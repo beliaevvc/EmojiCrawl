@@ -9,12 +9,13 @@ import Slot from './Slot';
 import { Card, LogEntry, Overheads } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
+import { GameStatsOverlay } from './GameStatsOverlay';
 
 interface GameScreenProps {
   onExit: () => void;
 }
 
-// ... (InteractionZone, EnemySlotDropZone, SellZone remain same)
+// ... (Other components remain the same)
 // Interaction Drop Zone Wrapper
 const InteractionZone = ({ 
     onDrop, 
@@ -714,30 +715,13 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
       </AnimatePresence>
 
       {(state.status === 'lost' || state.status === 'won') && (
-          <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 text-center">
-              <h2 className={`text-4xl md:text-6xl font-bold mb-4 ${state.status === 'won' ? 'text-yellow-400' : 'text-rose-500'}`}>
-                  {state.status === 'won' ? 'ПОБЕДА!' : 'GAME OVER'}
-              </h2>
-              <p className="text-stone-400 mb-8 max-w-md">
-                  {state.status === 'won' 
-                      ? 'Вы очистили подземелье от монстров и собрали все сокровища!' 
-                      : 'Ваш герой пал в бою. Попробуйте еще раз!'}
-              </p>
-              <div className="flex gap-4">
-                  <button 
-                      onClick={() => dispatch({ type: 'START_GAME' })} 
-                      className="px-6 py-3 bg-stone-700 text-white rounded hover:bg-stone-600 border border-stone-500 font-bold tracking-wider"
-                  >
-                      НОВАЯ ИГРА
-                  </button>
-                  <button 
-                      onClick={onExit} 
-                      className="px-6 py-3 bg-stone-900 text-stone-400 rounded hover:bg-stone-800 border border-stone-700"
-                  >
-                      ВЫХОД
-                  </button>
-              </div>
-          </div>
+          <GameStatsOverlay 
+              stats={state.stats} 
+              status={state.status} 
+              playerHp={state.player.hp}
+              onRestart={() => dispatch({ type: 'START_GAME' })}
+              onExit={onExit}
+          />
       )}
     </motion.div>
   );

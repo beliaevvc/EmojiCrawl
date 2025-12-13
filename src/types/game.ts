@@ -37,6 +37,19 @@ export interface Overheads {
     overdef: number;
 }
 
+export interface GameStats {
+    monstersKilled: number;
+    coinsCollected: number; // Total value of coins collected
+    hpHealed: number;
+    damageDealt: number;
+    damageBlocked: number;
+    damageTaken: number;
+    resetsUsed: number;
+    itemsSold: number;
+    startTime: number;
+    endTime: number | null;
+}
+
 export interface GameState {
   deck: Card[];
   enemySlots: (Card | null)[]; // Fixed 4 slots
@@ -48,6 +61,7 @@ export interface GameState {
   status: 'playing' | 'won' | 'lost';
   logs: LogEntry[];
   overheads: Overheads;
+  stats: GameStats;
 }
 
 export const MAX_HP = 13;

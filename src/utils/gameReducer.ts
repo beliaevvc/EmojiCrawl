@@ -1,6 +1,19 @@
 // ... imports
-import { GameState, LogEntry, Overheads } from '../types/game';
+import { GameState, LogEntry, Overheads, GameStats } from '../types/game';
 import { createDeck, shuffleDeck } from './gameLogic';
+
+const initialStats: GameStats = {
+    monstersKilled: 0,
+    coinsCollected: 0,
+    hpHealed: 0,
+    damageDealt: 0,
+    damageBlocked: 0,
+    damageTaken: 0,
+    resetsUsed: 0,
+    itemsSold: 0,
+    startTime: Date.now(),
+    endTime: null
+};
 
 // Initial State (Moved here to ensure it's exported)
 export const initialState: GameState = {
@@ -17,7 +30,8 @@ export const initialState: GameState = {
   round: 1,
   status: 'playing',
   logs: [],
-  overheads: { overheal: 0, overdamage: 0, overdef: 0 }
+  overheads: { overheal: 0, overdamage: 0, overdef: 0 },
+  stats: initialStats
 };
 
 // ... (Existing Action Types)
@@ -50,6 +64,16 @@ const updateOverheads = (state: GameState, type: keyof Overheads, value: number)
         overheads: {
             ...state.overheads,
             [type]: state.overheads[type] + value
+        }
+    };
+}
+
+const updateStats = (state: GameState, updates: Partial<GameStats>): GameState => {
+    return {
+        ...state,
+        stats: {
+            ...state.stats,
+            ...updates
         }
     };
 }
@@ -104,7 +128,7 @@ const removeCardFromSource = (state: GameState, cardId: string): { newState: Gam
   return { newState, card: null, fromWhere: null };
 };
 
-// Handle attack logic but return object with logs instead of pure state, or handle logging in parent
+// Handle attack logic
 const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): { state: GameState, log?: string, logType?: LogEntry['type'] } => {
     let newState = { ...state };
     const damage = monster.value;
@@ -116,6 +140,7 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
             ...newState.player,
             hp: Math.max(0, newState.player.hp - damage)
         };
+        newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + damage });
         log = `Получен урон от монстра: -${damage} HP`;
     } else if (defenseType === 'shield' && shieldHand) {
         const hand = shieldHand === 'left' ? newState.leftHand : newState.rightHand;
@@ -127,6 +152,12 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
         const overflow = Math.max(0, damage - blocked);
         const overdef = Math.max(0, shield.value - damage);
         
+        // Update stats
+        newState = updateStats(newState, { 
+            damageBlocked: newState.stats.damageBlocked + blocked,
+            damageTaken: newState.stats.damageTaken + overflow
+        });
+
         if (overdef > 0) {
             newState = updateOverheads(newState, 'overdef', overdef);
         }
@@ -173,6 +204,12 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
     let log = '';
 
     const overdamage = Math.max(0, damage - monsterHp);
+    
+    // Stats
+    newState = updateStats(newState, { 
+        damageDealt: newState.stats.damageDealt + Math.min(damage, monsterHp) 
+    });
+
     if (overdamage > 0) {
         newState = updateOverheads(newState, 'overdamage', overdamage);
     }
@@ -181,6 +218,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         const newSlots = [...newState.enemySlots];
         newSlots[monsterIdx] = null;
         newState.enemySlots = newSlots;
+        newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
         log = `Монстр убит оружием (${damage} урона, Overkill: ${overdamage}).`;
     } else {
         const newMonsterHp = monsterHp - damage;
@@ -204,7 +242,15 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
      const deckEmpty = s.deck.length === 0;
 
      if (deckEmpty && cardsOnTable === 0) {
-         return { ...s, status: 'won', logs: [createLog("🏆 ПОБЕДА! Все монстры повержены!", 'info'), ...s.logs] };
+         if (s.status !== 'won') {
+             return { 
+                 ...s, 
+                 status: 'won', 
+                 logs: [createLog("🏆 ПОБЕДА! Все монстры повержены!", 'info'), ...s.logs],
+                 stats: { ...s.stats, endTime: Date.now() }
+             };
+         }
+         return s;
      }
 
      if (cardsOnTable <= 1 && !deckEmpty) {
@@ -260,7 +306,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
   switch (action.type) {
     case 'INIT_GAME':
-      return { ...initialState };
+      return { ...initialState, stats: { ...initialStats, startTime: Date.now() } };
       
     case 'START_GAME': {
       const newDeck = createDeck();
@@ -283,7 +329,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         backpack: null,
         round: 1,
         logs: [createLog("Новая игра началась!", 'info')],
-        overheads: { overheal: 0, overdamage: 0, overdef: 0 }
+        overheads: { overheal: 0, overdamage: 0, overdef: 0 },
+        stats: { ...initialStats, startTime: Date.now() }
       };
       break;
     }
@@ -311,6 +358,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          playerUpdates = { coins: newState.player.coins + card.value };
          logMessage = `Собрано: +${card.value} монет`;
          logType = 'gain';
+         nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + card.value });
       } else if (card.type === 'potion') {
          blocked = true;
          const healAmount = card.value;
@@ -322,27 +370,15 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          playerUpdates = { hp: newHp };
          
          logMessage = `Выпито зелье: +${actualHeal} HP`;
+         
+         // Update stats
+         nextState = updateStats(newState, { hpHealed: newState.stats.hpHealed + actualHeal });
+
          if (overheal > 0) {
              logMessage += ` (Overheal: ${overheal})`;
-             nextState = updateOverheads(newState, 'overheal', overheal);
-             // Re-assign because updateOverheads returns new state
-             // But we are constructing nextState below, so we need to be careful
-             // Let's modify newState directly here or chain it
-             // Actually `updateOverheads` returns a fresh state object. 
-             // We need to carry that over.
-         } else {
-             // If no overheal, nextState = newState currently
-             nextState = newState;
+             nextState = updateOverheads(nextState, 'overheal', overheal);
          }
          logType = 'heal';
-         
-         // Fix the flow:
-         if (overheal > 0) {
-             nextState = updateOverheads(newState, 'overheal', overheal);
-         } else {
-             nextState = newState;
-         }
-
       } else {
          logMessage = `Взято в руку: ${card.icon}`;
          nextState = newState;
@@ -376,6 +412,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 enemySlots: newSlots,
                 player: { ...state.player, hp: newHp }
             };
+            nextState = updateStats(nextState, { damageTaken: nextState.stats.damageTaken + dmg });
             logMessage = `Удар монстра принят: -${dmg} HP`;
             logType = 'combat';
         } 
@@ -464,6 +501,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     const newHp = newState.player.hp + actualHeal;
                     newState.player = { ...newState.player, hp: newHp };
                     
+                    newState = updateStats(newState, { hpHealed: newState.stats.hpHealed + actualHeal });
+
                     if (overheal > 0) {
                         newState = updateOverheads(newState, 'overheal', overheal);
                         logMessage = `Заклинание КРОВОСОС: +${actualHeal} HP (Overheal: ${overheal})`;
@@ -520,13 +559,18 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     const dmg = 13 - newState.player.hp;
                     if (dmg > 0) {
                         const newHp = targetCard.value - dmg;
-                        const overdamage = Math.max(0, dmg - targetCard.value); // If dmg kills monster, check overhead
+                        const overdamage = Math.max(0, dmg - targetCard.value); 
+                        
+                        const actualDamage = Math.min(dmg, targetCard.value);
+                        newState = updateStats(newState, { damageDealt: newState.stats.damageDealt + actualDamage });
 
                         if (newHp <= 0) {
                              const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
                              const newSlots = [...newState.enemySlots];
                              newSlots[idx] = null;
                              newState.enemySlots = newSlots;
+                             newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
+                             
                              logMessage = `Заклинание ЖЕРТВА: монстр уничтожен (${dmg} урона`;
                              if (overdamage > 0) {
                                  logMessage += `, Overkill: ${overdamage})`;
@@ -575,6 +619,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             enemySlots: emptySlots,
             deck: newDeck
         };
+        nextState = updateStats(nextState, { resetsUsed: nextState.stats.resetsUsed + 1 });
         logMessage = 'СБРОС: карты убраны, потрачено 5 HP.';
         break;
     }
@@ -601,6 +646,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             ...newState,
             player: { ...newState.player, coins: newState.player.coins + coinsToAdd }
         };
+        nextState = updateStats(nextState, { 
+            itemsSold: nextState.stats.itemsSold + 1,
+            coinsCollected: nextState.stats.coinsCollected + coinsToAdd 
+        });
         logMessage = `Продано: ${card.icon} за ${coinsToAdd} монет.`;
         logType = 'gain';
         break;
@@ -612,6 +661,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
   
   if (nextState.player.hp <= 0 && nextState.status !== 'lost') {
       nextState.status = 'lost';
+      nextState = updateStats(nextState, { endTime: Date.now() });
       nextState = addLog(nextState, "Герой погиб...", 'combat');
   }
 
