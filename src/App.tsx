@@ -2,10 +2,12 @@ import { useState } from 'react';
 import MainMenu from './components/MainMenu';
 import GameScreen from './components/GameScreen';
 import StatsScreen from './components/StatsScreen';
+import DeckbuilderScreen from './components/DeckbuilderScreen';
 import { AnimatePresence } from 'framer-motion';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
+import { DeckConfig } from './types/game';
 
 // Safely detect touch device
 const isTouchDevice = () => {
@@ -17,7 +19,23 @@ const isTouchDevice = () => {
 const Backend = isTouchDevice() ? TouchBackend : HTML5Backend;
 
 function App() {
-  const [gameState, setGameState] = useState<'menu' | 'game' | 'stats'>('menu');
+  const [gameState, setGameState] = useState<'menu' | 'game' | 'stats' | 'deckbuilder'>('menu');
+  const [customDeckConfig, setCustomDeckConfig] = useState<DeckConfig | undefined>(undefined);
+
+  const handleStartCustomGame = (config: DeckConfig) => {
+      setCustomDeckConfig(config);
+      setGameState('game');
+  };
+
+  const handleStartStandardGame = () => {
+      setCustomDeckConfig(undefined);
+      setGameState('game');
+  };
+
+  const handleExitGame = () => {
+      setGameState('menu');
+      setCustomDeckConfig(undefined);
+  };
 
   return (
     <DndProvider backend={Backend}>
@@ -26,12 +44,26 @@ function App() {
           {gameState === 'menu' && (
             <MainMenu 
                 key="menu" 
-                onStartGame={() => setGameState('game')} 
+                onStartGame={handleStartStandardGame} 
+                onCreateGame={() => setGameState('deckbuilder')}
                 onShowStats={() => setGameState('stats')}
             />
           )}
+          {gameState === 'deckbuilder' && (
+            <DeckbuilderScreen 
+                key="deckbuilder" 
+                onBack={() => setGameState('menu')}
+                onStartStandard={handleStartStandardGame}
+                onStartCustom={handleStartCustomGame}
+            />
+          )}
           {gameState === 'game' && (
-            <GameScreen key="game" onExit={() => setGameState('menu')} />
+            <GameScreen 
+                key="game" 
+                onExit={handleExitGame} 
+                deckConfig={customDeckConfig}
+                runType={customDeckConfig ? 'custom' : 'standard'}
+            />
           )}
           {gameState === 'stats' && (
             <StatsScreen key="stats" onBack={() => setGameState('menu')} />

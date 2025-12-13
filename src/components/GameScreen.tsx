@@ -6,7 +6,7 @@ import { useDrop } from 'react-dnd';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
-import { Card, LogEntry, Overheads } from '../types/game';
+import { Card, LogEntry, Overheads, DeckConfig } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
 import { GameStatsOverlay } from './GameStatsOverlay';
@@ -15,6 +15,8 @@ import { ConfirmationModal } from './ConfirmationModal';
 
 interface GameScreenProps {
   onExit: () => void;
+  deckConfig?: DeckConfig;
+  runType?: 'standard' | 'custom';
 }
 
 // ... (Other components remain the same)
@@ -235,7 +237,7 @@ const GameLogWindow = ({ logs }: { logs: LogEntry[] }) => {
 };
 
 
-const GameScreen = ({ onExit }: GameScreenProps) => {
+const GameScreen = ({ onExit, deckConfig, runType = 'standard' }: GameScreenProps) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
@@ -271,7 +273,11 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
   } as Record<string, number>);
 
   useEffect(() => {
-    dispatch({ type: 'START_GAME' });
+    dispatch({ 
+        type: 'START_GAME', 
+        deckConfig, 
+        runType 
+    });
   }, []);
 
   // Monitor Game Status for Saving
@@ -605,7 +611,7 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
               onCardClick={() => state.backpack && handleCardClick(state.backpack)}
           />
 
-        </div>
+          </div>
 
         {/* Right Side: Sell Button */}
         <div className="flex items-center justify-center">
@@ -689,7 +695,11 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
                   title="Новая игра" 
                   message="Вы уверены, что хотите начать заново? Текущий прогресс будет потерян."
                   onConfirm={() => {
-                      dispatch({ type: 'START_GAME' });
+                      dispatch({ 
+                          type: 'START_GAME',
+                          deckConfig,
+                          runType 
+                      });
                       setShowRestartConfirm(false);
                   }}
                   onCancel={() => setShowRestartConfirm(false)}
@@ -713,7 +723,11 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
               stats={state.stats} 
               status={state.status} 
               playerHp={state.player.hp}
-              onRestart={() => dispatch({ type: 'START_GAME' })}
+              onRestart={() => dispatch({ 
+                  type: 'START_GAME',
+                  deckConfig,
+                  runType
+              })}
               onExit={onExit}
           />
       )}

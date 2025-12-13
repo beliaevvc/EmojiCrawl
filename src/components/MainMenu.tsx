@@ -3,10 +3,11 @@ import { Play, PlusSquare, FileUp, Settings2, BarChart3 } from 'lucide-react';
 
 interface MainMenuProps {
   onStartGame: () => void;
+  onCreateGame: () => void;
   onShowStats: () => void;
 }
 
-const MainMenu = ({ onStartGame, onShowStats }: MainMenuProps) => {
+const MainMenu = ({ onStartGame, onCreateGame, onShowStats }: MainMenuProps) => {
   return (
     <motion.div 
       exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
@@ -38,7 +39,12 @@ const MainMenu = ({ onStartGame, onShowStats }: MainMenuProps) => {
           primary 
           onClick={onStartGame}
         />
-        <MenuButton icon={<PlusSquare size={20} />} label="Создать игру" delay={0.3} />
+        <MenuButton 
+            icon={<PlusSquare size={20} />} 
+            label="Создать игру" 
+            delay={0.3} 
+            onClick={onCreateGame}
+        />
         <MenuButton icon={<FileUp size={20} />} label="Загрузить шаблон" delay={0.4} />
       </div>
 

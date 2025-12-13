@@ -1,6 +1,10 @@
 export type CardType = 'monster' | 'weapon' | 'shield' | 'potion' | 'coin' | 'spell';
 
-export type SpellType = 'escape' | 'leech' | 'potionify' | 'wind' | 'sacrifice';
+export type SpellType = 
+    | 'escape' | 'leech' | 'potionify' | 'wind' | 'sacrifice' 
+    | 'split' | 'barrier' | 'wardrobe' | 'merchant' | 'volley' 
+    | 'trophy' | 'epiphany' | 'deflection' | 'echo' | 'snack' 
+    | 'swap' | 'anvil' | 'armor' | 'archive' | 'scout' | 'cut';
 
 export interface Card {
   id: string;
@@ -48,6 +52,7 @@ export interface GameStats {
     itemsSold: number;
     startTime: number;
     endTime: number | null;
+    runType: 'standard' | 'custom';
 }
 
 export interface RunHistoryEntry extends GameStats {
@@ -58,8 +63,18 @@ export interface RunHistoryEntry extends GameStats {
     overheads: Overheads;
 }
 
+export interface DeckConfig {
+    character: { hp: number; coins: number };
+    shields: number[];
+    weapons: number[];
+    potions: number[];
+    coins: number[];
+    spells: SpellType[];
+}
+
 export interface GameState {
   deck: Card[];
+  discardPile: Card[];
   enemySlots: (Card | null)[]; // Fixed 4 slots
   leftHand: HandSlot;
   rightHand: HandSlot;
@@ -70,6 +85,7 @@ export interface GameState {
   logs: LogEntry[];
   overheads: Overheads;
   stats: GameStats;
+  activeEffects: SpellType[];
 }
 
 export const MAX_HP = 13;

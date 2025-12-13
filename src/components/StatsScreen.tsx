@@ -60,6 +60,11 @@ const HistoryCard = ({ entry }: { entry: RunHistoryEntry }) => {
                         <span className={`font-bold uppercase tracking-widest text-sm ${isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {isWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ'}
                         </span>
+                        {entry.runType === 'custom' && (
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 border border-indigo-500/50 px-1.5 py-0.5 rounded bg-indigo-900/20">
+                                Custom
+                            </span>
+                        )}
                         <span className="text-stone-600 text-xs font-bold">#{entry.gameNumber}</span>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-stone-500">

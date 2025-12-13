@@ -1,0 +1,310 @@
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Save, Play, Swords } from 'lucide-react';
+import { useState } from 'react';
+import CharacterEditor from './CharacterEditor';
+import ShieldsEditor from './ShieldsEditor';
+import WeaponsEditor from './WeaponsEditor';
+import PotionsEditor from './PotionsEditor';
+import CoinsEditor from './CoinsEditor';
+import SpellsEditor from './SpellsEditor';
+import { DeckConfig, SpellType } from '../types/game';
+import { BASE_SPELLS } from '../data/spells';
+
+interface DeckbuilderScreenProps {
+    onBack: () => void;
+    onStartStandard: () => void;
+    onStartCustom: (config: DeckConfig) => void;
+}
+
+const CategoryCard = ({ 
+    icon, 
+    label, 
+    count, 
+    onClick,
+    colorClass = "border-stone-500 bg-stone-800",
+    isModified = false
+}: { 
+    icon: string; 
+    label: string; 
+    count?: number; 
+    onClick?: () => void;
+    colorClass?: string;
+    isModified?: boolean;
+}) => (
+    <motion.div 
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
+        className="flex flex-col items-center gap-3 cursor-pointer group relative"
+    >
+        <div className={`
+            w-20 h-20 md:w-24 md:h-24 rounded-full border-4 
+            ${colorClass}
+            flex items-center justify-center text-4xl md:text-5xl 
+            shadow-lg group-hover:shadow-xl group-hover:border-stone-300 transition-all
+            relative
+        `}>
+            {icon}
+            {count !== undefined && (
+                <div className="absolute -top-1 -right-1 w-8 h-8 bg-stone-900 border-2 border-stone-600 rounded-full flex items-center justify-center text-xs font-bold text-stone-300 shadow-md">
+                    {count}
+                </div>
+            )}
+            {isModified && (
+                <div className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-rose-400 z-20">
+                    NEW
+                </div>
+            )}
+        </div>
+        <span className="text-stone-400 font-bold uppercase tracking-widest text-xs group-hover:text-stone-200 transition-colors">
+            {label}
+        </span>
+    </motion.div>
+);
+
+const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: DeckbuilderScreenProps) => {
+    
+    // Config State
+    const [customPlayer, setCustomPlayer] = useState({ hp: 13, maxHp: 13, coins: 0 });
+    const [customShields, setCustomShields] = useState<number[]>([2, 3, 4, 5, 6, 7]);
+    const [customWeapons, setCustomWeapons] = useState<number[]>([2, 3, 4, 5, 6, 7]);
+    const [customPotions, setCustomPotions] = useState<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    const [customCoins, setCustomCoins] = useState<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    const [customSpells, setCustomSpells] = useState<SpellType[]>([...BASE_SPELLS]);
+
+    // Modals
+    const [showCharacterEditor, setShowCharacterEditor] = useState(false);
+    const [showShieldsEditor, setShowShieldsEditor] = useState(false);
+    const [showWeaponsEditor, setShowWeaponsEditor] = useState(false);
+    const [showPotionsEditor, setShowPotionsEditor] = useState(false);
+    const [showCoinsEditor, setShowCoinsEditor] = useState(false);
+    const [showSpellsEditor, setShowSpellsEditor] = useState(false);
+
+    // Checks
+    const arraysEqual = (a: any[], b: any[]) => {
+        if (a.length !== b.length) return false;
+        const sortedA = [...a].sort();
+        const sortedB = [...b].sort();
+        return sortedA.every((val, index) => val === sortedB[index]);
+    };
+
+    const isCharacterModified = customPlayer.hp !== 13 || customPlayer.coins !== 0;
+    const isShieldsModified = JSON.stringify(customShields.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7].slice().sort((a,b) => a-b));
+    const isWeaponsModified = JSON.stringify(customWeapons.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7].slice().sort((a,b) => a-b));
+    const isPotionsModified = JSON.stringify(customPotions.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10].slice().sort((a,b) => a-b));
+    const isCoinsModified = JSON.stringify(customCoins.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10].slice().sort((a,b) => a-b));
+    const isSpellsModified = !arraysEqual(customSpells, BASE_SPELLS);
+
+    // Hardcoded counts for other categories for now
+    const otherCardsCount = 19; // Monsters only (fixed for now)
+    const totalCards = customShields.length + customWeapons.length + customPotions.length + customCoins.length + customSpells.length + otherCardsCount;
+
+    const handleStartCustom = () => {
+        onStartCustom({
+            character: customPlayer,
+            shields: customShields,
+            weapons: customWeapons,
+            potions: customPotions,
+            coins: customCoins,
+            spells: customSpells
+        });
+    };
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="relative w-full min-h-screen bg-stone-950 flex flex-col p-4 md:p-8 overflow-hidden font-sans select-none"
+        >
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+
+            {/* Header */}
+            <div className="relative z-10 flex items-center justify-between mb-8 max-w-4xl mx-auto w-full">
+                <button 
+                    onClick={onBack}
+                    className="flex items-center gap-2 text-stone-400 hover:text-stone-200 transition-colors group"
+                >
+                    <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="font-bold tracking-widest uppercase text-sm">Назад</span>
+                </button>
+                
+                <div className="text-center">
+                    <h2 className="text-3xl md:text-4xl font-display font-bold text-stone-200 uppercase tracking-tighter">
+                        Deckbuilder
+                    </h2>
+                    <p className="text-stone-500 text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase mt-1">
+                        Конструктор колоды
+                    </p>
+                </div>
+
+                <div className="flex items-center gap-2 bg-stone-900/50 px-3 py-1.5 rounded-lg border border-stone-800">
+                    <span className="text-stone-500 text-xs font-bold uppercase">Всего карт</span>
+                    <span className="text-stone-200 font-mono font-bold">{totalCards}</span>
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl mx-auto z-10 relative">
+                <h3 className="text-stone-500 font-bold uppercase tracking-widest text-sm mb-12">Выберите категорию</h3>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12 mb-12">
+                     {/* Character */}
+                    <CategoryCard 
+                        icon="🧙‍♂️" 
+                        label="Персонаж" 
+                        colorClass="border-stone-400 bg-stone-800"
+                        onClick={() => setShowCharacterEditor(true)}
+                        isModified={isCharacterModified}
+                    />
+
+                    <CategoryCard 
+                        icon="🐺" 
+                        label="Монстры" 
+                        count={19} 
+                        colorClass="border-rose-500/50 bg-rose-900/20"
+                    />
+                    
+                    {/* Weapons */}
+                    <CategoryCard 
+                        icon="⚔️" 
+                        label="Оружие" 
+                        count={customWeapons.length} 
+                        colorClass="border-stone-400 bg-stone-800"
+                        onClick={() => setShowWeaponsEditor(true)}
+                        isModified={isWeaponsModified}
+                    />
+
+                    {/* Shields */}
+                    <CategoryCard 
+                        icon="🛡️" 
+                        label="Щиты" 
+                        count={customShields.length} 
+                        colorClass="border-stone-400 bg-stone-800"
+                        onClick={() => setShowShieldsEditor(true)}
+                        isModified={isShieldsModified}
+                    />
+
+                    {/* Potions */}
+                    <CategoryCard 
+                        icon="🧪" 
+                        label="Зелья" 
+                        count={customPotions.length} 
+                        colorClass="border-emerald-500/50 bg-emerald-900/20"
+                        onClick={() => setShowPotionsEditor(true)}
+                        isModified={isPotionsModified}
+                    />
+                    
+                    {/* Coins */}
+                    <CategoryCard 
+                        icon="💎" 
+                        label="Кристаллы" 
+                        count={customCoins.length} 
+                        colorClass="border-amber-500/50 bg-amber-900/20"
+                        onClick={() => setShowCoinsEditor(true)}
+                        isModified={isCoinsModified}
+                    />
+
+                    {/* Spells */}
+                    <CategoryCard 
+                        icon="📜" 
+                        label="Заклинания" 
+                        count={customSpells.length} 
+                        colorClass="border-indigo-500/50 bg-indigo-900/20"
+                        onClick={() => setShowSpellsEditor(true)}
+                        isModified={isSpellsModified}
+                    />
+                </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col md:flex-row gap-4 justify-center items-center mt-auto pt-8">
+                <button className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-stone-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-stone-200 transition-all font-bold uppercase tracking-widest text-xs group">
+                    <Save size={18} className="group-hover:scale-110 transition-transform"/>
+                    Сохранить шаблон
+                </button>
+                
+                <button 
+                    onClick={handleStartCustom}
+                    className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-indigo-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-indigo-300 transition-all font-bold uppercase tracking-widest text-xs group"
+                >
+                    <Swords size={18} className="group-hover:rotate-12 transition-transform"/>
+                    Начать кастом забег
+                </button>
+
+                <button 
+                    onClick={onStartStandard}
+                    className="w-full md:w-auto px-8 py-4 bg-stone-100 text-stone-950 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:scale-105 transition-all shadow-lg shadow-stone-900/50"
+                >
+                    <Play size={18} fill="currentColor" />
+                    Начать обычный забег
+                </button>
+            </div>
+
+            <AnimatePresence>
+                {showCharacterEditor && (
+                    <CharacterEditor 
+                        initialStats={customPlayer}
+                        onSave={(stats) => {
+                            setCustomPlayer(stats);
+                            setShowCharacterEditor(false);
+                        }}
+                        onClose={() => setShowCharacterEditor(false)}
+                    />
+                )}
+                {showShieldsEditor && (
+                    <ShieldsEditor 
+                        initialValues={customShields}
+                        onSave={(shields) => {
+                            setCustomShields(shields);
+                            setShowShieldsEditor(false);
+                        }}
+                        onClose={() => setShowShieldsEditor(false)}
+                    />
+                )}
+                {showWeaponsEditor && (
+                    <WeaponsEditor 
+                        initialValues={customWeapons}
+                        onSave={(weapons) => {
+                            setCustomWeapons(weapons);
+                            setShowWeaponsEditor(false);
+                        }}
+                        onClose={() => setShowWeaponsEditor(false)}
+                    />
+                )}
+                {showPotionsEditor && (
+                    <PotionsEditor 
+                        initialValues={customPotions}
+                        onSave={(potions) => {
+                            setCustomPotions(potions);
+                            setShowPotionsEditor(false);
+                        }}
+                        onClose={() => setShowPotionsEditor(false)}
+                    />
+                )}
+                {showCoinsEditor && (
+                    <CoinsEditor 
+                        initialValues={customCoins}
+                        onSave={(coins) => {
+                            setCustomCoins(coins);
+                            setShowCoinsEditor(false);
+                        }}
+                        onClose={() => setShowCoinsEditor(false)}
+                    />
+                )}
+                {showSpellsEditor && (
+                    <SpellsEditor 
+                        initialValues={customSpells}
+                        onSave={(spells) => {
+                            setCustomSpells(spells);
+                            setShowSpellsEditor(false);
+                        }}
+                        onClose={() => setShowSpellsEditor(false)}
+                    />
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
+
+export default DeckbuilderScreen;
