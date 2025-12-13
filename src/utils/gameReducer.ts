@@ -366,7 +366,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
           // Build custom deck from config
           const baseDeck = createDeck();
           // Filter out everything
-          const otherCards: Card[] = []; // Rebuilding from scratch based on config is safer if we want full control, but "otherCards" assumes base deck structure.
           // Actually, createDeck makes a standard deck. If we use custom config, we should probably ignore base deck distributions for the types we customize.
           // Since we customize ALL types now in DeckBuilder (Monsters are still fixed count 19 but we might want to customize later), let's stick to filtering.
           // Wait, monsters are NOT customizable in numbers yet (fixed 19 in UI), but DeckConfig doesn't have monsters array yet. 
@@ -856,6 +855,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         const tempVal = targetCard.value;
                         const newTarget = { ...targetCard, value: otherItem.value };
                         const newOther = { ...otherItem, value: tempVal };
+
+                        if (otherHandLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: newOther };
+                        else if (otherHandLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: newOther };
 
                         if (targetLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: newTarget };
                         else if (targetLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: newTarget };
