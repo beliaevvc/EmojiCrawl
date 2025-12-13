@@ -318,10 +318,12 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         const { spellCardId, targetId } = action;
         
         const spellLoc = findCardLocation(state, spellCardId);
+        // Only allow using spells from hands
+        if (spellLoc !== 'leftHand' && spellLoc !== 'rightHand') return state;
+
         let spellCard: any = null;
         if (spellLoc === 'leftHand') spellCard = state.leftHand.card;
         else if (spellLoc === 'rightHand') spellCard = state.rightHand.card;
-        else if (spellLoc === 'backpack') spellCard = state.backpack;
         
         if (!spellCard || spellCard.type !== 'spell' || !spellCard.spellType) return state;
 
@@ -339,10 +341,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
         switch (spellCard.spellType) {
             case 'escape': 
-                if (targetCard?.type === 'monster') {
-                    const monsters = newState.enemySlots.filter(c => c?.type === 'monster') as any[];
-                    const newEnemySlots = newState.enemySlots.map(c => c?.type === 'monster' ? null : c);
-                    const newDeck = shuffleDeck([...newState.deck, ...monsters]);
+                if (targetId === 'player') {
+                    const cardsToReturn = newState.enemySlots.filter(c => c !== null) as any[];
+                    const newEnemySlots = [null, null, null, null];
+                    const newDeck = shuffleDeck([...newState.deck, ...cardsToReturn]);
+                    
                     newState.enemySlots = newEnemySlots;
                     newState.deck = newDeck;
                     spellUsed = true;

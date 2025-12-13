@@ -323,6 +323,12 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
               monsterId: item.id, 
               target 
           });
+      } else if (item.type === 'spell' && target === 'player') {
+          dispatch({ 
+              type: 'USE_SPELL_ON_TARGET', 
+              spellCardId: item.id, 
+              targetId: 'player' 
+          });
       }
   };
   
