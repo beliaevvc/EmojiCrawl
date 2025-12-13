@@ -3,9 +3,10 @@ import { Play, PlusSquare, FileUp, Settings2, BarChart3 } from 'lucide-react';
 
 interface MainMenuProps {
   onStartGame: () => void;
+  onShowStats: () => void;
 }
 
-const MainMenu = ({ onStartGame }: MainMenuProps) => {
+const MainMenu = ({ onStartGame, onShowStats }: MainMenuProps) => {
   return (
     <motion.div 
       exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
@@ -43,6 +44,7 @@ const MainMenu = ({ onStartGame }: MainMenuProps) => {
 
       {/* Кнопка статистики */}
       <motion.button
+        onClick={onShowStats}
         initial={{ x: 50, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ delay: 0.7 }}

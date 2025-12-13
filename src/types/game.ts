@@ -50,6 +50,14 @@ export interface GameStats {
     endTime: number | null;
 }
 
+export interface RunHistoryEntry extends GameStats {
+    id: string;
+    gameNumber: number;
+    date: string; // ISO string
+    result: 'won' | 'lost';
+    overheads: Overheads;
+}
+
 export interface GameState {
   deck: Card[];
   enemySlots: (Card | null)[]; // Fixed 4 slots

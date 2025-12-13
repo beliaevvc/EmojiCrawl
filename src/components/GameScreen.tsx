@@ -10,6 +10,7 @@ import { Card, LogEntry, Overheads } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
 import { GameStatsOverlay } from './GameStatsOverlay';
+import { saveRun } from '../utils/statsStorage';
 
 interface GameScreenProps {
   onExit: () => void;
@@ -309,6 +310,13 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
   useEffect(() => {
     dispatch({ type: 'START_GAME' });
   }, []);
+
+  // Monitor Game Status for Saving
+  useEffect(() => {
+      if (state.status === 'won' || state.status === 'lost') {
+          saveRun(state.stats, state.status, state.overheads);
+      }
+  }, [state.status, state.stats, state.overheads]);
 
   // Monitor Hero HP for visual effects
   useEffect(() => {
