@@ -188,11 +188,20 @@ const ConfirmationModal = ({ onConfirm, onCancel, title, message }: { onConfirm:
     </motion.div>
 );
 
+// Mini Stats Item Component
+const DeckStatItem = ({ icon, count, color }: { icon: string, count: number, color: string }) => (
+    <div className={`flex flex-col items-center justify-center w-8 h-10 bg-stone-900/90 border border-stone-700 rounded-md backdrop-blur-sm shadow-sm ${count === 0 ? 'opacity-30 grayscale' : ''}`}>
+        <div className="text-sm">{icon}</div>
+        <div className={`text-[10px] font-bold ${color}`}>{count}</div>
+    </div>
+);
+
 const GameScreen = ({ onExit }: GameScreenProps) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [showInfo, setShowInfo] = useState(false); // Deck Stats Toggle
   
   // Visual Effects State
   const [floatingTexts, setFloatingTexts] = useState<FloatingTextItem[]>([]);
@@ -207,6 +216,19 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
   // Track Enemy Slots for animations
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const prevEnemySlots = useRef(state.enemySlots);
+
+  // Calculate Deck Stats
+  const deckStats = state.deck.reduce((acc, card) => {
+      acc[card.type] = (acc[card.type] || 0) + 1;
+      return acc;
+  }, {
+      monster: 0,
+      coin: 0,
+      potion: 0,
+      shield: 0,
+      weapon: 0,
+      spell: 0
+  } as Record<string, number>);
 
   useEffect(() => {
     dispatch({ type: 'START_GAME' });
@@ -380,12 +402,32 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
 
       {/* --- Top Panel --- */}
       <div className="flex justify-between items-start z-10 w-full px-2 md:px-4 pt-2 md:pt-4">
-        <div className="flex items-center gap-3 px-4 py-2 bg-stone-900/90 border border-stone-700 rounded shadow-lg backdrop-blur-sm">
-          <span className="font-bold text-stone-400 text-base tracking-widest font-sans">ОСТАЛОСЬ</span>
-          <div className="w-px h-4 bg-stone-700"></div>
-          <span className="font-mono font-bold text-stone-100 text-base">{state.deck.length}</span>
+        <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 px-4 py-2 bg-stone-900/90 border border-stone-700 rounded shadow-lg backdrop-blur-sm">
+              <span className="font-bold text-stone-400 text-base tracking-widest font-sans">ОСТАЛОСЬ</span>
+              <div className="w-px h-4 bg-stone-700"></div>
+              <span className="font-mono font-bold text-stone-100 text-base">{state.deck.length}</span>
+            </div>
+
+            {/* Deck Stats Breakdown */}
+            <AnimatePresence>
+                {showInfo && (
+                    <motion.div 
+                        initial={{ opacity: 0, x: -10, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -10, width: 0 }}
+                        className="flex gap-1.5 overflow-hidden"
+                    >
+                        <DeckStatItem icon="🐺" count={deckStats.monster} color="text-rose-400" />
+                        <DeckStatItem icon="💎" count={deckStats.coin} color="text-amber-400" />
+                        <DeckStatItem icon="🧪" count={deckStats.potion} color="text-emerald-400" />
+                        <DeckStatItem icon="🛡️" count={deckStats.shield} color="text-stone-300" />
+                        <DeckStatItem icon="⚔️" count={deckStats.weapon} color="text-stone-300" />
+                        <DeckStatItem icon="📜" count={deckStats.spell} color="text-indigo-400" />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
-        {/* Sell Button Moved to Main Area */}
       </div>
 
       {/* --- Main Game Area --- */}
@@ -535,7 +577,8 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
          <SystemButton 
             icon={<Search size={20} />} 
             label="Info" 
-            onClick={() => setShowRules(true)} 
+            active={showInfo}
+            onClick={() => setShowInfo(!showInfo)} 
          />
       </div>
 
@@ -615,14 +658,15 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
   );
 };
 
-const SystemButton = ({ icon, label, onClick, danger = false }: { icon: React.ReactNode, label: string, onClick?: () => void, danger?: boolean }) => (
+const SystemButton = ({ icon, label, onClick, danger = false, active = false }: { icon: React.ReactNode, label: string, onClick?: () => void, danger?: boolean, active?: boolean }) => (
     <button 
         onClick={onClick}
         className={`
             relative group flex items-center gap-3 px-5 py-3 
-            bg-stone-900/80 backdrop-blur-md border border-stone-700 
+            backdrop-blur-md border 
             rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 
             transition-all duration-200 overflow-hidden
+            ${active ? 'bg-indigo-900/60 border-indigo-500' : 'bg-stone-900/80 border-stone-700'}
             ${danger ? 'hover:border-rose-500/50' : 'hover:border-indigo-500/50'}
         `}
     >
@@ -631,10 +675,19 @@ const SystemButton = ({ icon, label, onClick, danger = false }: { icon: React.Re
             bg-gradient-to-r ${danger ? 'from-rose-900/20 to-transparent' : 'from-indigo-900/20 to-transparent'}
         `}></div>
         
-        <div className={`text-stone-400 ${danger ? 'group-hover:text-rose-400' : 'group-hover:text-indigo-300'} transition-colors`}>
+        <div className={`
+            ${active ? 'text-indigo-200' : 'text-stone-400'}
+            ${danger ? 'group-hover:text-rose-400' : 'group-hover:text-indigo-300'} 
+            transition-colors
+        `}>
             {icon}
         </div>
-        <span className={`text-[10px] md:text-xs font-bold tracking-widest text-stone-500 ${danger ? 'group-hover:text-rose-200' : 'group-hover:text-stone-200'} transition-colors uppercase`}>
+        <span className={`
+            text-[10px] md:text-xs font-bold tracking-widest uppercase
+            ${active ? 'text-indigo-100' : 'text-stone-500'}
+            ${danger ? 'group-hover:text-rose-200' : 'group-hover:text-stone-200'} 
+            transition-colors
+        `}>
             {label}
         </span>
     </button>
