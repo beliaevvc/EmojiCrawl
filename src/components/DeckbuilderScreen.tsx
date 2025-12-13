@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Save, Play, Swords } from 'lucide-react';
+import { ArrowLeft, Save, Play, Swords, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import CharacterEditor from './CharacterEditor';
 import ShieldsEditor from './ShieldsEditor';
@@ -7,8 +7,10 @@ import WeaponsEditor from './WeaponsEditor';
 import PotionsEditor from './PotionsEditor';
 import CoinsEditor from './CoinsEditor';
 import SpellsEditor from './SpellsEditor';
-import { DeckConfig, SpellType } from '../types/game';
+import MonstersEditor, { DEFAULT_MONSTER_GROUPS } from './MonstersEditor';
+import { DeckConfig, SpellType, MonsterGroupConfig } from '../types/game';
 import { BASE_SPELLS } from '../data/spells';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface DeckbuilderScreenProps {
     onBack: () => void;
@@ -51,7 +53,7 @@ const CategoryCard = ({
                 </div>
             )}
             {isModified && (
-                <div className="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-rose-400 z-20">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-rose-400 z-20 whitespace-nowrap">
                     NEW
                 </div>
             )}
@@ -71,6 +73,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
     const [customPotions, setCustomPotions] = useState<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10]);
     const [customCoins, setCustomCoins] = useState<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10]);
     const [customSpells, setCustomSpells] = useState<SpellType[]>([...BASE_SPELLS]);
+    const [customMonsters, setCustomMonsters] = useState<MonsterGroupConfig[]>(DEFAULT_MONSTER_GROUPS);
 
     // Modals
     const [showCharacterEditor, setShowCharacterEditor] = useState(false);
@@ -79,6 +82,8 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
     const [showPotionsEditor, setShowPotionsEditor] = useState(false);
     const [showCoinsEditor, setShowCoinsEditor] = useState(false);
     const [showSpellsEditor, setShowSpellsEditor] = useState(false);
+    const [showMonstersEditor, setShowMonstersEditor] = useState(false);
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
 
     // Checks
     const arraysEqual = (a: any[], b: any[]) => {
@@ -94,10 +99,11 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
     const isPotionsModified = JSON.stringify(customPotions.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10].slice().sort((a,b) => a-b));
     const isCoinsModified = JSON.stringify(customCoins.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10].slice().sort((a,b) => a-b));
     const isSpellsModified = !arraysEqual(customSpells, BASE_SPELLS);
+    const isMonstersModified = JSON.stringify(customMonsters) !== JSON.stringify(DEFAULT_MONSTER_GROUPS);
 
-    // Hardcoded counts for other categories for now
-    const otherCardsCount = 19; // Monsters only (fixed for now)
-    const totalCards = customShields.length + customWeapons.length + customPotions.length + customCoins.length + customSpells.length + otherCardsCount;
+    // Total Counts
+    const monsterCount = customMonsters.reduce((acc, g) => acc + g.count, 0);
+    const totalCards = customShields.length + customWeapons.length + customPotions.length + customCoins.length + customSpells.length + monsterCount;
 
     const handleStartCustom = () => {
         onStartCustom({
@@ -106,8 +112,20 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
             weapons: customWeapons,
             potions: customPotions,
             coins: customCoins,
-            spells: customSpells
+            spells: customSpells,
+            monsters: customMonsters
         });
+    };
+
+    const handleResetAll = () => {
+        setCustomPlayer({ hp: 13, maxHp: 13, coins: 0 });
+        setCustomShields([2, 3, 4, 5, 6, 7]);
+        setCustomWeapons([2, 3, 4, 5, 6, 7]);
+        setCustomPotions([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        setCustomCoins([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        setCustomSpells([...BASE_SPELLS]);
+        setCustomMonsters([...DEFAULT_MONSTER_GROUPS]);
+        setShowResetConfirm(false);
     };
 
     return (
@@ -138,9 +156,19 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2 bg-stone-900/50 px-3 py-1.5 rounded-lg border border-stone-800">
-                    <span className="text-stone-500 text-xs font-bold uppercase">Всего карт</span>
-                    <span className="text-stone-200 font-mono font-bold">{totalCards}</span>
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setShowResetConfirm(true)}
+                        className="flex items-center gap-2 text-stone-500 hover:text-rose-400 transition-colors group"
+                        title="Сбросить все настройки"
+                    >
+                        <RotateCcw size={18} className="group-hover:-rotate-180 transition-transform duration-500" />
+                    </button>
+
+                    <div className="flex items-center gap-2 bg-stone-900/50 px-3 py-1.5 rounded-lg border border-stone-800">
+                        <span className="text-stone-500 text-xs font-bold uppercase">Всего карт</span>
+                        <span className="text-stone-200 font-mono font-bold">{totalCards}</span>
+                    </div>
                 </div>
             </div>
 
@@ -161,8 +189,10 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
                     <CategoryCard 
                         icon="🐺" 
                         label="Монстры" 
-                        count={19} 
+                        count={monsterCount} 
                         colorClass="border-rose-500/50 bg-rose-900/20"
+                        onClick={() => setShowMonstersEditor(true)}
+                        isModified={isMonstersModified}
                     />
                     
                     {/* Weapons */}
@@ -300,6 +330,24 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
                             setShowSpellsEditor(false);
                         }}
                         onClose={() => setShowSpellsEditor(false)}
+                    />
+                )}
+                {showMonstersEditor && (
+                    <MonstersEditor 
+                        initialGroups={customMonsters}
+                        onSave={(groups) => {
+                            setCustomMonsters(groups);
+                            setShowMonstersEditor(false);
+                        }}
+                        onClose={() => setShowMonstersEditor(false)}
+                    />
+                )}
+                {showResetConfirm && (
+                    <ConfirmationModal 
+                        title="Сбросить все?"
+                        message="Вы уверены, что хотите сбросить все настройки колоды к стандартным значениям?"
+                        onConfirm={handleResetAll}
+                        onCancel={() => setShowResetConfirm(false)}
                     />
                 )}
             </AnimatePresence>

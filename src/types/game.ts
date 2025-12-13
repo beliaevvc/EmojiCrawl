@@ -6,12 +6,19 @@ export type SpellType =
     | 'trophy' | 'epiphany' | 'deflection' | 'echo' | 'snack' 
     | 'swap' | 'anvil' | 'armor' | 'archive' | 'scout' | 'cut';
 
+export type MonsterAbilityType = 
+    | 'commission' | 'whisper' | 'silence' | 'breach' | 'disarm' | 'blessing'
+    | 'trample' | 'mirror' | 'stealth' | 'graveyard' | 'scream' | 'legacy'
+    | 'flee' | 'offering' | 'ambush' | 'theft' | 'rot' | 'web' | 'bones'
+    | 'beacon' | 'parasite' | 'corrosion' | 'exhaustion' | 'junk' | 'miss' | 'corpseeater';
+
 export interface Card {
   id: string;
   type: CardType;
   value: number; // HP/Attack for monsters, Value for items
   maxHealth?: number; // For monsters (to track current HP vs Max)
   spellType?: SpellType;
+  ability?: MonsterAbilityType;
   icon: string;
   name?: string;
   description?: string;
@@ -63,6 +70,13 @@ export interface RunHistoryEntry extends GameStats {
     overheads: Overheads;
 }
 
+export interface MonsterGroupConfig {
+    id: string; // Unique ID for editor keys
+    value: number;
+    count: number;
+    ability?: MonsterAbilityType;
+}
+
 export interface DeckConfig {
     character: { hp: number; coins: number };
     shields: number[];
@@ -70,6 +84,7 @@ export interface DeckConfig {
     potions: number[];
     coins: number[];
     spells: SpellType[];
+    monsters: MonsterGroupConfig[];
 }
 
 export interface GameState {
