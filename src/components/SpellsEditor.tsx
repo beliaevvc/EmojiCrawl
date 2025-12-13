@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusCircle, Check, RotateCcw, X, Plus } from 'lucide-react';
+import { PlusCircle, Check, RotateCcw, X } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import SpellPicker from './SpellPicker';
 import { SpellType } from '../types/game';

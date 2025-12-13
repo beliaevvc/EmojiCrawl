@@ -194,7 +194,7 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
 };
 
 // Handle On Kill Abilities
-const applyKillAbilities = (state: GameState, monster: Card, killer?: 'weapon' | 'spell' | 'other'): GameState => {
+const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' | 'spell' | 'other'): GameState => {
     let newState = { ...state };
     
     // Global Trigger: Parasite (other monsters heal)
@@ -357,20 +357,7 @@ const applyKillAbilities = (state: GameState, monster: Card, killer?: 'weapon' |
             break;
         case 'miss':
             // Apply next attack debuff.
-            // Implemented via activeEffects? "Player Miss".
-            // Let's assume a new activeEffect 'miss'
-            newState.activeEffects = [...newState.activeEffects, 'miss']; // Wait, activeEffects type is SpellType. Need to extend it or map it.
-            // FIX: 'miss' is in MonsterAbilityType, but activeEffects expects SpellType usually.
-            // Let's cast or add 'miss' to SpellType logic if we want to reuse activeEffects.
-            // Or better: Add 'miss' to SpellType in types. (Did I add it? Yes, 'miss' is in AbilityType).
-            // But activeEffects is SpellType[].
-            // 'miss' is defined in SpellType too? No. 
-            // I should use a separate state for Debuffs or reuse activeEffects but cast it.
-            // Let's reuse activeEffects but I need to make sure 'miss' is a valid value there.
-            // 'miss' is in AbilityType but NOT SpellType. 
-            // Hack: I'll add 'miss_debuff' to activeEffects or just check ability type.
-            // Let's assume I updated SpellType to include 'miss' or I'll just skip type check for now with "as any".
-            newState.activeEffects = [...newState.activeEffects, 'miss' as any]; 
+            newState.activeEffects = [...newState.activeEffects, 'miss']; 
             newState = addLog(newState, 'ПРОМАХ: Следующая атака слабее.', 'combat');
             break;
     }
@@ -497,9 +484,9 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
     let damage = weapon.value;
     
     // Miss Ability (Debuff on player)
-    if (newState.activeEffects.includes('miss' as any)) {
+    if (newState.activeEffects.includes('miss')) {
         damage = Math.max(0, damage - 2);
-        newState.activeEffects = newState.activeEffects.filter(e => e !== 'miss' as any);
+        newState.activeEffects = newState.activeEffects.filter(e => e !== 'miss');
     }
 
     const monsterHp = monster.value;
@@ -759,7 +746,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       }
 
       const enemySlots = [null, null, null, null] as (any | null)[];
-      let tempStateForSpawn = { ...state, deck: newDeck, enemySlots, player: { ...initialState.player } };
 
       // Fill slots
       for (let i = 0; i < 4; i++) {

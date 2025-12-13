@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, RotateCcw, Plus, Minus, PlusCircle } from 'lucide-react';
-import { MonsterGroupConfig, MonsterAbilityType } from '../types/game';
+import { MonsterGroupConfig } from '../types/game';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import { ConfirmationModal } from './ConfirmationModal';
 import MonsterGroupEditor from './MonsterGroupEditor';

@@ -108,7 +108,7 @@ export interface GameState {
   logs: LogEntry[];
   overheads: Overheads;
   stats: GameStats;
-  activeEffects: SpellType[];
+  activeEffects: (SpellType | 'miss')[];
 }
 
 export const MAX_HP = 13;

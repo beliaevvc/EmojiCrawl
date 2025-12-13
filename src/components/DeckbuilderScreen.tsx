@@ -82,7 +82,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     useEffect(() => {
         if (initialTemplate) {
             const { config } = initialTemplate;
-            setCustomPlayer(config.character);
+            setCustomPlayer({ ...config.character, maxHp: config.character.hp });
             setCustomShields(config.shields);
             setCustomWeapons(config.weapons);
             setCustomPotions(config.potions);
