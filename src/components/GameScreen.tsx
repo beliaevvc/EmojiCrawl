@@ -240,6 +240,7 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showInfo, setShowInfo] = useState(false); // Deck Stats & Logs Toggle
   
   // Visual Effects State
@@ -447,32 +448,44 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
        <div className="absolute inset-0 flex justify-between opacity-5 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(90deg, transparent 49%, #000 50%, transparent 51%)', backgroundSize: '12.5% 100%' }}></div>
 
       {/* --- Top Panel --- */}
-      <div className="flex justify-between items-start z-10 w-full px-2 md:px-4 pt-2 md:pt-4">
-        <div className="flex items-center gap-2">
-            <div className="flex items-center gap-3 px-4 py-2 bg-stone-900/90 border border-stone-700 rounded shadow-lg backdrop-blur-sm">
-              <span className="font-bold text-stone-400 text-base tracking-widest font-sans">ОСТАЛОСЬ</span>
-              <div className="w-px h-4 bg-stone-700"></div>
-              <span className="font-mono font-bold text-stone-100 text-base">{state.deck.length}</span>
-            </div>
+      <div className="flex justify-between items-center z-10 w-full px-2 md:px-4 pt-2 md:pt-4">
+        <div className="flex items-center gap-4 md:gap-8">
+            {/* --- Logo Button --- */}
+            <button 
+                onClick={() => setShowExitConfirm(true)}
+                className="group relative px-2 py-1"
+            >
+                 <span className="relative z-10 font-display font-bold text-2xl md:text-3xl text-stone-200 tracking-tighter uppercase drop-shadow-lg group-hover:text-rose-500 transition-colors">
+                     Skazmor
+                 </span>
+            </button>
 
-            {/* Deck Stats Breakdown */}
-            <AnimatePresence>
-                {showInfo && (
-                    <motion.div 
-                        initial={{ opacity: 0, x: -10, width: 0 }}
-                        animate={{ opacity: 1, x: 0, width: 'auto' }}
-                        exit={{ opacity: 0, x: -10, width: 0 }}
-                        className="flex gap-1.5 overflow-hidden"
-                    >
-                        <DeckStatItem icon="🐺" count={deckStats.monster} color="text-rose-400" />
-                        <DeckStatItem icon="💎" count={deckStats.coin} color="text-amber-400" />
-                        <DeckStatItem icon="🧪" count={deckStats.potion} color="text-emerald-400" />
-                        <DeckStatItem icon="🛡️" count={deckStats.shield} color="text-stone-300" />
-                        <DeckStatItem icon="⚔️" count={deckStats.weapon} color="text-stone-300" />
-                        <DeckStatItem icon="📜" count={deckStats.spell} color="text-indigo-400" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 px-4 py-2 bg-stone-900/90 border border-stone-700 rounded shadow-lg backdrop-blur-sm">
+                  <span className="font-bold text-stone-400 text-base tracking-widest font-sans">ОСТАЛОСЬ</span>
+                  <div className="w-px h-4 bg-stone-700"></div>
+                  <span className="font-mono font-bold text-stone-100 text-base">{state.deck.length}</span>
+                </div>
+
+                {/* Deck Stats Breakdown */}
+                <AnimatePresence>
+                    {showInfo && (
+                        <motion.div 
+                            initial={{ opacity: 0, x: -10, width: 0 }}
+                            animate={{ opacity: 1, x: 0, width: 'auto' }}
+                            exit={{ opacity: 0, x: -10, width: 0 }}
+                            className="flex gap-1.5 overflow-hidden"
+                        >
+                            <DeckStatItem icon="🐺" count={deckStats.monster} color="text-rose-400" />
+                            <DeckStatItem icon="💎" count={deckStats.coin} color="text-amber-400" />
+                            <DeckStatItem icon="🧪" count={deckStats.potion} color="text-emerald-400" />
+                            <DeckStatItem icon="🛡️" count={deckStats.shield} color="text-stone-300" />
+                            <DeckStatItem icon="⚔️" count={deckStats.weapon} color="text-stone-300" />
+                            <DeckStatItem icon="📜" count={deckStats.spell} color="text-indigo-400" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
       </div>
 
@@ -680,6 +693,17 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
                       setShowRestartConfirm(false);
                   }}
                   onCancel={() => setShowRestartConfirm(false)}
+              />
+          )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+          {showExitConfirm && (
+              <ConfirmationModal 
+                  title="Выход в меню" 
+                  message="Вы уверены, что хотите выйти? Текущий прогресс игры будет потерян."
+                  onConfirm={onExit}
+                  onCancel={() => setShowExitConfirm(false)}
               />
           )}
       </AnimatePresence>
