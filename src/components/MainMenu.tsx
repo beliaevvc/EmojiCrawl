@@ -39,7 +39,6 @@ const MainMenu = ({ onStartGame }: MainMenuProps) => {
         />
         <MenuButton icon={<PlusSquare size={20} />} label="Создать игру" delay={0.3} />
         <MenuButton icon={<FileUp size={20} />} label="Загрузить шаблон" delay={0.4} />
-        <MenuButton icon={<Settings2 size={20} />} label="Версия игры: v0.1" delay={0.5} small />
       </div>
 
       {/* Кнопка статистики */}

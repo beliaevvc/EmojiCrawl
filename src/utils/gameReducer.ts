@@ -1,5 +1,5 @@
 // ... imports
-import { GameState, LogEntry } from '../types/game';
+import { GameState, LogEntry, Overheads } from '../types/game';
 import { createDeck, shuffleDeck } from './gameLogic';
 
 // Initial State (Moved here to ensure it's exported)
@@ -17,6 +17,7 @@ export const initialState: GameState = {
   round: 1,
   status: 'playing',
   logs: [],
+  overheads: { overheal: 0, overdamage: 0, overdef: 0 }
 };
 
 // ... (Existing Action Types)
@@ -42,6 +43,16 @@ const addLog = (state: GameState, message: string, type: LogEntry['type']): Game
     const newLogs = [createLog(message, type), ...state.logs].slice(0, 50); // Keep last 50 logs
     return { ...state, logs: newLogs };
 };
+
+const updateOverheads = (state: GameState, type: keyof Overheads, value: number): GameState => {
+    return {
+        ...state,
+        overheads: {
+            ...state.overheads,
+            [type]: state.overheads[type] + value
+        }
+    };
+}
 
 const findCardInSlots = (slots: (any)[], id: string): number => {
   return slots.findIndex(c => c?.id === id);
@@ -114,7 +125,12 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
 
         const blocked = Math.min(shield.value, damage);
         const overflow = Math.max(0, damage - blocked);
+        const overdef = Math.max(0, shield.value - damage);
         
+        if (overdef > 0) {
+            newState = updateOverheads(newState, 'overdef', overdef);
+        }
+
         if (shield.value > damage) {
              const newShieldValue = shield.value - damage;
              const newShield = { ...shield, value: newShieldValue };
@@ -124,7 +140,7 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
              } else {
                  newState.rightHand = { ...newState.rightHand, card: newShield };
              }
-             log = `Щит заблокировал ${blocked} урона.`;
+             log = `Щит заблокировал ${blocked} урона (Overdef: ${overdef}).`;
         } else {
              if (shieldHand === 'left') {
                  newState.leftHand = { ...newState.leftHand, card: null };
@@ -156,11 +172,16 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
     const monsterHp = monster.value;
     let log = '';
 
+    const overdamage = Math.max(0, damage - monsterHp);
+    if (overdamage > 0) {
+        newState = updateOverheads(newState, 'overdamage', overdamage);
+    }
+
     if (damage >= monsterHp) {
         const newSlots = [...newState.enemySlots];
         newSlots[monsterIdx] = null;
         newState.enemySlots = newSlots;
-        log = `Монстр убит оружием (${damage} урона).`;
+        log = `Монстр убит оружием (${damage} урона, Overkill: ${overdamage}).`;
     } else {
         const newMonsterHp = monsterHp - damage;
         const newMonster = { ...monster, value: newMonsterHp };
@@ -261,7 +282,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         rightHand: { card: null, blocked: false },
         backpack: null,
         round: 1,
-        logs: [createLog("Новая игра началась!", 'info')]
+        logs: [createLog("Новая игра началась!", 'info')],
+        overheads: { overheal: 0, overdamage: 0, overdef: 0 }
       };
       break;
     }
@@ -292,19 +314,45 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       } else if (card.type === 'potion') {
          blocked = true;
          const healAmount = card.value;
-         const newHp = Math.min(newState.player.hp + healAmount, newState.player.maxHp);
+         const neededHeal = newState.player.maxHp - newState.player.hp;
+         const overheal = Math.max(0, healAmount - neededHeal);
+         const actualHeal = Math.min(healAmount, neededHeal);
+         
+         const newHp = newState.player.hp + actualHeal;
          playerUpdates = { hp: newHp };
-         logMessage = `Выпито зелье: +${healAmount} HP`;
+         
+         logMessage = `Выпито зелье: +${actualHeal} HP`;
+         if (overheal > 0) {
+             logMessage += ` (Overheal: ${overheal})`;
+             nextState = updateOverheads(newState, 'overheal', overheal);
+             // Re-assign because updateOverheads returns new state
+             // But we are constructing nextState below, so we need to be careful
+             // Let's modify newState directly here or chain it
+             // Actually `updateOverheads` returns a fresh state object. 
+             // We need to carry that over.
+         } else {
+             // If no overheal, nextState = newState currently
+             nextState = newState;
+         }
          logType = 'heal';
+         
+         // Fix the flow:
+         if (overheal > 0) {
+             nextState = updateOverheads(newState, 'overheal', overheal);
+         } else {
+             nextState = newState;
+         }
+
       } else {
          logMessage = `Взято в руку: ${card.icon}`;
+         nextState = newState;
       }
 
       const updatedHand = { card: card, blocked };
       
       nextState = {
-        ...newState,
-        player: { ...newState.player, ...playerUpdates },
+        ...nextState,
+        player: { ...nextState.player, ...playerUpdates },
         [action.hand === 'left' ? 'leftHand' : 'rightHand']: updatedHand
       };
       break;
@@ -409,10 +457,20 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             case 'leech': 
                 if (targetCard?.type === 'monster') {
                     const healAmount = targetCard.value;
-                    const newHp = Math.min(newState.player.hp + healAmount, newState.player.maxHp);
+                    const neededHeal = newState.player.maxHp - newState.player.hp;
+                    const overheal = Math.max(0, healAmount - neededHeal);
+                    const actualHeal = Math.min(healAmount, neededHeal);
+                    
+                    const newHp = newState.player.hp + actualHeal;
                     newState.player = { ...newState.player, hp: newHp };
+                    
+                    if (overheal > 0) {
+                        newState = updateOverheads(newState, 'overheal', overheal);
+                        logMessage = `Заклинание КРОВОСОС: +${actualHeal} HP (Overheal: ${overheal})`;
+                    } else {
+                        logMessage = `Заклинание КРОВОСОС: +${actualHeal} HP`;
+                    }
                     spellUsed = true;
-                    logMessage = `Заклинание КРОВОСОС: +${healAmount} HP из монстра.`;
                     logType = 'heal';
                 }
                 break;
@@ -462,12 +520,20 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     const dmg = 13 - newState.player.hp;
                     if (dmg > 0) {
                         const newHp = targetCard.value - dmg;
+                        const overdamage = Math.max(0, dmg - targetCard.value); // If dmg kills monster, check overhead
+
                         if (newHp <= 0) {
                              const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
                              const newSlots = [...newState.enemySlots];
                              newSlots[idx] = null;
                              newState.enemySlots = newSlots;
-                             logMessage = `Заклинание ЖЕРТВА: монстр уничтожен (${dmg} урона).`;
+                             logMessage = `Заклинание ЖЕРТВА: монстр уничтожен (${dmg} урона`;
+                             if (overdamage > 0) {
+                                 logMessage += `, Overkill: ${overdamage})`;
+                                 newState = updateOverheads(newState, 'overdamage', overdamage);
+                             } else {
+                                 logMessage += ')';
+                             }
                         } else {
                              const newMonster = { ...targetCard, value: newHp };
                              const idx = newState.enemySlots.findIndex(c => c?.id === targetId);

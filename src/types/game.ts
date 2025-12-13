@@ -31,6 +31,12 @@ export interface LogEntry {
     timestamp: number;
 }
 
+export interface Overheads {
+    overheal: number;
+    overdamage: number;
+    overdef: number;
+}
+
 export interface GameState {
   deck: Card[];
   enemySlots: (Card | null)[]; // Fixed 4 slots
@@ -41,6 +47,7 @@ export interface GameState {
   round: number;
   status: 'playing' | 'won' | 'lost';
   logs: LogEntry[];
+  overheads: Overheads;
 }
 
 export const MAX_HP = 13;

@@ -1,12 +1,12 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, Play, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, Play, AlertCircle, ChevronUp, ChevronDown, Activity } from 'lucide-react';
 import { useDrop } from 'react-dnd';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
-import { Card, LogEntry } from '../types/game';
+import { Card, LogEntry, Overheads } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
 
@@ -100,7 +100,6 @@ const RulesModal = ({ onClose }: { onClose: () => void }) => (
             </button>
             <h2 className="text-2xl font-bold text-stone-200 mb-6 text-center tracking-widest uppercase">Правила Игры</h2>
             <div className="space-y-6 text-stone-400 text-sm md:text-base h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                {/* Rules content ... */}
                  <section>
                     <h3 className="flex items-center gap-2 text-stone-200 font-bold mb-2">
                         <Skull size={18} className="text-rose-500" /> Цель
@@ -196,6 +195,34 @@ const DeckStatItem = ({ icon, count, color }: { icon: string, count: number, col
         <div className="text-sm">{icon}</div>
         <div className={`text-[10px] font-bold ${color}`}>{count}</div>
     </div>
+);
+
+// Overhead Stats Component
+const OverheadStatsWindow = ({ overheads }: { overheads: Overheads }) => (
+    <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        className="absolute top-24 right-4 z-30 bg-stone-900/80 backdrop-blur-md border border-stone-700 rounded-xl p-3 shadow-xl w-48 pointer-events-none select-none"
+    >
+        <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2 border-b border-stone-800 pb-1 flex items-center gap-2">
+            <Activity size={12} /> Аналитика
+        </h3>
+        <div className="space-y-2">
+            <div className="flex justify-between items-center text-xs">
+                <span className="text-emerald-400/80 flex items-center gap-1.5"><Zap size={12}/> Overheal</span>
+                <span className="font-mono font-bold text-emerald-200">{overheads.overheal}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+                <span className="text-rose-400/80 flex items-center gap-1.5"><Swords size={12}/> Overkill</span>
+                <span className="font-mono font-bold text-rose-200">{overheads.overdamage}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+                <span className="text-blue-400/80 flex items-center gap-1.5"><Shield size={12}/> Overdef</span>
+                <span className="font-mono font-bold text-blue-200">{overheads.overdef}</span>
+            </div>
+        </div>
+    </motion.div>
 );
 
 // Game Log Component
@@ -630,9 +657,14 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
          />
       </div>
 
-      {/* Game Log Window */}
+      {/* Game Log Window & Overhead Stats */}
       <AnimatePresence>
-          {showInfo && <GameLogWindow logs={state.logs} />}
+          {showInfo && (
+              <>
+                 <OverheadStatsWindow overheads={state.overheads} />
+                 <GameLogWindow logs={state.logs} />
+              </>
+          )}
       </AnimatePresence>
 
       <AnimatePresence>
