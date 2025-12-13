@@ -550,6 +550,8 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
   const stateWithRoundCheck = (s: GameState): GameState => { 
+     if (s.status === 'lost') return s;
+
      const cardsOnTable = s.enemySlots.filter(c => c !== null).length;
      const deckEmpty = s.deck.length === 0;
 
