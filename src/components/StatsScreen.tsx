@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Trophy, Skull, Clock, Calendar, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { getRunHistory, clearHistory } from '../utils/statsStorage';
 import { RunHistoryEntry } from '../types/game';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface StatsScreenProps {
   onBack: () => void;
@@ -117,12 +118,12 @@ const HistoryCard = ({ entry }: { entry: RunHistoryEntry }) => {
 
 const StatsScreen = ({ onBack }: StatsScreenProps) => {
     const [history, setHistory] = useState(getRunHistory());
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
 
     const handleClear = () => {
-        if (confirm("Вы уверены, что хотите очистить всю историю?")) {
-            clearHistory();
-            setHistory([]);
-        }
+        clearHistory();
+        setHistory([]);
+        setShowClearConfirm(false);
     };
 
     return (
@@ -150,7 +151,7 @@ const StatsScreen = ({ onBack }: StatsScreenProps) => {
                 </h2>
 
                 <button 
-                    onClick={handleClear}
+                    onClick={() => setShowClearConfirm(true)}
                     className="p-2 text-stone-600 hover:text-rose-500 transition-colors rounded-full hover:bg-rose-900/10"
                     title="Очистить историю"
                 >
@@ -171,9 +172,19 @@ const StatsScreen = ({ onBack }: StatsScreenProps) => {
                     </div>
                 )}
             </div>
+
+            <AnimatePresence>
+                {showClearConfirm && (
+                    <ConfirmationModal
+                        title="Очистка истории"
+                        message="Вы уверены, что хотите удалить всю историю забегов? Это действие нельзя отменить."
+                        onConfirm={handleClear}
+                        onCancel={() => setShowClearConfirm(false)}
+                    />
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
 
 export default StatsScreen;
-
