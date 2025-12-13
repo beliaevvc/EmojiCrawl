@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Play, PlusSquare, FileUp, Settings2, BarChart3 } from 'lucide-react';
+import { Play, PlusSquare, FileUp, BarChart3 } from 'lucide-react';
 
 interface MainMenuProps {
   onStartGame: () => void;

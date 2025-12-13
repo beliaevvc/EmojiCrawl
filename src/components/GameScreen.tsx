@@ -1,7 +1,7 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, Play, AlertCircle, ChevronUp, ChevronDown, Activity } from 'lucide-react';
+import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity } from 'lucide-react';
 import { useDrop } from 'react-dnd';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';

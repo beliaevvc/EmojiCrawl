@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Plus } from 'lucide-react';
-import { SPELLS, SpellDefinition } from '../data/spells';
+import { SPELLS } from '../data/spells';
 import { SpellType } from '../types/game';
 
 interface SpellPickerProps {
