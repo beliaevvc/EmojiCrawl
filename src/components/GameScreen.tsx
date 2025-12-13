@@ -6,7 +6,7 @@ import { useDrop } from 'react-dnd';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
-import { Card, GameState } from '../types/game';
+import { Card } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 
 interface GameScreenProps {
@@ -357,7 +357,7 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
         </div>
       </div>
 
-      {/* ... Bottom Panel and Overlays ... */}
+      {/* --- Bottom Panel and Overlays --- */}
       <div className="flex gap-2 md:gap-4 items-end z-10 w-full px-4 md:px-6 pb-4 md:pb-6">
          <SystemButton icon={<Flag size={18} />} label="New Game" onClick={onExit} />
          <SystemButton icon={<RefreshCw size={18} />} label="2x" />

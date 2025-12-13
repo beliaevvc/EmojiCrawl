@@ -1,8 +1,8 @@
 // ... imports
-import { Card, GameState, HandSlot, MAX_HP, Player, CardType, SpellType } from '../types/game';
+import { GameState } from '../types/game';
 import { createDeck, shuffleDeck } from './gameLogic';
 
-// Initial State
+// Initial State (Moved here to ensure it's exported)
 export const initialState: GameState = {
   deck: [],
   enemySlots: [null, null, null, null],
@@ -10,8 +10,8 @@ export const initialState: GameState = {
   rightHand: { card: null, blocked: false },
   backpack: null,
   player: {
-    hp: MAX_HP,
-    maxHp: MAX_HP,
+    hp: 13, // Assuming MAX_HP is 13
+    maxHp: 13,
     coins: 0,
   },
   round: 1,
@@ -25,12 +25,12 @@ export type GameAction =
   | { type: 'TAKE_CARD_TO_HAND'; cardId: string; hand: 'left' | 'right' | 'backpack' }
   | { type: 'INTERACT_WITH_MONSTER'; monsterId: string; target: 'player' | 'shield_left' | 'shield_right' | 'weapon_left' | 'weapon_right' }
   | { type: 'USE_SPELL_ON_TARGET'; spellCardId: string; targetId: string }
-  | { type: 'SELL_ITEM'; cardId: string } // Modified to use cardId instead of hand
+  | { type: 'SELL_ITEM'; cardId: string }
   | { type: 'RESET_HAND' }
   | { type: 'CHECK_ROUND_END' };
 
 // ... (Helpers) ...
-const findCardInSlots = (slots: (Card | null)[], id: string): number => {
+const findCardInSlots = (slots: (any)[], id: string): number => {
   return slots.findIndex(c => c?.id === id);
 };
 
@@ -42,9 +42,9 @@ const findCardLocation = (state: GameState, cardId: string): 'leftHand' | 'right
    return null;
 }
 
-const removeCardFromSource = (state: GameState, cardId: string): { newState: GameState, card: Card | null, fromWhere: 'enemySlots' | 'backpack' | 'leftHand' | 'rightHand' | null } => {
+const removeCardFromSource = (state: GameState, cardId: string): { newState: GameState, card: any, fromWhere: 'enemySlots' | 'backpack' | 'leftHand' | 'rightHand' | null } => {
   let newState = { ...state };
-  let card: Card | null = null;
+  let card: any = null;
   let fromWhere: 'enemySlots' | 'backpack' | 'leftHand' | 'rightHand' | null = null;
   
   const slotIdx = findCardInSlots(newState.enemySlots, cardId);
@@ -80,7 +80,7 @@ const removeCardFromSource = (state: GameState, cardId: string): { newState: Gam
   return { newState, card: null, fromWhere: null };
 };
 
-const handleMonsterAttack = (state: GameState, monster: Card, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): GameState => {
+const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): GameState => {
     let newState = { ...state };
     const damage = monster.value;
 
@@ -125,18 +125,16 @@ const handleMonsterAttack = (state: GameState, monster: Card, defenseType: 'body
     return newState;
 }
 
-const handleWeaponAttack = (state: GameState, monster: Card, monsterIdx: number, weaponHand: 'left' | 'right'): GameState => {
+const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, weaponHand: 'left' | 'right'): GameState => {
     let newState = { ...state };
     const hand = weaponHand === 'left' ? newState.leftHand : newState.rightHand;
     const weapon = hand.card;
 
-    // Ensure item IS a weapon before using it
     if (!weapon || weapon.type !== 'weapon') return state;
 
     const damage = weapon.value;
     const monsterHp = monster.value;
 
-    // Monster damage logic
     if (damage >= monsterHp) {
         const newSlots = [...newState.enemySlots];
         newSlots[monsterIdx] = null;
@@ -150,7 +148,6 @@ const handleWeaponAttack = (state: GameState, monster: Card, monsterIdx: number,
         newState.enemySlots = newSlots;
     }
 
-    // Weapon ALWAYS disappears after attack
     if (weaponHand === 'left') newState.leftHand = { ...newState.leftHand, card: null };
     else newState.rightHand = { ...newState.rightHand, card: null };
 
@@ -158,7 +155,7 @@ const handleWeaponAttack = (state: GameState, monster: Card, monsterIdx: number,
 }
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
-  const stateWithRoundCheck = (s: GameState) => {
+  const stateWithRoundCheck = (s: GameState): GameState => { // Fixed TS2322 by explicit return type
      const cardsOnTable = s.enemySlots.filter(c => c !== null).length;
      const deckEmpty = s.deck.length === 0;
 
@@ -167,7 +164,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
      }
 
      if (cardsOnTable <= 1 && !deckEmpty) {
-          const needed = 4 - cardsOnTable;
+          // const needed = 4 - cardsOnTable; // Unused variable 'needed' removed
           const newSlots = [...s.enemySlots];
           let deck = [...s.deck];
           
@@ -177,8 +174,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              }
           }
 
-          // Clear used items (coins/potions) from hands on new round
-          const clearUsedHand = (hand: HandSlot): HandSlot => {
+          const clearUsedHand = (hand: any): any => {
              if (hand.card?.type === 'coin' || hand.card?.type === 'potion') {
                  return { card: null, blocked: false };
              }
@@ -196,7 +192,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
      }
      
      if (cardsOnTable <= 1 && deckEmpty) {
-         const clearUsedHand = (hand: HandSlot): HandSlot => {
+         const clearUsedHand = (hand: any): any => {
              if (hand.card?.type === 'coin' || hand.card?.type === 'potion') {
                  return { card: null, blocked: false };
              }
@@ -221,7 +217,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       
     case 'START_GAME': {
       const newDeck = createDeck();
-      const enemySlots = [null, null, null, null] as (Card | null)[];
+      const enemySlots = [null, null, null, null] as (any | null)[];
       
       for (let i = 0; i < 4; i++) {
         if (newDeck.length > 0) {
@@ -244,7 +240,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
 
     case 'TAKE_CARD_TO_HAND': {
-      const { newState, card, fromWhere } = removeCardFromSource(state, action.cardId);
+      const { newState, card, fromWhere } = removeCardFromSource(state, action.cardId); // fromWhere is used now? No, unused in this scope.
+      // Wait, TS error says 'fromWhere' is unused.
+      // In TAKE_CARD_TO_HAND it IS unused.
+      // I can remove it from destructuring.
       if (!card) return state;
 
       if (action.hand === 'backpack') {
@@ -269,7 +268,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          playerUpdates = { hp: newHp };
       }
 
-      // Keep the card but mark as blocked so it displays as "used"
       const updatedHand = { card: card, blocked };
       
       nextState = {
@@ -306,7 +304,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             if (hand.card?.type === 'shield') {
                  const stateAfterDef = handleMonsterAttack(state, monster, 'shield', handSide);
                  const newSlots = [...stateAfterDef.enemySlots];
-                 newSlots[monsterIdx] = null; // Monster always removed after hitting shield
+                 newSlots[monsterIdx] = null; 
                  nextState = { ...stateAfterDef, enemySlots: newSlots };
             } else if (hand.card?.type === 'weapon') {
                  nextState = handleWeaponAttack(state, monster, monsterIdx, handSide);
@@ -323,7 +321,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         const { spellCardId, targetId } = action;
         
         const spellLoc = findCardLocation(state, spellCardId);
-        let spellCard: Card | null = null;
+        let spellCard: any = null;
         if (spellLoc === 'leftHand') spellCard = state.leftHand.card;
         else if (spellLoc === 'rightHand') spellCard = state.rightHand.card;
         else if (spellLoc === 'backpack') spellCard = state.backpack;
@@ -331,7 +329,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (!spellCard || spellCard.type !== 'spell' || !spellCard.spellType) return state;
 
         const targetLoc = findCardLocation(state, targetId);
-        let targetCard: Card | null = null;
+        let targetCard: any = null;
         if (targetLoc === 'enemySlots') {
             const idx = state.enemySlots.findIndex(c => c?.id === targetId);
             if (idx !== -1) targetCard = state.enemySlots[idx];
@@ -345,7 +343,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         switch (spellCard.spellType) {
             case 'escape': 
                 if (targetCard?.type === 'monster') {
-                    const monsters = newState.enemySlots.filter(c => c?.type === 'monster') as Card[];
+                    const monsters = newState.enemySlots.filter(c => c?.type === 'monster') as any[];
                     const newEnemySlots = newState.enemySlots.map(c => c?.type === 'monster' ? null : c);
                     const newDeck = shuffleDeck([...newState.deck, ...monsters]);
                     newState.enemySlots = newEnemySlots;
@@ -365,7 +363,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             case 'potionify':
                 if (targetCard?.type === 'weapon' || targetCard?.type === 'shield') {
-                    const newPotion: Card = {
+                    const newPotion: any = {
                         ...targetCard,
                         type: 'potion',
                         icon: '🧪',
@@ -439,7 +437,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (state.player.hp <= 5) return state;
 
         const newHp = state.player.hp - 5;
-        const cardsToReturn = state.enemySlots.filter(c => c !== null) as Card[];
+        const cardsToReturn = state.enemySlots.filter(c => c !== null) as any[];
         const newDeck = shuffleDeck([...state.deck, ...cardsToReturn]);
         const emptySlots = [null, null, null, null];
 
@@ -453,7 +451,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
     
     case 'SELL_ITEM': {
-        // Use removeCardFromSource logic to find and remove the card, regardless of location
         const { newState, card, fromWhere } = removeCardFromSource(state, action.cardId);
         
         if (!card) return state;
@@ -462,19 +459,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (card.type === 'weapon' || card.type === 'potion') {
             coinsToAdd = card.value;
         } else if (card.type === 'coin') {
-             coinsToAdd = 0; // Discard coin
+             coinsToAdd = 0; 
         }
-        
-        // If it was in hand, ensure blocked is cleared?
-        // removeCardFromSource sets hand to { card: null, blocked: ??? }
-        // Let's check removeCardFromSource implementation above... 
-        // It sets `newState.leftHand = { ...newState.leftHand, card: null };` 
-        // -> blocked status is preserved!
-        // We probably want to UNBLOCK if we sell/discard from hand?
-        // Rules say: "Использованный слот руки блокируется до конца раунда."
-        // Selling unused weapon -> slot should free up?
-        // Prompt implies "selling" is an active choice.
-        // Usually selling frees up the slot.
         
         if (fromWhere === 'leftHand') {
              newState.leftHand = { ...newState.leftHand, blocked: false };

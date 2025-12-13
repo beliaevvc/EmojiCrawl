@@ -1,7 +1,5 @@
-import React from 'react';
 import { useDrop } from 'react-dnd';
 import { Card as CardType } from '../types/game';
-import { ItemTypes } from '../types/DragTypes';
 import CardComponent from './CardComponent';
 
 interface SlotProps {

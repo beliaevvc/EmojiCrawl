@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDrag } from 'react-dnd';
 import { Card as CardType } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
