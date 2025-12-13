@@ -273,6 +273,16 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       spell: 0
   } as Record<string, number>);
 
+  // Epiphany Effect Timer
+  useEffect(() => {
+      if (state.peekCards) {
+          const timer = setTimeout(() => {
+              dispatch({ type: 'CLEAR_PEEK' });
+          }, 5000);
+          return () => clearTimeout(timer);
+      }
+  }, [state.peekCards]);
+
   useEffect(() => {
     dispatch({ 
         type: 'START_GAME', 
@@ -729,6 +739,39 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                   onConfirm={onExit}
                   onCancel={() => setShowExitConfirm(false)}
               />
+          )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+          {state.peekCards && (
+              <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="absolute top-20 md:top-24 left-0 w-full z-[100] flex justify-center pointer-events-none"
+              >
+                  <div className="bg-stone-900/90 backdrop-blur-md border border-indigo-500/30 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-2">
+                      <div className="text-[10px] font-bold text-indigo-300 tracking-[0.2em] uppercase">
+                          СЛЕДУЮЩИЕ КАРТЫ
+                      </div>
+                      <div className="flex gap-3">
+                          {state.peekCards.map((card, i) => (
+                              <motion.div
+                                  key={card.id}
+                                  initial={{ opacity: 0, scale: 0.5 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: i * 0.1, type: "spring", stiffness: 300, damping: 25 }}
+                                  className="w-12 h-12 md:w-14 md:h-14 relative"
+                              >
+                                  <CardComponent card={card} isDraggable={false} />
+                              </motion.div>
+                          ))}
+                          {state.peekCards.length === 0 && (
+                              <p className="text-stone-500 text-xs font-bold uppercase px-2">Колода пуста</p>
+                          )}
+                      </div>
+                  </div>
+              </motion.div>
           )}
       </AnimatePresence>
 

@@ -36,7 +36,8 @@ export const initialState: GameState = {
   logs: [],
   overheads: { overheal: 0, overdamage: 0, overdef: 0 },
   stats: initialStats,
-  activeEffects: []
+  activeEffects: [],
+  peekCards: null
 };
 
 // ... (Action Types)
@@ -48,7 +49,8 @@ export type GameAction =
   | { type: 'USE_SPELL_ON_TARGET'; spellCardId: string; targetId: string }
   | { type: 'SELL_ITEM'; cardId: string }
   | { type: 'RESET_HAND' }
-  | { type: 'CHECK_ROUND_END' };
+  | { type: 'CHECK_ROUND_END' }
+  | { type: 'CLEAR_PEEK' };
 
 // Helpers
 const createLog = (message: string, type: LogEntry['type']): LogEntry => ({
@@ -1304,8 +1306,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             case 'epiphany':
                 if (targetId === 'player') {
                     const top3 = newState.deck.slice(-3).reverse();
-                    const msg = top3.map(c => c.icon).join(' ');
-                    logMessage = `ПРОЗРЕНИЕ: ${msg || 'Колода пуста'}`;
+                    newState.peekCards = top3;
+                    logMessage = `ПРОЗРЕНИЕ: Открыто будущее (${top3.length} карт).`;
                     spellUsed = true;
                 }
                 break;
@@ -1527,6 +1529,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     case 'CHECK_ROUND_END':
         // Logic handled in stateWithRoundCheck wrapper usually, but good to have explicit trigger if needed
         return state;
+
+    case 'CLEAR_PEEK':
+        return { ...state, peekCards: null };
 
     default:
       return state;

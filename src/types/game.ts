@@ -109,6 +109,7 @@ export interface GameState {
   overheads: Overheads;
   stats: GameStats;
   activeEffects: (SpellType | 'miss')[];
+  peekCards: Card[] | null;
 }
 
 export const MAX_HP = 13;
