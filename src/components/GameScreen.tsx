@@ -347,7 +347,18 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               // Death usually results in null slot. Round reset fills it.
               // If slot is null, it's a death.
               else if (!card) {
-                   diff = prevCard.value; // Show "remaining HP" as damage dealt
+                   // Check if removal was due to non-damage effects
+                   const recentLogs = state.logs.slice(0, 3);
+                   const isNonDamageRemoval = recentLogs.some(log => 
+                       log.message.includes('ВЕТЕР') || 
+                       log.message.includes('ПОБЕГ') || 
+                       log.message.includes('СБРОС') ||
+                       log.message.includes('БАРЬЕР')
+                   );
+
+                   if (!isNonDamageRemoval) {
+                       diff = prevCard.value; // Show "remaining HP" as damage dealt
+                   }
               }
 
               if (diff > 0) {

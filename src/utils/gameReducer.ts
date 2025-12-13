@@ -1077,7 +1077,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             case 'wind':
                 if (targetCard?.type === 'monster' || targetCard?.type === 'coin') {
-                    const newDeck = shuffleDeck([...newState.deck, targetCard]);
+                    let cardToReturn = targetCard;
+                    // Reset monster HP to maxHealth if available
+                    if (targetCard.type === 'monster' && targetCard.maxHealth) {
+                        cardToReturn = { ...targetCard, value: targetCard.maxHealth };
+                    }
+
+                    const newDeck = shuffleDeck([...newState.deck, cardToReturn]);
                     
                      if (targetLoc === 'enemySlots') {
                         const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
@@ -1087,7 +1093,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     }
                     newState.deck = newDeck;
                     spellUsed = true;
-                    logMessage = 'Заклинание ВЕТЕР: карта сдута в колоду.';
+                    logMessage = 'Заклинание ВЕТЕР: карта вернулась в колоду (HP восстановлено).';
                 }
                 break;
 

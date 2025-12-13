@@ -136,7 +136,7 @@ const StatsScreen = ({ onBack }: StatsScreenProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="relative w-full min-h-screen bg-stone-950 flex flex-col p-4 md:p-8 overflow-hidden"
+            className="relative w-full h-screen bg-stone-950 flex flex-col p-4 md:p-8 overflow-hidden"
         >
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
             
