@@ -155,7 +155,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
 }
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
-  const stateWithRoundCheck = (s: GameState): GameState => { // Fixed TS2322 by explicit return type
+  const stateWithRoundCheck = (s: GameState): GameState => { 
      const cardsOnTable = s.enemySlots.filter(c => c !== null).length;
      const deckEmpty = s.deck.length === 0;
 
@@ -164,7 +164,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
      }
 
      if (cardsOnTable <= 1 && !deckEmpty) {
-          // const needed = 4 - cardsOnTable; // Unused variable 'needed' removed
           const newSlots = [...s.enemySlots];
           let deck = [...s.deck];
           
@@ -197,7 +196,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                  return { card: null, blocked: false };
              }
              return { ...hand, blocked: false };
-         };
+          };
          return {
              ...s,
              leftHand: clearUsedHand(s.leftHand),
@@ -240,10 +239,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
 
     case 'TAKE_CARD_TO_HAND': {
-      const { newState, card, fromWhere } = removeCardFromSource(state, action.cardId); // fromWhere is used now? No, unused in this scope.
-      // Wait, TS error says 'fromWhere' is unused.
-      // In TAKE_CARD_TO_HAND it IS unused.
-      // I can remove it from destructuring.
+      const { newState, card } = removeCardFromSource(state, action.cardId); // Fixed: removed unused fromWhere
+      
       if (!card) return state;
 
       if (action.hand === 'backpack') {
