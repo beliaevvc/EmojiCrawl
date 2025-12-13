@@ -1,14 +1,39 @@
 import { useDrag } from 'react-dnd';
 import { Card as CardType } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface CardProps {
   card: CardType;
   isDraggable?: boolean;
   onClick?: () => void;
+  // Removed onVisualEffect from props as it is handled by parent now
 }
 
 const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
+  const elementRef = useRef<HTMLDivElement>(null);
+  const prevValueRef = useRef(card.value);
+  const [isShaking, setIsShaking] = useState(false);
+
+  // Monitor value changes for animations (Shake/Ring only)
+  useEffect(() => {
+    if (card.type === 'spell' || card.type === 'coin') return; 
+
+    const diff = card.value - prevValueRef.current;
+    
+    if (diff !== 0) {
+       if (diff < 0) {
+           // Damage taken -> Shake + Ring
+           setIsShaking(true);
+           setTimeout(() => setIsShaking(false), 300);
+       }
+       // Note: Floating text is now handled by GameScreen to ensure it shows even on death
+    }
+    
+    prevValueRef.current = card.value;
+  }, [card.value, card.type]);
+
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { id: card.id, type: card.type, value: card.value, spellType: card.spellType },
@@ -17,6 +42,12 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
       isDragging: !!monitor.isDragging(),
     }),
   }), [card, isDraggable]);
+
+  // Combine refs
+  const setRefs = (element: HTMLDivElement | null) => {
+      drag(element);
+      (elementRef as any).current = element;
+  };
 
   const getBorderColor = () => {
     switch (card.type) {
@@ -38,15 +69,33 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
   }
 
   return (
-    <div
-      ref={drag}
+    <motion.div
+      ref={setRefs}
       onClick={onClick}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
+      initial={{ scale: 0.5, opacity: 0 }}
+      animate={{ 
+          scale: 1, 
+          opacity: isDragging ? 0.5 : 1,
+          x: isShaking ? [0, -5, 5, -5, 5, 0] : 0,
+      }}
+      exit={{ 
+          scale: 0.5, 
+          opacity: 0, 
+          filter: "blur(10px)",
+          transition: { duration: 0.3 } 
+      }}
+      transition={{ 
+          type: "spring", 
+          stiffness: 500, 
+          damping: 30,
+          mass: 1
+      }}
       className={`
-        relative w-full h-full rounded-full border-2 ${getBorderColor()} ${getBgColor()}
+        absolute inset-0 w-full h-full rounded-full border-2 ${getBorderColor()} ${getBgColor()}
         flex items-center justify-center text-3xl md:text-5xl shadow-lg 
         ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:scale-105' : 'cursor-default'} 
-        select-none transition-transform
+        select-none z-10
+        ${isShaking ? 'ring-4 ring-rose-500' : ''}
       `}
     >
       {card.type !== 'spell' && (
@@ -67,7 +116,7 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
               {card.name.substring(0, 4)}
           </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

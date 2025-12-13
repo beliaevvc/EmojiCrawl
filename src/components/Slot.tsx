@@ -61,7 +61,7 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
     <div
       ref={drop}
       className={`
-        aspect-square rounded-full flex items-center justify-center transition-all duration-200
+        aspect-square rounded-full flex items-center justify-center transition-all duration-200 relative
         ${className}
         ${isBlocked ? 'opacity-50 grayscale cursor-not-allowed border-stone-800 bg-stone-900/50' : ''}
         ${isActive ? 'scale-105 ring-2' : ''} 
