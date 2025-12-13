@@ -17,6 +17,7 @@ interface GameScreenProps {
   onExit: () => void;
   deckConfig?: DeckConfig;
   runType?: 'standard' | 'custom';
+  templateName?: string;
 }
 
 // ... (Other components remain the same)
@@ -237,7 +238,7 @@ const GameLogWindow = ({ logs }: { logs: LogEntry[] }) => {
 };
 
 
-const GameScreen = ({ onExit, deckConfig, runType = 'standard' }: GameScreenProps) => {
+const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: GameScreenProps) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
@@ -276,7 +277,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard' }: GameScreenProp
     dispatch({ 
         type: 'START_GAME', 
         deckConfig, 
-        runType 
+        runType,
+        templateName
     });
   }, []);
 
@@ -698,7 +700,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard' }: GameScreenProp
                       dispatch({ 
                           type: 'START_GAME',
                           deckConfig,
-                          runType 
+                          runType,
+                          templateName
                       });
                       setShowRestartConfirm(false);
                   }}
@@ -726,7 +729,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard' }: GameScreenProp
               onRestart={() => dispatch({ 
                   type: 'START_GAME',
                   deckConfig,
-                  runType
+                  runType,
+                  templateName
               })}
               onExit={onExit}
           />

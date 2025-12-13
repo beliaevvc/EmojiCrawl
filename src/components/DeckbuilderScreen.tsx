@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save, Play, Swords, RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CharacterEditor from './CharacterEditor';
 import ShieldsEditor from './ShieldsEditor';
 import WeaponsEditor from './WeaponsEditor';
@@ -8,14 +8,17 @@ import PotionsEditor from './PotionsEditor';
 import CoinsEditor from './CoinsEditor';
 import SpellsEditor from './SpellsEditor';
 import MonstersEditor, { DEFAULT_MONSTER_GROUPS } from './MonstersEditor';
-import { DeckConfig, SpellType, MonsterGroupConfig } from '../types/game';
+import { DeckConfig, SpellType, MonsterGroupConfig, DeckTemplate } from '../types/game';
 import { BASE_SPELLS } from '../data/spells';
 import { ConfirmationModal } from './ConfirmationModal';
+import SaveTemplateModal from './SaveTemplateModal';
+import { saveTemplate } from '../utils/storage';
 
 interface DeckbuilderScreenProps {
     onBack: () => void;
     onStartStandard: () => void;
-    onStartCustom: (config: DeckConfig) => void;
+    onStartCustom: (config: DeckConfig, templateName?: string) => void;
+    initialTemplate?: DeckTemplate | null;
 }
 
 const CategoryCard = ({ 
@@ -64,7 +67,7 @@ const CategoryCard = ({
     </motion.div>
 );
 
-const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: DeckbuilderScreenProps) => {
+const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemplate }: DeckbuilderScreenProps) => {
     
     // Config State
     const [customPlayer, setCustomPlayer] = useState({ hp: 13, maxHp: 13, coins: 0 });
@@ -75,6 +78,20 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
     const [customSpells, setCustomSpells] = useState<SpellType[]>([...BASE_SPELLS]);
     const [customMonsters, setCustomMonsters] = useState<MonsterGroupConfig[]>(DEFAULT_MONSTER_GROUPS);
 
+    // Initial Load
+    useEffect(() => {
+        if (initialTemplate) {
+            const { config } = initialTemplate;
+            setCustomPlayer(config.character);
+            setCustomShields(config.shields);
+            setCustomWeapons(config.weapons);
+            setCustomPotions(config.potions);
+            setCustomCoins(config.coins);
+            setCustomSpells(config.spells);
+            setCustomMonsters(config.monsters);
+        }
+    }, [initialTemplate]);
+
     // Modals
     const [showCharacterEditor, setShowCharacterEditor] = useState(false);
     const [showShieldsEditor, setShowShieldsEditor] = useState(false);
@@ -84,6 +101,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
     const [showSpellsEditor, setShowSpellsEditor] = useState(false);
     const [showMonstersEditor, setShowMonstersEditor] = useState(false);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [showSaveTemplate, setShowSaveTemplate] = useState(false);
 
     // Checks
     const arraysEqual = (a: any[], b: any[]) => {
@@ -105,16 +123,18 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
     const monsterCount = customMonsters.reduce((acc, g) => acc + g.count, 0);
     const totalCards = customShields.length + customWeapons.length + customPotions.length + customCoins.length + customSpells.length + monsterCount;
 
+    const getCurrentConfig = (): DeckConfig => ({
+        character: customPlayer,
+        shields: customShields,
+        weapons: customWeapons,
+        potions: customPotions,
+        coins: customCoins,
+        spells: customSpells,
+        monsters: customMonsters
+    });
+
     const handleStartCustom = () => {
-        onStartCustom({
-            character: customPlayer,
-            shields: customShields,
-            weapons: customWeapons,
-            potions: customPotions,
-            coins: customCoins,
-            spells: customSpells,
-            monsters: customMonsters
-        });
+        onStartCustom(getCurrentConfig(), initialTemplate?.name);
     };
 
     const handleResetAll = () => {
@@ -126,6 +146,18 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
         setCustomSpells([...BASE_SPELLS]);
         setCustomMonsters([...DEFAULT_MONSTER_GROUPS]);
         setShowResetConfirm(false);
+    };
+
+    const handleSaveTemplate = (name: string) => {
+        const template: DeckTemplate = {
+            id: Date.now().toString(),
+            name,
+            config: getCurrentConfig(),
+            createdAt: Date.now()
+        };
+        saveTemplate(template);
+        setShowSaveTemplate(false);
+        // Maybe show toast? Or just close.
     };
 
     return (
@@ -152,7 +184,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
                         Deckbuilder
                     </h2>
                     <p className="text-stone-500 text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase mt-1">
-                        Конструктор колоды
+                        {initialTemplate ? `Шаблон: ${initialTemplate.name}` : 'Конструктор колоды'}
                     </p>
                 </div>
 
@@ -249,7 +281,10 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
 
             {/* Bottom Actions */}
             <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col md:flex-row gap-4 justify-center items-center mt-auto pt-8">
-                <button className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-stone-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-stone-200 transition-all font-bold uppercase tracking-widest text-xs group">
+                <button 
+                    onClick={() => setShowSaveTemplate(true)}
+                    className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-stone-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-stone-200 transition-all font-bold uppercase tracking-widest text-xs group"
+                >
                     <Save size={18} className="group-hover:scale-110 transition-transform"/>
                     Сохранить шаблон
                 </button>
@@ -272,6 +307,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
             </div>
 
             <AnimatePresence>
+                {/* ... existing modals ... */}
                 {showCharacterEditor && (
                     <CharacterEditor 
                         initialStats={customPlayer}
@@ -348,6 +384,12 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom }: Deckbuild
                         message="Вы уверены, что хотите сбросить все настройки колоды к стандартным значениям?"
                         onConfirm={handleResetAll}
                         onCancel={() => setShowResetConfirm(false)}
+                    />
+                )}
+                {showSaveTemplate && (
+                    <SaveTemplateModal 
+                        onSave={handleSaveTemplate}
+                        onCancel={() => setShowSaveTemplate(false)}
                     />
                 )}
             </AnimatePresence>

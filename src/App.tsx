@@ -7,7 +7,7 @@ import { AnimatePresence } from 'framer-motion';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
-import { DeckConfig } from './types/game';
+import { DeckConfig, DeckTemplate } from './types/game';
 
 // Safely detect touch device
 const isTouchDevice = () => {
@@ -21,20 +21,31 @@ const Backend = isTouchDevice() ? TouchBackend : HTML5Backend;
 function App() {
   const [gameState, setGameState] = useState<'menu' | 'game' | 'stats' | 'deckbuilder'>('menu');
   const [customDeckConfig, setCustomDeckConfig] = useState<DeckConfig | undefined>(undefined);
+  const [initialTemplate, setInitialTemplate] = useState<DeckTemplate | null>(null);
+  const [activeTemplateName, setActiveTemplateName] = useState<string | undefined>(undefined);
 
-  const handleStartCustomGame = (config: DeckConfig) => {
+  const handleStartCustomGame = (config: DeckConfig, templateName?: string) => {
       setCustomDeckConfig(config);
+      setActiveTemplateName(templateName);
       setGameState('game');
   };
 
   const handleStartStandardGame = () => {
       setCustomDeckConfig(undefined);
+      setActiveTemplateName(undefined);
       setGameState('game');
   };
 
   const handleExitGame = () => {
       setGameState('menu');
       setCustomDeckConfig(undefined);
+      setActiveTemplateName(undefined);
+      setInitialTemplate(null);
+  };
+
+  const handleLoadTemplate = (template: DeckTemplate) => {
+      setInitialTemplate(template);
+      setGameState('deckbuilder');
   };
 
   return (
@@ -45,16 +56,24 @@ function App() {
             <MainMenu 
                 key="menu" 
                 onStartGame={handleStartStandardGame} 
-                onCreateGame={() => setGameState('deckbuilder')}
+                onCreateGame={() => {
+                    setInitialTemplate(null);
+                    setGameState('deckbuilder');
+                }}
                 onShowStats={() => setGameState('stats')}
+                onLoadTemplate={handleLoadTemplate}
             />
           )}
           {gameState === 'deckbuilder' && (
             <DeckbuilderScreen 
                 key="deckbuilder" 
-                onBack={() => setGameState('menu')}
+                onBack={() => {
+                    setGameState('menu');
+                    setInitialTemplate(null);
+                }}
                 onStartStandard={handleStartStandardGame}
                 onStartCustom={handleStartCustomGame}
+                initialTemplate={initialTemplate}
             />
           )}
           {gameState === 'game' && (
@@ -63,6 +82,7 @@ function App() {
                 onExit={handleExitGame} 
                 deckConfig={customDeckConfig}
                 runType={customDeckConfig ? 'custom' : 'standard'}
+                templateName={activeTemplateName}
             />
           )}
           {gameState === 'stats' && (

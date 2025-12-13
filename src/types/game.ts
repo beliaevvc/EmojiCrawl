@@ -60,6 +60,7 @@ export interface GameStats {
     startTime: number;
     endTime: number | null;
     runType: 'standard' | 'custom';
+    templateName?: string; // If run started from a template
 }
 
 export interface RunHistoryEntry extends GameStats {
@@ -85,6 +86,13 @@ export interface DeckConfig {
     coins: number[];
     spells: SpellType[];
     monsters: MonsterGroupConfig[];
+}
+
+export interface DeckTemplate {
+    id: string;
+    name: string;
+    config: DeckConfig;
+    createdAt: number;
 }
 
 export interface GameState {

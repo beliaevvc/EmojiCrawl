@@ -42,7 +42,7 @@ export const initialState: GameState = {
 // ... (Action Types)
 export type GameAction =
   | { type: 'INIT_GAME' }
-  | { type: 'START_GAME'; deckConfig?: { character: { hp: number; coins: number }; shields: number[]; weapons: number[]; potions: number[]; coins: number[]; spells: SpellType[]; monsters: MonsterGroupConfig[] }; runType?: 'standard' | 'custom' }
+  | { type: 'START_GAME'; deckConfig?: { character: { hp: number; coins: number }; shields: number[]; weapons: number[]; potions: number[]; coins: number[]; spells: SpellType[]; monsters: MonsterGroupConfig[] }; runType?: 'standard' | 'custom'; templateName?: string }
   | { type: 'TAKE_CARD_TO_HAND'; cardId: string; hand: 'left' | 'right' | 'backpack' }
   | { type: 'INTERACT_WITH_MONSTER'; monsterId: string; target: 'player' | 'shield_left' | 'shield_right' | 'weapon_left' | 'weapon_right' }
   | { type: 'USE_SPELL_ON_TARGET'; spellCardId: string; targetId: string }
@@ -795,7 +795,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         round: 1,
         logs: [createLog("Новая игра началась!", 'info')],
         overheads: { overheal: 0, overdamage: 0, overdef: 0 },
-        stats: { ...initialStats, startTime: Date.now(), runType: runType },
+        stats: { ...initialStats, startTime: Date.now(), runType: runType, templateName: action.templateName },
         activeEffects: []
       };
 

@@ -1,13 +1,19 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Play, PlusSquare, FileUp, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { DeckTemplate } from '../types/game';
+import LoadTemplateModal from './LoadTemplateModal';
 
 interface MainMenuProps {
   onStartGame: () => void;
   onCreateGame: () => void;
   onShowStats: () => void;
+  onLoadTemplate: (template: DeckTemplate) => void;
 }
 
-const MainMenu = ({ onStartGame, onCreateGame, onShowStats }: MainMenuProps) => {
+const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: MainMenuProps) => {
+  const [showLoadTemplate, setShowLoadTemplate] = useState(false);
+
   return (
     <motion.div 
       exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
@@ -45,7 +51,12 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats }: MainMenuProps) => 
             delay={0.3} 
             onClick={onCreateGame}
         />
-        <MenuButton icon={<FileUp size={20} />} label="Загрузить шаблон" delay={0.4} />
+        <MenuButton 
+            icon={<FileUp size={20} />} 
+            label="Загрузить шаблон" 
+            delay={0.4} 
+            onClick={() => setShowLoadTemplate(true)}
+        />
       </div>
 
       {/* Кнопка статистики */}
@@ -63,6 +74,18 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats }: MainMenuProps) => 
        {/* Эмодзи декор */}
        <div className="absolute top-1/4 left-10 text-8xl opacity-5 rotate-12 select-none pointer-events-none">🗡️</div>
        <div className="absolute bottom-1/4 right-10 text-8xl opacity-5 -rotate-12 select-none pointer-events-none">💀</div>
+
+       <AnimatePresence>
+           {showLoadTemplate && (
+               <LoadTemplateModal 
+                   onLoad={(template) => {
+                       onLoadTemplate(template);
+                       setShowLoadTemplate(false);
+                   }}
+                   onClose={() => setShowLoadTemplate(false)}
+               />
+           )}
+       </AnimatePresence>
     </motion.div>
   );
 };
