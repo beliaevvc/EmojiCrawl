@@ -61,9 +61,16 @@ const HistoryCard = ({ entry }: { entry: RunHistoryEntry }) => {
                             {isWin ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ'}
                         </span>
                         {entry.runType === 'custom' && (
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 border border-indigo-500/50 px-1.5 py-0.5 rounded bg-indigo-900/20">
-                                Custom
-                            </span>
+                            <div className="flex gap-2">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 border border-indigo-500/50 px-1.5 py-0.5 rounded bg-indigo-900/20">
+                                    Custom
+                                </span>
+                                {entry.templateName && (
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/50 px-1.5 py-0.5 rounded bg-emerald-900/20">
+                                        {entry.templateName}
+                                    </span>
+                                )}
+                            </div>
                         )}
                         <span className="text-stone-600 text-xs font-bold">#{entry.gameNumber}</span>
                     </div>

@@ -57,19 +57,13 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
             delay={0.4} 
             onClick={() => setShowLoadTemplate(true)}
         />
+        <MenuButton 
+            icon={<BarChart3 size={20} />} 
+            label="Статистика забегов" 
+            delay={0.5} 
+            onClick={onShowStats}
+        />
       </div>
-
-      {/* Кнопка статистики */}
-      <motion.button
-        onClick={onShowStats}
-        initial={{ x: 50, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ delay: 0.7 }}
-        className="absolute bottom-6 right-6 flex items-center gap-2 px-4 py-2 text-stone-400 hover:text-stone-100 hover:bg-stone-900 rounded-full transition-all border border-transparent hover:border-stone-800 z-10"
-      >
-        <span className="text-sm font-medium">Статистика забегов</span>
-        <BarChart3 size={18} />
-      </motion.button>
       
        {/* Эмодзи декор */}
        <div className="absolute top-1/4 left-10 text-8xl opacity-5 rotate-12 select-none pointer-events-none">🗡️</div>
