@@ -1,5 +1,5 @@
 // ... imports
-import { GameState } from '../types/game';
+import { GameState, LogEntry } from '../types/game';
 import { createDeck, shuffleDeck } from './gameLogic';
 
 // Initial State (Moved here to ensure it's exported)
@@ -16,6 +16,7 @@ export const initialState: GameState = {
   },
   round: 1,
   status: 'playing',
+  logs: [],
 };
 
 // ... (Existing Action Types)
@@ -29,7 +30,19 @@ export type GameAction =
   | { type: 'RESET_HAND' }
   | { type: 'CHECK_ROUND_END' };
 
-// ... (Helpers) ...
+// Helpers
+const createLog = (message: string, type: LogEntry['type']): LogEntry => ({
+    id: Math.random().toString(36).substr(2, 9),
+    message,
+    type,
+    timestamp: Date.now()
+});
+
+const addLog = (state: GameState, message: string, type: LogEntry['type']): GameState => {
+    const newLogs = [createLog(message, type), ...state.logs].slice(0, 50); // Keep last 50 logs
+    return { ...state, logs: newLogs };
+};
+
 const findCardInSlots = (slots: (any)[], id: string): number => {
   return slots.findIndex(c => c?.id === id);
 };
@@ -80,20 +93,24 @@ const removeCardFromSource = (state: GameState, cardId: string): { newState: Gam
   return { newState, card: null, fromWhere: null };
 };
 
-const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): GameState => {
+// Handle attack logic but return object with logs instead of pure state, or handle logging in parent
+const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): { state: GameState, log?: string, logType?: LogEntry['type'] } => {
     let newState = { ...state };
     const damage = monster.value;
+    let log = '';
+    let logType: LogEntry['type'] = 'combat';
 
     if (defenseType === 'body') {
         newState.player = {
             ...newState.player,
             hp: Math.max(0, newState.player.hp - damage)
         };
+        log = `Получен урон от монстра: -${damage} HP`;
     } else if (defenseType === 'shield' && shieldHand) {
         const hand = shieldHand === 'left' ? newState.leftHand : newState.rightHand;
         const shield = hand.card;
         
-        if (!shield || shield.type !== 'shield') return state;
+        if (!shield || shield.type !== 'shield') return { state };
 
         const blocked = Math.min(shield.value, damage);
         const overflow = Math.max(0, damage - blocked);
@@ -107,12 +124,14 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
              } else {
                  newState.rightHand = { ...newState.rightHand, card: newShield };
              }
+             log = `Щит заблокировал ${blocked} урона.`;
         } else {
              if (shieldHand === 'left') {
                  newState.leftHand = { ...newState.leftHand, card: null };
              } else {
                  newState.rightHand = { ...newState.rightHand, card: null };
              }
+             log = `Щит разрушен! Заблокировано ${blocked}.`;
         }
 
         if (overflow > 0) {
@@ -120,25 +139,28 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
                 ...newState.player,
                 hp: Math.max(0, newState.player.hp - overflow)
             };
+            log += ` Прошло урона: -${overflow} HP`;
         }
     }
-    return newState;
+    return { state: newState, log, logType };
 }
 
-const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, weaponHand: 'left' | 'right'): GameState => {
+const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, weaponHand: 'left' | 'right'): { state: GameState, log?: string, logType?: LogEntry['type'] } => {
     let newState = { ...state };
     const hand = weaponHand === 'left' ? newState.leftHand : newState.rightHand;
     const weapon = hand.card;
 
-    if (!weapon || weapon.type !== 'weapon') return state;
+    if (!weapon || weapon.type !== 'weapon') return { state };
 
     const damage = weapon.value;
     const monsterHp = monster.value;
+    let log = '';
 
     if (damage >= monsterHp) {
         const newSlots = [...newState.enemySlots];
         newSlots[monsterIdx] = null;
         newState.enemySlots = newSlots;
+        log = `Монстр убит оружием (${damage} урона).`;
     } else {
         const newMonsterHp = monsterHp - damage;
         const newMonster = { ...monster, value: newMonsterHp };
@@ -146,12 +168,13 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         const newSlots = [...newState.enemySlots];
         newSlots[monsterIdx] = newMonster;
         newState.enemySlots = newSlots;
+        log = `Монстру нанесено ${damage} урона.`;
     }
 
     if (weaponHand === 'left') newState.leftHand = { ...newState.leftHand, card: null };
     else newState.rightHand = { ...newState.rightHand, card: null };
 
-    return newState;
+    return { state: newState, log, logType: 'combat' };
 }
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
@@ -160,7 +183,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
      const deckEmpty = s.deck.length === 0;
 
      if (deckEmpty && cardsOnTable === 0) {
-         return { ...s, status: 'won' };
+         return { ...s, status: 'won', logs: [createLog("🏆 ПОБЕДА! Все монстры повержены!", 'info'), ...s.logs] };
      }
 
      if (cardsOnTable <= 1 && !deckEmpty) {
@@ -180,7 +203,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              return { ...hand, blocked: false };
           };
 
-          return {
+          const newState = {
              ...s,
              deck,
              enemySlots: newSlots,
@@ -188,6 +211,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              rightHand: clearUsedHand(s.rightHand),
              round: s.round + 1
           };
+          
+          return addLog(newState, `Раунд ${newState.round} начался.`, 'info');
      }
      
      if (cardsOnTable <= 1 && deckEmpty) {
@@ -209,6 +234,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
   };
 
   let nextState = state;
+  let logMessage = '';
+  let logType: LogEntry['type'] = 'info';
 
   switch (action.type) {
     case 'INIT_GAME':
@@ -233,19 +260,21 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         leftHand: { card: null, blocked: false },
         rightHand: { card: null, blocked: false },
         backpack: null,
-        round: 1
+        round: 1,
+        logs: [createLog("Новая игра началась!", 'info')]
       };
       break;
     }
 
     case 'TAKE_CARD_TO_HAND': {
-      const { newState, card } = removeCardFromSource(state, action.cardId); // Fixed: removed unused fromWhere
+      const { newState, card } = removeCardFromSource(state, action.cardId);
       
       if (!card) return state;
 
       if (action.hand === 'backpack') {
          if (newState.backpack) return state;
          nextState = { ...newState, backpack: card };
+         logMessage = `В рюкзак положено: ${card.icon}`;
          break;
       }
       
@@ -258,11 +287,17 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       if (card.type === 'coin') {
          blocked = true;
          playerUpdates = { coins: newState.player.coins + card.value };
+         logMessage = `Собрано: +${card.value} монет`;
+         logType = 'gain';
       } else if (card.type === 'potion') {
          blocked = true;
          const healAmount = card.value;
          const newHp = Math.min(newState.player.hp + healAmount, newState.player.maxHp);
          playerUpdates = { hp: newHp };
+         logMessage = `Выпито зелье: +${healAmount} HP`;
+         logType = 'heal';
+      } else {
+         logMessage = `Взято в руку: ${card.icon}`;
       }
 
       const updatedHand = { card: card, blocked };
@@ -293,23 +328,39 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 enemySlots: newSlots,
                 player: { ...state.player, hp: newHp }
             };
+            logMessage = `Удар монстра принят: -${dmg} HP`;
+            logType = 'combat';
         } 
         else if (action.target === 'shield_left' || action.target === 'shield_right') {
             const handSide = action.target === 'shield_left' ? 'left' : 'right';
             const hand = handSide === 'left' ? state.leftHand : state.rightHand;
             
             if (hand.card?.type === 'shield') {
-                 const stateAfterDef = handleMonsterAttack(state, monster, 'shield', handSide);
-                 const newSlots = [...stateAfterDef.enemySlots];
+                 const res = handleMonsterAttack(state, monster, 'shield', handSide);
+                 const newSlots = [...res.state.enemySlots];
                  newSlots[monsterIdx] = null; 
-                 nextState = { ...stateAfterDef, enemySlots: newSlots };
+                 nextState = { ...res.state, enemySlots: newSlots };
+                 if (res.log) {
+                     logMessage = res.log;
+                     logType = res.logType || 'combat';
+                 }
             } else if (hand.card?.type === 'weapon') {
-                 nextState = handleWeaponAttack(state, monster, monsterIdx, handSide);
+                 const res = handleWeaponAttack(state, monster, monsterIdx, handSide);
+                 nextState = res.state;
+                 if (res.log) {
+                     logMessage = res.log;
+                     logType = res.logType || 'combat';
+                 }
             }
         }
         else if (action.target === 'weapon_left' || action.target === 'weapon_right') {
              const handSide = action.target === 'weapon_left' ? 'left' : 'right';
-             nextState = handleWeaponAttack(state, monster, monsterIdx, handSide);
+             const res = handleWeaponAttack(state, monster, monsterIdx, handSide);
+             nextState = res.state;
+             if (res.log) {
+                 logMessage = res.log;
+                 logType = res.logType || 'combat';
+             }
         }
         break;
     }
@@ -338,6 +389,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         
         let newState = { ...state };
         let spellUsed = false;
+        
+        logType = 'spell';
 
         switch (spellCard.spellType) {
             case 'escape': 
@@ -349,6 +402,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     newState.enemySlots = newEnemySlots;
                     newState.deck = newDeck;
                     spellUsed = true;
+                    logMessage = 'Заклинание ПОБЕГ: враги замешаны в колоду.';
                 }
                 break;
 
@@ -358,6 +412,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     const newHp = Math.min(newState.player.hp + healAmount, newState.player.maxHp);
                     newState.player = { ...newState.player, hp: newHp };
                     spellUsed = true;
+                    logMessage = `Заклинание КРОВОСОС: +${healAmount} HP из монстра.`;
+                    logType = 'heal';
                 }
                 break;
 
@@ -381,6 +437,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                          newState.rightHand = { ...newState.rightHand, card: newPotion };
                     }
                     spellUsed = true;
+                    logMessage = 'Заклинание ЗЕЛЬЕФИКАЦИЯ: предмет превращен в зелье.';
                 }
                 break;
 
@@ -396,6 +453,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     }
                     newState.deck = newDeck;
                     spellUsed = true;
+                    logMessage = 'Заклинание ВЕТЕР: карта сдута в колоду.';
                 }
                 break;
 
@@ -409,13 +467,17 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                              const newSlots = [...newState.enemySlots];
                              newSlots[idx] = null;
                              newState.enemySlots = newSlots;
+                             logMessage = `Заклинание ЖЕРТВА: монстр уничтожен (${dmg} урона).`;
                         } else {
                              const newMonster = { ...targetCard, value: newHp };
                              const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
                              const newSlots = [...newState.enemySlots];
                              newSlots[idx] = newMonster;
                              newState.enemySlots = newSlots;
+                             logMessage = `Заклинание ЖЕРТВА: нанесено ${dmg} урона.`;
                         }
+                    } else {
+                        logMessage = 'Заклинание ЖЕРТВА: нет эффекта (полное HP).';
                     }
                     spellUsed = true;
                 }
@@ -447,6 +509,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             enemySlots: emptySlots,
             deck: newDeck
         };
+        logMessage = 'СБРОС: карты убраны, потрачено 5 HP.';
         break;
     }
     
@@ -472,6 +535,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             ...newState,
             player: { ...newState.player, coins: newState.player.coins + coinsToAdd }
         };
+        logMessage = `Продано: ${card.icon} за ${coinsToAdd} монет.`;
+        logType = 'gain';
         break;
     }
 
@@ -481,6 +546,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
   
   if (nextState.player.hp <= 0 && nextState.status !== 'lost') {
       nextState.status = 'lost';
+      nextState = addLog(nextState, "Герой погиб...", 'combat');
+  }
+
+  if (logMessage) {
+      nextState = addLog(nextState, logMessage, logType);
   }
   
   return stateWithRoundCheck(nextState);

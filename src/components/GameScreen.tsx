@@ -1,12 +1,12 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, Play, AlertCircle } from 'lucide-react';
+import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, Play, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { useDrop } from 'react-dnd';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
-import { Card } from '../types/game';
+import { Card, LogEntry } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
 
@@ -14,6 +14,7 @@ interface GameScreenProps {
   onExit: () => void;
 }
 
+// ... (InteractionZone, EnemySlotDropZone, SellZone remain same)
 // Interaction Drop Zone Wrapper
 const InteractionZone = ({ 
     onDrop, 
@@ -99,7 +100,8 @@ const RulesModal = ({ onClose }: { onClose: () => void }) => (
             </button>
             <h2 className="text-2xl font-bold text-stone-200 mb-6 text-center tracking-widest uppercase">Правила Игры</h2>
             <div className="space-y-6 text-stone-400 text-sm md:text-base h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                <section>
+                {/* Rules content ... */}
+                 <section>
                     <h3 className="flex items-center gap-2 text-stone-200 font-bold mb-2">
                         <Skull size={18} className="text-rose-500" /> Цель
                     </h3>
@@ -196,12 +198,58 @@ const DeckStatItem = ({ icon, count, color }: { icon: string, count: number, col
     </div>
 );
 
+// Game Log Component
+const GameLogWindow = ({ logs }: { logs: LogEntry[] }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className={`
+                absolute bottom-20 right-4 z-40 
+                bg-stone-900/80 backdrop-blur-md border border-stone-700 
+                rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300
+                w-64 md:w-80
+                ${expanded ? 'h-[60vh]' : 'h-32'}
+            `}
+        >
+             <div 
+                className="flex items-center justify-between p-2 bg-stone-800/50 border-b border-stone-700 cursor-pointer hover:bg-stone-800 transition-colors"
+                onClick={() => setExpanded(!expanded)}
+             >
+                 <span className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Журнал</span>
+                 {expanded ? <ChevronDown size={16} className="text-stone-400" /> : <ChevronUp size={16} className="text-stone-400" />}
+             </div>
+             
+             <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar flex flex-col-reverse">
+                 {logs.map((log) => {
+                     let color = 'text-stone-400';
+                     if (log.type === 'combat') color = 'text-rose-400';
+                     if (log.type === 'heal') color = 'text-emerald-400';
+                     if (log.type === 'gain') color = 'text-amber-400';
+                     if (log.type === 'spell') color = 'text-indigo-400';
+
+                     return (
+                         <div key={log.id} className={`text-[10px] md:text-xs ${color} font-medium leading-tight border-b border-stone-800/50 pb-1 last:border-0`}>
+                             {log.message}
+                         </div>
+                     )
+                 })}
+                 {logs.length === 0 && <div className="text-center text-stone-600 text-xs py-4">Нет записей...</div>}
+             </div>
+        </motion.div>
+    );
+};
+
+
 const GameScreen = ({ onExit }: GameScreenProps) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
-  const [showInfo, setShowInfo] = useState(false); // Deck Stats Toggle
+  const [showInfo, setShowInfo] = useState(false); // Deck Stats & Logs Toggle
   
   // Visual Effects State
   const [floatingTexts, setFloatingTexts] = useState<FloatingTextItem[]>([]);
@@ -581,6 +629,11 @@ const GameScreen = ({ onExit }: GameScreenProps) => {
             onClick={() => setShowInfo(!showInfo)} 
          />
       </div>
+
+      {/* Game Log Window */}
+      <AnimatePresence>
+          {showInfo && <GameLogWindow logs={state.logs} />}
+      </AnimatePresence>
 
       <AnimatePresence>
           {selectedCard && (

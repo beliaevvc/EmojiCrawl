@@ -24,6 +24,13 @@ export interface HandSlot {
   blocked: boolean; // If true, cannot use or place card until next round
 }
 
+export interface LogEntry {
+    id: string;
+    message: string;
+    type: 'info' | 'combat' | 'heal' | 'gain' | 'spell';
+    timestamp: number;
+}
+
 export interface GameState {
   deck: Card[];
   enemySlots: (Card | null)[]; // Fixed 4 slots
@@ -33,7 +40,7 @@ export interface GameState {
   player: Player;
   round: number;
   status: 'playing' | 'won' | 'lost';
+  logs: LogEntry[];
 }
 
 export const MAX_HP = 13;
-
