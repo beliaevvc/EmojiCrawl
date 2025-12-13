@@ -453,7 +453,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (!card) return state;
 
         let coinsToAdd = 0;
-        if (card.type === 'weapon' || card.type === 'potion') {
+        if (card.type === 'weapon' || card.type === 'potion' || card.type === 'shield') {
             coinsToAdd = card.value;
         } else if (card.type === 'coin') {
              coinsToAdd = 0; 
