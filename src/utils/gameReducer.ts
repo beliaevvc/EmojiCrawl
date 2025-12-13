@@ -924,6 +924,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             const newSlots = [...nextState.enemySlots];
             newSlots[monsterIdx] = null;
             nextState.enemySlots = newSlots;
+            
+            // Stats: Monster died attacking player
+            nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
 
             // Trigger Kill Abilities (Self-sacrifice/suicide attack counts as death?)
             // Usually attacking player means monster leaves. Is it "death"?
@@ -949,6 +952,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                  const newSlots = [...nextState.enemySlots];
                  newSlots[monsterIdx] = null;
                  nextState.enemySlots = newSlots;
+                 
+                 // Stats: Monster died attacking shield
+                 nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
 
                  if (res.log) {
                      logMessage = res.log;
@@ -1175,6 +1181,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         const newSlots = [...newState.enemySlots];
                         newSlots[idx] = null;
                         newState.enemySlots = newSlots;
+                        newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
                         logMessage = 'РАСЩЕПЛЕНИЕ: монстр уничтожен (слишком мал).';
                     }
                     spellUsed = true;
@@ -1187,6 +1194,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     const newSlots = [...newState.enemySlots];
                     newSlots[idx] = null; 
                     newState.enemySlots = newSlots;
+                    newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
                     logMessage = 'БАРЬЕР: монстр нейтрализован.';
                     spellUsed = true;
                 }
