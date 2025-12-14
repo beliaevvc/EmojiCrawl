@@ -1284,7 +1284,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             case 'sacrifice':
                 if (targetCard?.type === 'monster') {
-                    const dmg = 13 - newState.player.hp;
+                    let dmg = 13 - newState.player.hp;
+                    
+                    if (newState.activeEffects.includes('miss')) {
+                         dmg = Math.max(0, dmg - 2);
+                         newState.activeEffects = newState.activeEffects.filter(e => e !== 'miss');
+                    }
+
                     if (dmg > 0) {
                         const newHp = targetCard.value - dmg;
                         const overdamage = Math.max(0, dmg - targetCard.value); 
@@ -1396,23 +1402,33 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             case 'volley':
                 if (targetId === 'player') { 
                     const ns = [...newState.enemySlots];
-                    let hits = 0;
-                    ns.forEach((c, i) => {
-                        if (c && c.type === 'monster') {
-                            const newVal = c.value - 1;
-                            if (newVal <= 0) {
-                                ns[i] = null;
-                                newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
-                                newState = applyKillAbilities(newState, c, 'spell');
-                                newState.discardPile = [...newState.discardPile, c];
-                            } else {
-                                ns[i] = { ...c, value: newVal };
+                    let damage = 1;
+                    
+                    if (newState.activeEffects.includes('miss')) {
+                         damage = 0;
+                         newState.activeEffects = newState.activeEffects.filter(e => e !== 'miss');
+                         logMessage = 'ПРОМАХ: Залп прошел мимо.';
+                    }
+                    
+                    if (damage > 0) {
+                        let hits = 0;
+                        ns.forEach((c, i) => {
+                            if (c && c.type === 'monster') {
+                                const newVal = c.value - damage;
+                                if (newVal <= 0) {
+                                    ns[i] = null;
+                                    newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
+                                    newState = applyKillAbilities(newState, c, 'spell');
+                                    newState.discardPile = [...newState.discardPile, c];
+                                } else {
+                                    ns[i] = { ...c, value: newVal };
+                                }
+                                hits++;
                             }
-                            hits++;
-                        }
-                    });
-                    newState.enemySlots = ns;
-                    logMessage = `ЗАЛП: нанесено по 1 урону ${hits} монстрам.`;
+                        });
+                        newState.enemySlots = ns;
+                        logMessage = `ЗАЛП: нанесено по ${damage} урона ${hits} монстрам.`;
+                    }
                     spellUsed = true;
                 }
                 break;
@@ -1564,8 +1580,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             case 'cut':
                 if (targetCard?.type === 'monster') {
-                    const dmg = 4;
+                    let dmg = 4;
                     const selfDmg = 2;
+
+                    if (newState.activeEffects.includes('miss')) {
+                         dmg = Math.max(0, dmg - 2);
+                         newState.activeEffects = newState.activeEffects.filter(e => e !== 'miss');
+                    }
                     
                     // Damage Monster
                     const newMonsterVal = targetCard.value - dmg;

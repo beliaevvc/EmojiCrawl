@@ -825,8 +825,17 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 md:w-10 md:h-10 bg-green-900 border-2 border-green-500 rounded-full flex items-center justify-center text-xs md:text-sm font-bold text-green-100 z-20 shadow-md">
                 {state.player.hp}
              </div>
-             <div className={`absolute top-1/2 -right-2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 bg-stone-700 border border-stone-500 rounded-full flex items-center justify-center text-[8px] md:text-[10px] font-bold text-stone-300 z-20 shadow-md transition-all duration-300 ${coinPulse ? 'scale-125 ring-2 ring-amber-400 bg-amber-900/50' : ''}`}>
-                {state.player.coins}
+             
+             {/* Right Side Status Icons (Coins + Debuffs) */}
+             <div className="absolute -right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 items-center z-30 pointer-events-none">
+                 <div className={`w-5 h-5 md:w-6 md:h-6 bg-stone-700 border border-stone-500 rounded-full flex items-center justify-center text-[8px] md:text-[10px] font-bold text-stone-300 shadow-md transition-all duration-300 ${coinPulse ? 'scale-125 ring-2 ring-amber-400 bg-amber-900/50' : ''}`}>
+                    {state.player.coins}
+                 </div>
+                 {state.activeEffects.includes('miss') && (
+                     <div className="w-5 h-5 md:w-6 md:h-6 bg-stone-900/90 border border-stone-500 rounded-full flex items-center justify-center text-[10px] shadow-md animate-pulse" title="Промах: -2 к атаке">
+                         💫
+                     </div>
+                 )}
              </div>
           </InteractionZone>
 
