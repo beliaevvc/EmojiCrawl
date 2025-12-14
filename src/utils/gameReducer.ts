@@ -170,24 +170,6 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
                 }
             }
             break;
-        case 'mirror':
-            // Find max weapon
-            let maxDmg = 0;
-            if (newState.leftHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, newState.leftHand.card.value);
-            if (newState.rightHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, newState.rightHand.card.value);
-            if (newState.backpack?.type === 'weapon') maxDmg = Math.max(maxDmg, newState.backpack.value);
-            
-            if (maxDmg > 0) {
-                const slotIdx = newState.enemySlots.findIndex(c => c?.id === card.id);
-                if (slotIdx !== -1) {
-                    const newCard = { ...card, value: maxDmg };
-                    const newSlots = [...newState.enemySlots];
-                    newSlots[slotIdx] = newCard;
-                    newState.enemySlots = newSlots;
-                    newState = addLog(newState, `ЗЕРКАЛО (${card.icon}): HP стало равно ${maxDmg} (сила оружия).`, 'info');
-                }
-            }
-            break;
         case 'exhaustion':
             // Reduce max HP while alive
             newState.player.maxHp = Math.max(1, newState.player.maxHp - 1);
@@ -382,6 +364,37 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
     }
     return newState;
 };
+
+// Update Mirror Monsters
+const updateMirrorMonsters = (state: GameState): GameState => {
+    // Calculate max weapon damage
+    let maxDmg = 0;
+    if (state.leftHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.leftHand.card.value);
+    if (state.rightHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.rightHand.card.value);
+    if (state.backpack?.type === 'weapon') maxDmg = Math.max(maxDmg, state.backpack.value);
+
+    let newState = { ...state };
+    const newSlots = [...newState.enemySlots];
+    let changed = false;
+
+    newSlots.forEach((c, i) => {
+        if (c && c.type === 'monster' && c.ability === 'mirror') {
+            const baseVal = c.maxHealth || 0;
+            const targetVal = maxDmg > 0 ? maxDmg : baseVal;
+            
+            if (c.value !== targetVal) {
+                newSlots[i] = { ...c, value: targetVal };
+                changed = true;
+            }
+        }
+    });
+
+    if (changed) {
+        newState.enemySlots = newSlots;
+        newState = addLog(newState, 'ЗЕРКАЛО: Сила монстра изменилась.', 'info');
+    }
+    return newState;
+}
 
 // Handle attack logic
 const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): { state: GameState, log?: string, logType?: LogEntry['type'], monsterKept?: boolean } => {
@@ -828,6 +841,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
               nextState = applySpawnAbilities(nextState, c);
           }
       });
+      nextState = updateMirrorMonsters(nextState);
 
       break;
     }
@@ -1568,5 +1582,5 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       nextState = addLog(nextState, logMessage, logType);
   }
   
-  return stateWithRoundCheck(nextState);
+  return updateMirrorMonsters(stateWithRoundCheck(nextState));
 };

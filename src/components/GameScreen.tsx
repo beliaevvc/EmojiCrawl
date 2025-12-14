@@ -426,6 +426,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       // Check for Swap Action
       const lastLog = state.logs[0];
       const isSwap = lastLog && lastLog.message.includes('ЗАМЕНА');
+      const isMirror = lastLog && lastLog.message.includes('ЗЕРКАЛО');
 
       state.enemySlots.forEach((card, i) => {
           const prevCard = prevEnemySlots.current[i];
@@ -467,6 +468,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                   if (isSwap && card) {
                       // SWAP ANIMATION: Explicit transition visual
                       addFloatingText(x, y, `🔄 ${newValue}`, 'text-indigo-400 font-bold text-xl drop-shadow-black', true);
+                  } else if (isMirror && card) {
+                      addFloatingText(x, y, `⚙️ ${newValue}`, 'text-cyan-400 font-bold text-xl drop-shadow-black', true);
                   } else if (diff > 0) {
                       // Damage
                       addFloatingText(x, y, `-${diff}`, 'text-rose-500', true);
