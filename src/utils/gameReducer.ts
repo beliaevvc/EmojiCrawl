@@ -418,16 +418,21 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             newState = addLog(newState, 'ИЗНУРЕНИЕ: Макс. HP восстановлено (+1 HP).', 'info');
             break;
         case 'junk':
-            const junkCoin: Card = {
-                id: `junk_coin_${Math.random()}`,
-                type: 'coin',
+            const junkSkull: Card = {
+                id: `junk_skull_${Math.random().toString(36).substr(2, 5)}`,
+                type: 'skull',
                 value: 0,
-                icon: '🗑️',
-                name: 'Хлам',
-                description: 'Мусор.'
+                icon: '💀',
+                name: 'Кости',
+                description: 'Бесполезные останки.'
             };
-            if (!newState.backpack) newState.backpack = junkCoin;
-            else newState = addLog(newState, 'ХЛАМ: Рюкзак полон, хлам не влез.', 'info');
+            
+            if (!newState.backpack && !hasActiveAbility(newState, 'web')) {
+                newState.backpack = junkSkull;
+                newState = addLog(newState, 'ХЛАМ: Кости добавлены в рюкзак.', 'info');
+            } else {
+                newState = addLog(newState, 'ХЛАМ: Рюкзак полон или заблокирован.', 'info');
+            }
             break;
         case 'miss':
             // Apply next attack debuff.
