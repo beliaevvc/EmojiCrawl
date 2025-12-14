@@ -145,7 +145,7 @@ const hasActiveAbility = (state: GameState, ability: MonsterAbilityType): boolea
 
 // Apply On Spawn Abilities
 const applySpawnAbilities = (state: GameState, card: Card): GameState => {
-    let newState = { ...state };
+    let newState = { ...state, player: { ...state.player } };
     if (!card.ability) return newState;
 
     switch (card.ability) {
@@ -182,7 +182,7 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
 
 // Handle On Kill Abilities
 const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' | 'spell' | 'other'): GameState => {
-    let newState = { ...state };
+    let newState = { ...state, player: { ...state.player } };
     
     // Global Spell Effect: Trophy (Any kill grants coins)
     if (newState.activeEffects.includes('trophy')) {
@@ -413,9 +413,9 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             break;
         case 'exhaustion':
             // Restore Max HP when killed
-            newState.player.maxHp = Math.min(13, newState.player.maxHp + 1); // Assuming 13 is global max? Or just restore what was taken. 
-            // If base max is 13.
-            newState = addLog(newState, 'ИЗНУРЕНИЕ: Макс. HP восстановлено.', 'info');
+            newState.player.maxHp = Math.min(13, newState.player.maxHp + 1); 
+            newState.player.hp = Math.min(newState.player.maxHp, newState.player.hp + 1);
+            newState = addLog(newState, 'ИЗНУРЕНИЕ: Макс. HP восстановлено (+1 HP).', 'info');
             break;
         case 'junk':
             const junkCoin: Card = {
