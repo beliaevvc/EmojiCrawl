@@ -330,7 +330,13 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               setTimeout(() => setHeroShake(false), 300);
           } else {
               // Heal
-              addFloatingText(x, y, `+${diff}`, 'text-emerald-400', true);
+              // Check if this was Blessing (handled separately with delay)
+              const recentLogs = state.logs.slice(0, 3);
+              const isBlessing = recentLogs.some(l => l.message.includes('БЛАГОСЛОВЕНИЕ'));
+              
+              if (!isBlessing) {
+                  addFloatingText(x, y, `+${diff}`, 'text-emerald-400', true);
+              }
           }
       }
       prevHeroHp.current = state.player.hp;
@@ -358,6 +364,9 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
 
   // Monitor Logs for Armor Trigger
   const [armorFlash, setArmorFlash] = useState(false);
+  const [healFlash, setHealFlash] = useState(false);
+  const lastBlessingId = useRef<string | null>(null);
+
   useEffect(() => {
       const lastLog = state.logs[0];
       if (lastLog && lastLog.message.includes('Доспехи заблокировали')) {
@@ -370,6 +379,27 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               const y = rect.top;
               addFloatingText(x, y, '🛡️ BLOCKED', 'text-yellow-300 font-bold text-lg drop-shadow-md', true);
           }
+      }
+  }, [state.logs]);
+
+  // Monitor Logs for Blessing (Delayed Heal Effect)
+  useEffect(() => {
+      const blessingLog = state.logs.slice(0, 3).find(l => l.message.includes('БЛАГОСЛОВЕНИЕ'));
+      
+      if (blessingLog && blessingLog.id !== lastBlessingId.current) {
+          lastBlessingId.current = blessingLog.id;
+          
+          const timer = setTimeout(() => {
+              if (heroRef.current) {
+                   const rect = heroRef.current.getBoundingClientRect();
+                   const x = rect.left + rect.width / 2;
+                   const y = rect.top;
+                   addFloatingText(x, y, '+2', 'text-emerald-400', true);
+                   setHealFlash(true);
+                   setTimeout(() => setHealFlash(false), 500);
+              }
+          }, 700); // Delay to show sequence: Kill -> Wait -> Heal
+          return () => clearTimeout(timer);
       }
   }, [state.logs]);
 
@@ -661,7 +691,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               accepts={[ItemTypes.CARD]}
               className="relative aspect-square"
           >
-             <div ref={heroRef} className={`w-full h-full rounded-full border-2 md:border-4 border-stone-400 bg-stone-800 flex items-center justify-center text-4xl md:text-6xl shadow-[0_0_20px_rgba(0,0,0,0.5)] z-10 relative overflow-hidden transition-all ${heroShake ? 'animate-shake ring-4 ring-rose-500' : ''} ${armorFlash ? 'ring-4 ring-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.6)] brightness-110 scale-105' : ''}`}>
+             <div ref={heroRef} className={`w-full h-full rounded-full border-2 md:border-4 border-stone-400 bg-stone-800 flex items-center justify-center text-4xl md:text-6xl shadow-[0_0_20px_rgba(0,0,0,0.5)] z-10 relative overflow-hidden transition-all ${heroShake ? 'animate-shake ring-4 ring-rose-500' : ''} ${armorFlash ? 'ring-4 ring-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.6)] brightness-110 scale-105' : ''} ${healFlash ? 'ring-4 ring-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.6)] brightness-110 scale-105' : ''}`}>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-rose-900/50 to-transparent transition-all duration-500" style={{ height: `${(state.player.hp / state.player.maxHp) * 100}%` }}></div>
                 🧙‍♂️
              </div>
