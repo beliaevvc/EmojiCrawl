@@ -1484,6 +1484,21 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             break;
         }
 
+        // Pre-check for Monster type
+        let cardToSell: Card | null = null;
+        if (state.leftHand.card?.id === action.cardId) cardToSell = state.leftHand.card;
+        else if (state.rightHand.card?.id === action.cardId) cardToSell = state.rightHand.card;
+        else if (state.backpack?.id === action.cardId) cardToSell = state.backpack;
+        else {
+             const idx = state.enemySlots.findIndex(c => c?.id === action.cardId);
+             if (idx !== -1) cardToSell = state.enemySlots[idx];
+        }
+
+        if (cardToSell && cardToSell.type === 'monster') {
+             logMessage = 'Нельзя продать монстра!';
+             break;
+        }
+
         const { newState, card, fromWhere } = removeCardFromSource(state, action.cardId);
         
         if (!card) return state;
