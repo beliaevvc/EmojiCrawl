@@ -560,6 +560,10 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       card && card.type === 'monster' && card.ability === 'rot'
   );
 
+  const hasWeb = state.enemySlots.some(card => 
+      card && card.type === 'monster' && card.ability === 'web'
+  );
+
   const handleSellDrop = (item: any) => {
      if (isSellBlocked) {
          return;
@@ -809,15 +813,23 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
           </InteractionZone>
 
           {/* Backpack */}
-          <Slot 
-              card={state.backpack} 
-              onDrop={handleDropToHand('backpack')} 
-              accepts={['card']} 
-              placeholderIcon="🎒"
-              canDropItem={(item) => item.type !== 'monster'}
-              onCardClick={() => state.backpack && handleCardClick(state.backpack)}
-              penalty={hasRot && state.backpack?.type === 'potion' ? -2 : 0}
-          />
+          <div className="relative">
+              <Slot 
+                  card={state.backpack} 
+                  onDrop={handleDropToHand('backpack')} 
+                  accepts={['card']} 
+                  placeholderIcon="🎒"
+                  isBlocked={hasWeb}
+                  canDropItem={(item) => item.type !== 'monster'}
+                  onCardClick={() => state.backpack && handleCardClick(state.backpack)}
+                  penalty={hasRot && state.backpack?.type === 'potion' ? -2 : 0}
+              />
+              {hasWeb && (
+                  <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                      <span className="text-4xl md:text-5xl drop-shadow-lg opacity-90 filter brightness-125">🕸️</span>
+                  </div>
+              )}
+          </div>
 
           </div>
 
