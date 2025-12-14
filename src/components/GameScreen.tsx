@@ -341,13 +341,16 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       const diff = state.player.coins - prevCoinsRef.current;
       if (diff !== 0 && heroRef.current) {
           const rect = heroRef.current.getBoundingClientRect();
-          const x = rect.left + rect.width / 2;
-          const y = rect.top;
+          // Spawn coin text at the right edge, slightly up from center vertically
+          const x = rect.right; 
+          const y = rect.top + rect.height / 2 - 15;
 
           if (diff > 0) {
-              addFloatingText(x + 20, y, `+${diff} 💎`, 'text-amber-400');
+              addFloatingText(x, y, `+${diff} 💎`, 'text-amber-400');
               setCoinPulse(true);
               setTimeout(() => setCoinPulse(false), 300);
+          } else if (diff < 0) {
+              addFloatingText(x, y, `${diff} 💎`, 'text-rose-500');
           }
       }
       prevCoinsRef.current = state.player.coins;
