@@ -915,25 +915,43 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       if (card.type === 'coin') {
          newState.discardPile = [...newState.discardPile, card]; // Add to discard
          blocked = true;
-         playerUpdates = { coins: newState.player.coins + card.value };
-         logMessage += `Собрано: +${card.value} монет`;
-         logType = 'gain';
-         nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + card.value });
 
          // Offering Ability
          const offeringMonsters = newState.enemySlots.filter(c => c?.type === 'monster' && c.ability === 'offering');
+         
          if (offeringMonsters.length > 0) {
              const newSlots = [...newState.enemySlots];
+             let anyHealed = false;
+
              offeringMonsters.forEach(m => {
                  const idx = newSlots.findIndex(c => c?.id === m!.id);
                  if (idx !== -1 && newSlots[idx]) {
-                     newSlots[idx] = { ...newSlots[idx]!, value: newSlots[idx]!.value + card.value };
+                     const monster = newSlots[idx]!;
+                     const maxHp = monster.maxHealth || monster.value;
+                     const currentHp = monster.value;
+                     
+                     if (currentHp < maxHp) {
+                         const healAmount = Math.min(card.value, maxHp - currentHp);
+                         newSlots[idx] = { ...monster, value: currentHp + healAmount };
+                         logMessage += ` ПОДНОШЕНИЕ: ${monster.icon} +${healAmount} HP.`;
+                         anyHealed = true;
+                     } else {
+                         logMessage += ` ПОДНОШЕНИЕ: ${monster.icon} сыт.`;
+                     }
                  }
              });
+             
+             if (!anyHealed) logMessage += " ПОДНОШЕНИЕ: Жертва принята.";
+             
              newState.enemySlots = newSlots;
-             logMessage += ` (ПОДНОШЕНИЕ: монстры исцелены на ${card.value})`;
+             logType = 'combat';
+             nextState = newState;
+         } else {
+             playerUpdates = { coins: newState.player.coins + card.value };
+             logMessage += `Собрано: +${card.value} монет`;
+             logType = 'gain';
+             nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + card.value });
          }
-
       } else if (card.type === 'potion') {
          newState.discardPile = [...newState.discardPile, card]; // Add to discard
          blocked = true;
