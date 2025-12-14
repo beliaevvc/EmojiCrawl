@@ -386,11 +386,29 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
                 const newVal = Math.max(0, target.value - 2);
                 
                 // Need to find where it is to update
-                if (newState.leftHand.card?.id === target.id) newState.leftHand.card = { ...target, value: newVal };
-                else if (newState.rightHand.card?.id === target.id) newState.rightHand.card = { ...target, value: newVal };
-                else if (newState.backpack?.id === target.id) newState.backpack = { ...target, value: newVal };
+                let logMsg = '';
                 
-                newState = addLog(newState, `КОРРОЗИЯ: ${target.icon} ослаблен (-2).`, 'combat');
+                const applyDamage = (currentCard: Card) => {
+                    if (newVal <= 0) {
+                        newState.discardPile = [...newState.discardPile, { ...currentCard, value: 0 }];
+                        logMsg = `КОРРОЗИЯ: ${currentCard.icon} разрушен!`;
+                        return null;
+                    } else {
+                        logMsg = `КОРРОЗИЯ: ${currentCard.icon} ослаблен (-2).`;
+                        return { ...currentCard, value: newVal };
+                    }
+                };
+
+                if (newState.leftHand.card?.id === target.id) {
+                    newState.leftHand.card = applyDamage(target);
+                } else if (newState.rightHand.card?.id === target.id) {
+                    newState.rightHand.card = applyDamage(target);
+                } else if (newState.backpack?.id === target.id) {
+                    newState.backpack = applyDamage(target);
+                }
+                
+                newState.lastEffect = { type: 'corrosion', targetId: target.id, value: -2, timestamp: Date.now() };
+                newState = addLog(newState, logMsg, 'combat');
             }
             break;
         case 'exhaustion':

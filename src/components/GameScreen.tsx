@@ -263,6 +263,30 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   // Track Enemy Slots for animations
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const prevEnemySlots = useRef(state.enemySlots);
+  
+  const leftHandRef = useRef<HTMLDivElement>(null);
+  const rightHandRef = useRef<HTMLDivElement>(null);
+  const backpackRef = useRef<HTMLDivElement>(null);
+
+  // Monitor Effects (Corrosion)
+  useEffect(() => {
+      if (state.lastEffect && state.lastEffect.type === 'corrosion') {
+          // Find target slot ref
+          let ref = null;
+          // Check IDs. Note: The card ID in state might be same, but we need to match it.
+          // Since state is updated, we check current slots.
+          if (state.leftHand.card?.id === state.lastEffect.targetId) ref = leftHandRef;
+          else if (state.rightHand.card?.id === state.lastEffect.targetId) ref = rightHandRef;
+          else if (state.backpack?.id === state.lastEffect.targetId) ref = backpackRef;
+
+          if (ref && ref.current) {
+               const rect = ref.current.getBoundingClientRect();
+               const x = rect.left + rect.width / 2;
+               const y = rect.top + rect.height / 2;
+               addFloatingText(x, y, '☣️ -2', 'text-lime-400 font-bold text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] z-[100]', true);
+          }
+      }
+  }, [state.lastEffect]);
 
   // Calculate Deck Stats
   // Safety check: ensure cards in deck are NOT on table/hand (prevent ghost duplicates in stats)
@@ -761,18 +785,20 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               accepts={[]} 
               className="relative"
           >
-              <Slot 
-                  card={state.leftHand.card} 
-                  onDrop={handleDropToHand('left')} 
-                  accepts={['card']} 
-                  placeholderIcon="✋" 
-                  isBlocked={state.leftHand.blocked}
-                  canDropItem={(item) => item.type !== 'monster'}
-                  // FIX: Only pass interaction handler if card is a SHIELD
-                  onInteract={state.leftHand.card?.type === 'shield' ? handleMonsterInteraction('shield_left') : undefined}
-                  onCardClick={() => state.leftHand.card && handleCardClick(state.leftHand.card)}
-                  penalty={hasRot && state.leftHand.card?.type === 'potion' ? -2 : 0}
-              />
+              <div ref={leftHandRef} className="w-full h-full">
+                  <Slot 
+                      card={state.leftHand.card} 
+                      onDrop={handleDropToHand('left')} 
+                      accepts={['card']} 
+                      placeholderIcon="✋" 
+                      isBlocked={state.leftHand.blocked}
+                      canDropItem={(item) => item.type !== 'monster'}
+                      // FIX: Only pass interaction handler if card is a SHIELD
+                      onInteract={state.leftHand.card?.type === 'shield' ? handleMonsterInteraction('shield_left') : undefined}
+                      onCardClick={() => state.leftHand.card && handleCardClick(state.leftHand.card)}
+                      penalty={hasRot && state.leftHand.card?.type === 'potion' ? -2 : 0}
+                  />
+              </div>
           </InteractionZone>
           
           {/* Player Avatar */}
@@ -810,22 +836,24 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               accepts={[]}
               className="relative"
           >
-              <Slot 
-                  card={state.rightHand.card} 
-                  onDrop={handleDropToHand('right')} 
-                  accepts={['card']} 
-                  placeholderIcon="✋" 
-                  isBlocked={state.rightHand.blocked}
-                  canDropItem={(item) => item.type !== 'monster'}
-                  // FIX: Only pass interaction handler if card is a SHIELD
-                  onInteract={state.rightHand.card?.type === 'shield' ? handleMonsterInteraction('shield_right') : undefined}
-                  onCardClick={() => state.rightHand.card && handleCardClick(state.rightHand.card)}
-                  penalty={hasRot && state.rightHand.card?.type === 'potion' ? -2 : 0}
-              />
+              <div ref={rightHandRef} className="w-full h-full">
+                  <Slot 
+                      card={state.rightHand.card} 
+                      onDrop={handleDropToHand('right')} 
+                      accepts={['card']} 
+                      placeholderIcon="✋" 
+                      isBlocked={state.rightHand.blocked}
+                      canDropItem={(item) => item.type !== 'monster'}
+                      // FIX: Only pass interaction handler if card is a SHIELD
+                      onInteract={state.rightHand.card?.type === 'shield' ? handleMonsterInteraction('shield_right') : undefined}
+                      onCardClick={() => state.rightHand.card && handleCardClick(state.rightHand.card)}
+                      penalty={hasRot && state.rightHand.card?.type === 'potion' ? -2 : 0}
+                  />
+              </div>
           </InteractionZone>
 
           {/* Backpack */}
-          <div className="relative">
+          <div className="relative" ref={backpackRef}>
               <Slot 
                   card={state.backpack} 
                   onDrop={handleDropToHand('backpack')} 
