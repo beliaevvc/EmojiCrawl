@@ -3,6 +3,7 @@ import { Card as CardType } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 
 interface CardProps {
   card: CardType;
@@ -109,6 +110,13 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
       )}
       
       <span className="drop-shadow-md">{card.icon}</span>
+
+      {/* Monster Ability Badge */}
+      {card.type === 'monster' && card.ability && (
+          <div className="absolute -top-2 md:-top-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-stone-900 border border-stone-600 flex items-center justify-center shadow-lg z-20 text-xs md:text-sm" title={MONSTER_ABILITIES.find(a => a.id === card.ability)?.name}>
+              {MONSTER_ABILITIES.find(a => a.id === card.ability)?.icon}
+          </div>
+      )}
 
       {/* Price Multiplier Badge */}
       {card.priceMultiplier && card.priceMultiplier > 1 && (
