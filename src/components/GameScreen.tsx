@@ -820,7 +820,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               >
                   <div className="bg-stone-900/90 backdrop-blur-md border border-indigo-500/30 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-2">
                       <div className="text-[10px] font-bold text-indigo-300 tracking-[0.2em] uppercase">
-                          СЛЕДУЮЩИЕ КАРТЫ
+                          {state.peekType === 'whisper' ? 'ШЕПОТ ЛЕСА' : 'СЛЕДУЮЩИЕ КАРТЫ'}
                       </div>
                       <div className="flex gap-3">
                           {state.peekCards.map((card, i) => (

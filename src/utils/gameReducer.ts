@@ -38,6 +38,7 @@ export const initialState: GameState = {
   stats: initialStats,
   activeEffects: [],
   peekCards: null,
+  peekType: undefined,
   scoutCards: null
 };
 
@@ -232,7 +233,13 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             break;
         case 'whisper':
             const nextCoin = newState.deck.find(c => c.type === 'coin');
-            newState = addLog(newState, `ШЕПОТ ЛЕСА: Следующая монета в колоде — ${nextCoin ? nextCoin.value : 'нет'}.`, 'info');
+            if (nextCoin) {
+                newState.peekCards = [nextCoin];
+                newState.peekType = 'whisper';
+                newState = addLog(newState, `ШЕПОТ ЛЕСА: Показана следующая монета.`, 'info');
+            } else {
+                newState = addLog(newState, `ШЕПОТ ЛЕСА: Монет в колоде больше нет.`, 'info');
+            }
             break;
         case 'breach':
             // Discard random Shield
@@ -1282,6 +1289,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 if (targetId === 'player') {
                     const top3 = newState.deck.slice(-3).reverse();
                     newState.peekCards = top3;
+                    newState.peekType = 'epiphany';
                     logMessage = `ПРОЗРЕНИЕ: Открыто будущее (${top3.length} карт).`;
                     spellUsed = true;
                 }
@@ -1541,7 +1549,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         return state;
 
     case 'CLEAR_PEEK':
-        return { ...state, peekCards: null };
+        return { ...state, peekCards: null, peekType: undefined };
 
     case 'CLEAR_SCOUT':
         return { ...state, scoutCards: null };
