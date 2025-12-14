@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, RotateCcw, Plus, Minus, PlusCircle } from 'lucide-react';
+import { X, Check, RotateCcw, Plus, Minus, PlusCircle, Zap } from 'lucide-react';
 import { MonsterGroupConfig } from '../types/game';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import { ConfirmationModal } from './ConfirmationModal';
 import MonsterGroupEditor from './MonsterGroupEditor';
+import AbilityPicker from './AbilityPicker';
 
 interface MonstersEditorProps {
     initialGroups: MonsterGroupConfig[];
@@ -31,6 +32,7 @@ const MonstersEditor = ({ initialGroups, onSave, onClose }: MonstersEditorProps)
     const [editingGroup, setEditingGroup] = useState<MonsterGroupConfig | null>(null);
     const [newGroupTemp, setNewGroupTemp] = useState<{ value: number, count: number } | null>(null);
     const [itemToDelete, setItemToDelete] = useState<string | null>(null); // Group ID
+    const [showAbilityPicker, setShowAbilityPicker] = useState(false);
 
     const totalMonsters = groups.reduce((acc, g) => acc + g.count, 0) + (newGroupTemp ? newGroupTemp.count : 0);
 
@@ -100,6 +102,14 @@ const MonstersEditor = ({ initialGroups, onSave, onClose }: MonstersEditorProps)
                              <span className="text-xl font-mono font-bold text-stone-300 leading-none">{totalMonsters}</span>
                         </div>
                     </div>
+
+                    <button 
+                        onClick={() => setShowAbilityPicker(true)}
+                        className="ml-auto mr-4 flex items-center gap-2 px-3 py-1.5 bg-purple-900/30 hover:bg-purple-900/50 border border-purple-500/30 hover:border-purple-500/50 rounded-lg transition-colors group"
+                    >
+                        <Zap size={14} className="text-purple-400 group-hover:text-purple-200" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-purple-300 group-hover:text-purple-100">Усилить всех</span>
+                    </button>
 
                     <button onClick={onClose} className="p-2 text-stone-500 hover:text-white transition-colors">
                         <X size={24} />
@@ -236,6 +246,15 @@ const MonstersEditor = ({ initialGroups, onSave, onClose }: MonstersEditorProps)
                             message="Вы уверены, что хотите удалить эту группу монстров?"
                             onConfirm={() => deleteGroup(itemToDelete)}
                             onCancel={() => setItemToDelete(null)}
+                        />
+                    )}
+                    {showAbilityPicker && (
+                        <AbilityPicker 
+                            onSelect={(ability) => {
+                                setGroups(groups.map(g => ({ ...g, ability })));
+                                setShowAbilityPicker(false);
+                            }}
+                            onClose={() => setShowAbilityPicker(false)}
                         />
                     )}
                 </AnimatePresence>
