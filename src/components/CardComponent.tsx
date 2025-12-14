@@ -110,6 +110,13 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
       
       <span className="drop-shadow-md">{card.icon}</span>
 
+      {/* Price Multiplier Badge */}
+      {card.priceMultiplier && card.priceMultiplier > 1 && (
+          <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-yellow-500 text-black font-bold text-[10px] flex items-center justify-center border border-yellow-300 shadow-md z-20">
+              x{card.priceMultiplier}
+          </div>
+      )}
+
       {/* Spell Name Badge (Optional, but helps ID spells) */}
       {card.type === 'spell' && card.name && (
           <div className="absolute -bottom-2 px-1 py-0.5 bg-black/60 rounded text-[6px] md:text-[8px] text-indigo-200 uppercase tracking-wider border border-indigo-900/50">

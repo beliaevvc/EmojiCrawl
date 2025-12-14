@@ -37,7 +37,8 @@ export const initialState: GameState = {
   overheads: { overheal: 0, overdamage: 0, overdef: 0 },
   stats: initialStats,
   activeEffects: [],
-  peekCards: null
+  peekCards: null,
+  scoutCards: null
 };
 
 // ... (Action Types)
@@ -50,7 +51,8 @@ export type GameAction =
   | { type: 'SELL_ITEM'; cardId: string }
   | { type: 'RESET_HAND' }
   | { type: 'CHECK_ROUND_END' }
-  | { type: 'CLEAR_PEEK' };
+  | { type: 'CLEAR_PEEK' }
+  | { type: 'CLEAR_SCOUT' };
 
 // Helpers
 const createLog = (message: string, type: LogEntry['type']): LogEntry => ({
@@ -198,6 +200,14 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
 // Handle On Kill Abilities
 const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' | 'spell' | 'other'): GameState => {
     let newState = { ...state };
+    
+    // Global Spell Effect: Trophy (Any kill grants coins)
+    if (newState.activeEffects.includes('trophy')) {
+        newState.activeEffects = newState.activeEffects.filter(e => e !== 'trophy');
+        newState.player.coins += 2;
+        newState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + 2 });
+        newState = addLog(newState, 'ТРОФЕЙ: +2 💎 за убийство монстра.', 'gain');
+    }
     
     // Global Trigger: Parasite (other monsters heal)
     const parasites = newState.enemySlots.filter(c => c?.type === 'monster' && c.ability === 'parasite' && c.id !== monster.id);
@@ -367,7 +377,7 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
 };
 
 // Handle attack logic
-const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): { state: GameState, log?: string, logType?: LogEntry['type'] } => {
+const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body' | 'shield', shieldHand?: 'left' | 'right'): { state: GameState, log?: string, logType?: LogEntry['type'], monsterKept?: boolean } => {
     let newState = { ...state };
     const damage = monster.value;
     let log = '';
@@ -385,31 +395,52 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
         if (state.activeEffects.includes('deflection')) {
             newState.activeEffects = state.activeEffects.filter(e => e !== 'deflection');
             
-            // Find random other monster to deflect to
-            const otherMonsters = newState.enemySlots.map((c, i) => ({c, i})).filter(item => item.c?.type === 'monster' && item.c.id !== monster.id);
+            // Find targets
+            const allMonsters = newState.enemySlots
+                .map((c, i) => ({c, i}))
+                .filter(item => item.c?.type === 'monster') as {c: Card, i: number}[];
             
+            const otherMonsters = allMonsters.filter(item => item.c.id !== monster.id);
+            
+            let targetIdx: number;
+            let targetMonster: Card;
+
             if (otherMonsters.length > 0) {
+                // Hit random other
                 const target = otherMonsters[Math.floor(Math.random() * otherMonsters.length)];
-                const targetMonster = target.c!;
-                const newHp = Math.max(0, targetMonster.value - damage);
-                
-                const newSlots = [...newState.enemySlots];
-                if (newHp === 0) {
-                    newSlots[target.i] = null;
-                    log = `Отвод: Урон (${damage}) перенаправлен в ${targetMonster.icon}. Монстр погиб!`;
-                    newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
-                    newState.enemySlots = newSlots;
-                    newState = applyKillAbilities(newState, targetMonster, 'other');
-                } else {
-                    newSlots[target.i] = { ...targetMonster, value: newHp };
-                    log = `Отвод: Урон (${damage}) перенаправлен в ${targetMonster.icon}.`;
-                    newState.enemySlots = newSlots;
-                }
-                
-                return { state: newState, log, logType: 'combat' };
+                targetIdx = target.i;
+                targetMonster = target.c;
             } else {
-                log = `Отвод не сработал (нет других монстров). Получен урон: -${damage} HP`;
+                // Hit self (if no others)
+                const selfEntry = allMonsters.find(item => item.c.id === monster.id);
+                if (!selfEntry) return { state: newState }; // Should not happen
+                targetIdx = selfEntry.i;
+                targetMonster = selfEntry.c;
             }
+
+            // Apply Damage
+            const newHp = Math.max(0, targetMonster.value - damage);
+            const newSlots = [...newState.enemySlots];
+            
+            if (newHp === 0) {
+                newSlots[targetIdx] = null;
+                log = `ОТВОД: Урон (${damage}) отражен в ${targetMonster.icon}. Монстр погиб!`;
+                newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
+                newState.enemySlots = newSlots;
+                newState = applyKillAbilities(newState, targetMonster, 'other');
+            } else {
+                newSlots[targetIdx] = { ...targetMonster, value: newHp };
+                log = `ОТВОД: Урон (${damage}) отражен в ${targetMonster.icon}.`;
+                newState.enemySlots = newSlots;
+            }
+            
+            // If we hit self and died, slot is already null.
+            // If we hit self and lived, slot is updated.
+            // If we hit other, attacker slot (monster) is untouched and should remain.
+            // In all cases, we handled the "outcome" of the attack here, so we return monsterKept=true
+            // to prevent the default "remove attacker" logic in INTERACT_WITH_MONSTER.
+            
+            return { state: newState, log, logType: 'combat', monsterKept: true };
         }
 
         newState.player = {
@@ -462,6 +493,7 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
              } else {
                  newState.rightHand = { ...newState.rightHand, card: null };
              }
+             newState.discardPile = [...newState.discardPile, shield];
              log = `Щит разрушен! Заблокировано ${blocked}.`;
         }
 
@@ -514,14 +546,6 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         // Apply Kill Abilities
         newState = applyKillAbilities(newState, monster, 'weapon');
 
-        // Trophy Check
-        if (newState.activeEffects.includes('trophy')) {
-            newState.activeEffects = newState.activeEffects.filter(e => e !== 'trophy');
-            newState.player.coins += 2;
-            newState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + 2 });
-            log += ` (Трофей: +2 💎)`;
-        }
-
     } else {
         const newMonsterHp = monsterHp - damage;
         
@@ -544,6 +568,8 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
 
     if (weaponHand === 'left') newState.leftHand = { ...newState.leftHand, card: null };
     else newState.rightHand = { ...newState.rightHand, card: null };
+
+    newState.discardPile = [...newState.discardPile, weapon];
 
     return { state: newState, log, logType: 'combat' };
 }
@@ -823,16 +849,21 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       let blocked = false;
       let playerUpdates = {};
 
-      if (newState.activeEffects.includes('echo') && (card.type === 'weapon' || card.type === 'shield' || card.type === 'potion' || card.type === 'coin')) {
-          if (!newState.backpack && !hasActiveAbility(state, 'web')) { // Web check again for Echo target
+      if (newState.activeEffects.includes('echo')) {
+          // Consume spell immediately
+          newState.activeEffects = newState.activeEffects.filter(e => e !== 'echo');
+
+          if (!newState.backpack && !hasActiveAbility(state, 'web')) { 
               const copy = { ...card, id: card.id + '_echo_' + Math.random().toString(36).substr(2, 5) };
               newState.backpack = copy;
-              newState.activeEffects = newState.activeEffects.filter(e => e !== 'echo');
-              logMessage = 'Эхо: предмет дублирован в рюкзак. ';
+              logMessage = 'ЭХО: Предмет дублирован в рюкзак. ';
+          } else {
+              logMessage = 'ЭХО: Магия рассеялась (рюкзак занят). ';
           }
       }
 
       if (card.type === 'coin') {
+         newState.discardPile = [...newState.discardPile, card]; // Add to discard
          blocked = true;
          playerUpdates = { coins: newState.player.coins + card.value };
          logMessage += `Собрано: +${card.value} монет`;
@@ -854,6 +885,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          }
 
       } else if (card.type === 'potion') {
+         newState.discardPile = [...newState.discardPile, card]; // Add to discard
          blocked = true;
          const healAmount = card.value;
          
@@ -922,21 +954,18 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             const res = handleMonsterAttack(state, monster, 'body');
             nextState = res.state;
             
-            // Remove monster after attack
-            const newSlots = [...nextState.enemySlots];
-            newSlots[monsterIdx] = null;
-            nextState.enemySlots = newSlots;
-            
-            // Stats: Monster died attacking player
-            nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
-
-            // Trigger Kill Abilities (Self-sacrifice/suicide attack counts as death?)
-            // Usually attacking player means monster leaves. Is it "death"?
-            // If abilities trigger "On Kill", it implies player killed it. 
-            // "Upon attacking player" is effectively "Leaves/Dies".
-            // Let's apply kill abilities for consistency or specific ones?
-            // "Commission: You lose 3 coins on KILL". If it hits you, you don't lose coins usually.
-            // Let's assume Kill Abilities only trigger on Weapon/Spell kills.
+            if (!res.monsterKept) {
+                // Remove monster after attack
+                const newSlots = [...nextState.enemySlots];
+                newSlots[monsterIdx] = null;
+                nextState.enemySlots = newSlots;
+                
+                // Stats: Monster died attacking player
+                nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
+    
+                // Trigger Kill Abilities
+                nextState = applyKillAbilities(nextState, monster, 'other');
+            }
             
             if (res.log) {
                 logMessage = res.log;
@@ -957,6 +986,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                  
                  // Stats: Monster died attacking shield
                  nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
+                 
+                 // Trigger Kill Abilities
+                 nextState = applyKillAbilities(nextState, monster, 'other');
 
                  if (res.log) {
                      logMessage = res.log;
@@ -1135,12 +1167,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                              // Trigger Abilities (Spell kill counts?)
                              newState = applyKillAbilities(newState, targetCard, 'spell');
 
-                             if (newState.activeEffects.includes('trophy')) {
-                                newState.activeEffects = newState.activeEffects.filter(e => e !== 'trophy');
-                                newState.player.coins += 2;
-                                logMessage += ` +2 💎`;
-                             }
-
                         } else {
                              const newMonster = { ...targetCard, value: newHp };
                              const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
@@ -1184,6 +1210,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         newSlots[idx] = null;
                         newState.enemySlots = newSlots;
                         newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
+                        newState = applyKillAbilities(newState, targetCard, 'spell');
                         logMessage = 'РАСЩЕПЛЕНИЕ: монстр уничтожен (слишком мал).';
                     }
                     spellUsed = true;
@@ -1194,79 +1221,17 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 if (targetCard?.type === 'monster') {
                     const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
                     const newSlots = [...newState.enemySlots];
-                    newSlots[idx] = null; 
+                    // Set value to 0 instead of removing
+                    newSlots[idx] = { ...targetCard, value: 0 }; 
                     newState.enemySlots = newSlots;
-                    newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
-                    logMessage = 'БАРЬЕР: монстр нейтрализован.';
+                    logMessage = 'БАРЬЕР: монстр ослаблен (атака 0).';
                     spellUsed = true;
-                }
-                break;
-
-            case 'wardrobe':
-                if (targetCard?.type === 'weapon' || targetCard?.type === 'shield') {
-                    const otherHandLoc = spellLoc === 'leftHand' ? 'rightHand' : 'leftHand';
-                    const otherHand = otherHandLoc === 'leftHand' ? newState.leftHand : newState.rightHand;
-                    const otherItem = otherHand.card;
-
-                    if (otherItem && (otherItem.type === 'weapon' || otherItem.type === 'shield')) {
-                        const tempVal = targetCard.value;
-                        const newTarget = { ...targetCard, value: otherItem.value };
-                        const newOther = { ...otherItem, value: tempVal };
-
-                        if (otherHandLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: newOther };
-                        else if (otherHandLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: newOther };
-
-                        if (targetLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: newTarget };
-                        else if (targetLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: newTarget };
-                        else if (targetLoc === 'backpack') newState.backpack = newTarget;
-                        else {
-                            const tIdx = newState.enemySlots.findIndex(c => c?.id === targetId);
-                            const ns = [...newState.enemySlots];
-                            ns[tIdx] = newTarget;
-                            newState.enemySlots = ns;
-                        }
-                        
-                        logMessage = 'ГАРДЕРОБ: силы предметов обменены.';
-                        spellUsed = true;
-                    } else {
-                        const tableItems = newState.enemySlots.map((c, i) => ({c, i})).filter(x => x.c && (x.c.type === 'weapon' || x.c.type === 'shield') && x.c.id !== targetCard.id);
-                        
-                        if (tableItems.length > 0) {
-                            const swapWith = tableItems[Math.floor(Math.random() * tableItems.length)];
-                            const temp = targetCard.value;
-                            const newTarget = { ...targetCard, value: swapWith.c!.value };
-                            const newSwap = { ...swapWith.c!, value: temp };
-
-                            // Update Target
-                            if (targetLoc === 'leftHand') newState.leftHand.card = newTarget;
-                            else if (targetLoc === 'rightHand') newState.rightHand.card = newTarget;
-                            else if (targetLoc === 'backpack') newState.backpack = newTarget;
-                            else {
-                                const tIdx = newState.enemySlots.findIndex(c => c?.id === targetId);
-                                const ns = [...newState.enemySlots];
-                                ns[tIdx] = newTarget;
-                                newState.enemySlots = ns;
-                            }
-
-                            // Update Swap Partner
-                            const ns = [...newState.enemySlots];
-                            ns[swapWith.i] = newSwap;
-                            newState.enemySlots = ns;
-
-                            logMessage = 'ГАРДЕРОБ: силы предметов обменены.';
-                            spellUsed = true;
-                        } else {
-                            logMessage = 'ГАРДЕРОБ: нет второго предмета для обмена.';
-                            spellUsed = true;
-                        }
-                    }
                 }
                 break;
 
             case 'merchant':
                 if (targetCard && (targetCard.type === 'weapon' || targetCard.type === 'shield' || targetCard.type === 'potion')) {
-                    const newVal = targetCard.value * 2;
-                    const newCard = { ...targetCard, value: newVal };
+                    const newCard = { ...targetCard, priceMultiplier: 2 };
                     
                     if (targetLoc === 'enemySlots') {
                         const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
@@ -1277,7 +1242,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     else if (targetLoc === 'rightHand') newState.rightHand.card = newCard;
                     else if (targetLoc === 'backpack') newState.backpack = newCard;
 
-                    logMessage = `СКУПЩИК: цена предмета удвоена (${newVal}).`;
+                    logMessage = `СКУПЩИК: предмет теперь стоит в 2 раза дороже при продаже.`;
                     spellUsed = true;
                 }
                 break;
@@ -1347,27 +1312,34 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 break;
 
             case 'swap':
-                if (targetCard?.type === 'monster') {
-                    const others = newState.enemySlots.map((c, i) => ({c, i})).filter(x => x.c && x.c.type === 'monster' && x.c.id !== targetId);
-                    if (others.length > 0) {
-                        const swapTarget = others[Math.floor(Math.random() * others.length)];
-                        
-                        const tempVal = targetCard.value;
-                        const m1 = { ...targetCard, value: swapTarget.c!.value };
-                        const m2 = { ...swapTarget.c!, value: tempVal };
+                if (targetId === 'player') {
+                    // Find all monsters
+                    const monsters = newState.enemySlots
+                        .map((c, i) => ({c, i}))
+                        .filter(x => x.c && x.c.type === 'monster') as {c: Card, i: number}[];
+
+                    if (monsters.length >= 2) {
+                        // Pick two random distinct monsters
+                        const shuffled = [...monsters].sort(() => 0.5 - Math.random());
+                        const m1 = shuffled[0];
+                        const m2 = shuffled[1];
+
+                        const val1 = m1.c.value;
+                        const val2 = m2.c.value;
+
+                        const newM1 = { ...m1.c, value: val2 };
+                        const newM2 = { ...m2.c, value: val1 };
 
                         const ns = [...newState.enemySlots];
-                        const idx1 = newState.enemySlots.findIndex(c => c?.id === targetId);
-                        ns[idx1] = m1;
-                        ns[swapTarget.i] = m2;
+                        ns[m1.i] = newM1;
+                        ns[m2.i] = newM2;
                         newState.enemySlots = ns;
                         
-                        logMessage = 'ЗАМЕНА: здоровья монстров обменены.';
-                        spellUsed = true;
+                        logMessage = `ЗАМЕНА: ${m1.c.icon} (${val1}) 🔄 ${m2.c.icon} (${val2})`;
                     } else {
-                        logMessage = 'ЗАМЕНА: нужен второй монстр.';
-                        spellUsed = true;
+                        logMessage = 'ЗАМЕНА: Недостаточно монстров (сработало вхолостую).';
                     }
+                    spellUsed = true;
                 }
                 break;
 
@@ -1420,14 +1392,21 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             case 'scout':
                 if (targetId === 'player') {
                     if (newState.deck.length >= 1) {
+                        const count = Math.min(2, newState.deck.length);
+                        // Get top cards for display (reversed so [0] is top)
+                        const topCards = newState.deck.slice(-count).reverse();
+                        
+                        // Store for UI display
+                        newState.scoutCards = topCards;
+
                         const top = newState.deck[newState.deck.length - 1]; // Top card (pop end)
                         // Discard it
                         newState.deck = newState.deck.slice(0, -1);
                         newState.discardPile = [...newState.discardPile, top];
                         
                         let msg = `РАЗВЕДКА: Сброшен ${top.icon}.`;
-                        if (newState.deck.length >= 1) {
-                            msg += ` Следующий: ${newState.deck[newState.deck.length - 1].icon}`;
+                        if (topCards.length > 1) {
+                            msg += ` Следующий: ${topCards[1].icon}`;
                         }
                         logMessage = msg;
                         spellUsed = true;
@@ -1465,6 +1444,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         }
 
         if (spellUsed) {
+            newState.discardPile = [...newState.discardPile, spellCard];
+            
             // Remove spell card
             if (spellLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
             else if (spellLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
@@ -1517,6 +1498,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              coinsToAdd = 0; 
         }
         
+        if (card.priceMultiplier) {
+            coinsToAdd *= card.priceMultiplier;
+        }
+        
         if (fromWhere === 'leftHand') {
              newState.leftHand = { ...newState.leftHand, blocked: false };
         } else if (fromWhere === 'rightHand') {
@@ -1542,6 +1527,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
     case 'CLEAR_PEEK':
         return { ...state, peekCards: null };
+
+    case 'CLEAR_SCOUT':
+        return { ...state, scoutCards: null };
 
     default:
       return state;

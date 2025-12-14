@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusCircle, Check, RotateCcw, X } from 'lucide-react';
+import { PlusCircle, Check, RotateCcw, X, Trash2 } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import SpellPicker from './SpellPicker';
 import { SpellType } from '../types/game';
-import { BASE_SPELLS, SPELLS } from '../data/spells';
+import { BASE_SPELLS, SPELLS, SpellDefinition } from '../data/spells';
 
 interface SpellsEditorProps {
     initialValues: SpellType[];
@@ -14,27 +14,35 @@ interface SpellsEditorProps {
 
 const SpellCardItem = ({ 
     spellId, 
-    onDelete 
+    onDelete,
+    onClick
 }: { 
     spellId: SpellType; 
     onDelete: () => void; 
+    onClick: () => void;
 }) => {
     const spell = SPELLS.find(s => s.id === spellId);
     if (!spell) return null;
 
     return (
-        <div className="flex flex-col items-center gap-2 relative group" style={{ margin: '10px' }}>
+        <div 
+            className="flex flex-col items-center gap-2 relative group cursor-pointer" 
+            style={{ margin: '10px' }}
+            onClick={onClick}
+        >
             <div className="relative">
                 <div 
-                    className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-indigo-500/50 bg-indigo-900/20 flex items-center justify-center text-3xl md:text-4xl shadow-lg relative cursor-help"
-                    title={`${spell.name}: ${spell.description}`}
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-indigo-500/50 bg-indigo-900/20 flex items-center justify-center text-3xl md:text-4xl shadow-lg relative transition-transform group-hover:scale-105"
                 >
                     <span className="z-10 select-none">{spell.icon}</span>
                 </div>
                 
                 {/* Delete Button - Top Left (Hover) */}
                 <button 
-                    onClick={onDelete}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
                     className="absolute -top-1 -left-1 w-7 h-7 bg-stone-800 border border-stone-600 rounded-full flex items-center justify-center text-stone-400 hover:bg-rose-900 hover:text-white hover:border-rose-500 transition-colors z-20 shadow-md opacity-0 group-hover:opacity-100"
                 >
                     <X size={14} />
@@ -49,6 +57,8 @@ const SpellsEditor = ({ initialValues, onSave, onClose }: SpellsEditorProps) => 
     const [spells, setSpells] = useState<SpellType[]>([...initialValues]);
     const [showPicker, setShowPicker] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const [selectedSpell, setSelectedSpell] = useState<SpellDefinition | null>(null);
 
     const handleAdd = (newSpell: SpellType) => {
         setSpells([...spells, newSpell]);
@@ -64,6 +74,11 @@ const SpellsEditor = ({ initialValues, onSave, onClose }: SpellsEditorProps) => 
             setSpells(spells.filter((_, i) => i !== itemToDelete));
             setItemToDelete(null);
         }
+    };
+
+    const handleClearAll = () => {
+        setSpells([]);
+        setShowClearConfirm(false);
     };
 
     return (
@@ -96,9 +111,20 @@ const SpellsEditor = ({ initialValues, onSave, onClose }: SpellsEditorProps) => 
                         </div>
                     </div>
 
-                    <button onClick={onClose} className="p-2 text-stone-500 hover:text-white transition-colors">
-                        <X size={24} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {/* Clear All Button */}
+                        <button 
+                            onClick={() => setShowClearConfirm(true)}
+                            className="p-2 text-stone-600 hover:text-rose-500 transition-colors rounded-full hover:bg-rose-900/10"
+                            title="Удалить все заклинания"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+
+                        <button onClick={onClose} className="p-2 text-stone-500 hover:text-white transition-colors">
+                            <X size={24} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Grid */}
@@ -109,6 +135,10 @@ const SpellsEditor = ({ initialValues, onSave, onClose }: SpellsEditorProps) => 
                                 key={index} 
                                 spellId={spell} 
                                 onDelete={() => handleDeleteClick(index)}
+                                onClick={() => {
+                                    const def = SPELLS.find(s => s.id === spell);
+                                    if (def) setSelectedSpell(def);
+                                }}
                             />
                         ))}
 
@@ -158,11 +188,44 @@ const SpellsEditor = ({ initialValues, onSave, onClose }: SpellsEditorProps) => 
                             onCancel={() => setItemToDelete(null)}
                         />
                     )}
+                    {showClearConfirm && (
+                        <ConfirmationModal 
+                            title="Очистить заклинания"
+                            message="Вы уверены, что хотите удалить ВСЕ заклинания из колоды?"
+                            onConfirm={handleClearAll}
+                            onCancel={() => setShowClearConfirm(false)}
+                        />
+                    )}
                     {showPicker && (
                         <SpellPicker 
                             onSelect={handleAdd}
                             onClose={() => setShowPicker(false)}
                         />
+                    )}
+                    {selectedSpell && (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                            onClick={() => setSelectedSpell(null)}
+                        >
+                            <div className="bg-stone-800 border-2 border-stone-600 rounded-lg p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                                <button 
+                                    onClick={() => setSelectedSpell(null)}
+                                    className="absolute top-2 right-2 text-stone-400 hover:text-white"
+                                >
+                                    <X size={20} />
+                                </button>
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="text-6xl select-none">{selectedSpell.icon}</div>
+                                    <h3 className="text-xl font-bold text-stone-100 uppercase tracking-widest">{selectedSpell.name}</h3>
+                                    <p className="text-stone-300 text-center text-sm leading-relaxed">
+                                        {selectedSpell.description}
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
                     )}
                 </AnimatePresence>
 

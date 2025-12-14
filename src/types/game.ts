@@ -2,7 +2,7 @@ export type CardType = 'monster' | 'weapon' | 'shield' | 'potion' | 'coin' | 'sp
 
 export type SpellType = 
     | 'escape' | 'leech' | 'potionify' | 'wind' | 'sacrifice' 
-    | 'split' | 'barrier' | 'wardrobe' | 'merchant' | 'volley' 
+    | 'split' | 'barrier' | 'merchant' | 'volley' 
     | 'trophy' | 'epiphany' | 'deflection' | 'echo' | 'snack' 
     | 'swap' | 'anvil' | 'armor' | 'archive' | 'scout' | 'cut';
 
@@ -22,6 +22,7 @@ export interface Card {
   icon: string;
   name?: string;
   description?: string;
+  priceMultiplier?: number;
 }
 
 export interface Player {
@@ -110,6 +111,7 @@ export interface GameState {
   stats: GameStats;
   activeEffects: (SpellType | 'miss')[];
   peekCards: Card[] | null;
+  scoutCards: Card[] | null;
 }
 
 export const MAX_HP = 13;

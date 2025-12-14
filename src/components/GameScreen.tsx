@@ -12,6 +12,9 @@ import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
 import { GameStatsOverlay } from './GameStatsOverlay';
 import { saveRun } from '../utils/statsStorage';
 import { ConfirmationModal } from './ConfirmationModal';
+import { SPELLS } from '../data/spells';
+
+const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
 
 interface GameScreenProps {
   onExit: () => void;
@@ -273,6 +276,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       spell: 0
   } as Record<string, number>);
 
+  const activeBuffs = state.activeEffects.filter(e => BUFF_SPELLS.includes(e));
+
   // Epiphany Effect Timer
   useEffect(() => {
       if (state.peekCards) {
@@ -282,6 +287,16 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
           return () => clearTimeout(timer);
       }
   }, [state.peekCards]);
+
+  // Scout Effect Timer
+  useEffect(() => {
+      if (state.scoutCards) {
+          const timer = setTimeout(() => {
+              dispatch({ type: 'CLEAR_SCOUT' });
+          }, 3000); // 3 seconds
+          return () => clearTimeout(timer);
+      }
+  }, [state.scoutCards]);
 
   useEffect(() => {
     dispatch({ 
@@ -337,25 +352,45 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       prevCoinsRef.current = state.player.coins;
   }, [state.player.coins]);
 
+  // Monitor Logs for Armor Trigger
+  const [armorFlash, setArmorFlash] = useState(false);
+  useEffect(() => {
+      const lastLog = state.logs[0];
+      if (lastLog && lastLog.message.includes('Доспехи заблокировали')) {
+          setArmorFlash(true);
+          setTimeout(() => setArmorFlash(false), 400); // Quick flash
+
+          if (heroRef.current) {
+              const rect = heroRef.current.getBoundingClientRect();
+              const x = rect.left + rect.width / 2;
+              const y = rect.top;
+              addFloatingText(x, y, '🛡️ BLOCKED', 'text-yellow-300 font-bold text-lg drop-shadow-md');
+          }
+      }
+  }, [state.logs]);
+
   // Monitor Enemy Slots for damage numbers
   useEffect(() => {
+      // Check for Swap Action
+      const lastLog = state.logs[0];
+      const isSwap = lastLog && lastLog.message.includes('ЗАМЕНА');
+
       state.enemySlots.forEach((card, i) => {
           const prevCard = prevEnemySlots.current[i];
           const slotEl = slotRefs.current[i];
 
           if (prevCard && slotEl && prevCard.type === 'monster') {
               let diff = 0;
-              // Case 1: Monster took damage (alive)
+              let hasChanged = false;
+              let newValue = 0;
+
+              // Case 1: Monster changed (alive)
               if (card && card.type === 'monster' && card.id === prevCard.id) {
                   diff = prevCard.value - card.value;
+                  newValue = card.value;
+                  if (diff !== 0) hasChanged = true;
               }
-              // Case 2: Monster died (card is null) - assumed taken damage >= HP
-              // Only trigger if it was indeed a monster before. 
-              // Note: If round resets, card might be new. We assume round reset clears prev?
-              // But prev is updated at end of effect.
-              // We need to differentiate "damage/death" from "round reset / replacement".
-              // Death usually results in null slot. Round reset fills it.
-              // If slot is null, it's a death.
+              // Case 2: Monster died (card is null)
               else if (!card) {
                    // Check if removal was due to non-damage effects
                    const recentLogs = state.logs.slice(0, 3);
@@ -367,20 +402,31 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                    );
 
                    if (!isNonDamageRemoval) {
-                       diff = prevCard.value; // Show "remaining HP" as damage dealt
+                       diff = prevCard.value;
+                       hasChanged = true;
                    }
               }
 
-              if (diff > 0) {
+              if (hasChanged) {
                   const rect = slotEl.getBoundingClientRect();
                   const x = rect.left + rect.width / 2;
                   const y = rect.top;
-                  addFloatingText(x, y, `-${diff}`, 'text-rose-500');
+
+                  if (isSwap && card) {
+                      // SWAP ANIMATION: Explicit transition visual
+                      addFloatingText(x, y, `🔄 ${newValue}`, 'text-indigo-400 font-bold text-xl drop-shadow-black');
+                  } else if (diff > 0) {
+                      // Damage
+                      addFloatingText(x, y, `-${diff}`, 'text-rose-500');
+                  } else if (diff < 0) {
+                      // Heal (e.g. Parasite, Legacy)
+                      addFloatingText(x, y, `+${Math.abs(diff)}`, 'text-emerald-400');
+                  }
               }
           }
       });
       prevEnemySlots.current = state.enemySlots;
-  }, [state.enemySlots]);
+  }, [state.enemySlots, state.logs]);
 
   const addFloatingText = (x: number, y: number, text: string, color: string) => {
       const id = Math.random().toString(36).substr(2, 9);
@@ -593,9 +639,20 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               accepts={[ItemTypes.CARD]}
               className="relative aspect-square"
           >
-             <div ref={heroRef} className={`w-full h-full rounded-full border-2 md:border-4 border-stone-400 bg-stone-800 flex items-center justify-center text-4xl md:text-6xl shadow-[0_0_20px_rgba(0,0,0,0.5)] z-10 relative overflow-hidden transition-all ${heroShake ? 'animate-shake ring-4 ring-rose-500' : ''}`}>
+             <div ref={heroRef} className={`w-full h-full rounded-full border-2 md:border-4 border-stone-400 bg-stone-800 flex items-center justify-center text-4xl md:text-6xl shadow-[0_0_20px_rgba(0,0,0,0.5)] z-10 relative overflow-hidden transition-all ${heroShake ? 'animate-shake ring-4 ring-rose-500' : ''} ${armorFlash ? 'ring-4 ring-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.6)] brightness-110 scale-105' : ''}`}>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-rose-900/50 to-transparent transition-all duration-500" style={{ height: `${(state.player.hp / state.player.maxHp) * 100}%` }}></div>
                 🧙‍♂️
+             </div>
+             {/* Active Buffs Icons */}
+             <div className="absolute -left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 items-center z-30 pointer-events-none">
+                 {activeBuffs.map((effect, i) => {
+                     const spell = SPELLS.find(s => s.id === effect);
+                     return spell ? (
+                         <div key={`${effect}-${i}`} className="w-5 h-5 md:w-6 md:h-6 bg-indigo-900/80 border border-indigo-400/50 rounded-full flex items-center justify-center text-[10px] md:text-xs shadow-sm backdrop-blur-[1px]">
+                             {spell.icon}
+                         </div>
+                     ) : null;
+                 })}
              </div>
              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 md:w-10 md:h-10 bg-green-900 border-2 border-green-500 rounded-full flex items-center justify-center text-xs md:text-sm font-bold text-green-100 z-20 shadow-md">
                 {state.player.hp}
@@ -769,6 +826,60 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                           {state.peekCards.length === 0 && (
                               <p className="text-stone-500 text-xs font-bold uppercase px-2">Колода пуста</p>
                           )}
+                      </div>
+                  </div>
+              </motion.div>
+          )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+          {state.scoutCards && (
+              <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="absolute top-20 md:top-24 left-0 w-full z-[100] flex justify-center pointer-events-none"
+              >
+                  <div className="bg-stone-900/90 backdrop-blur-md border border-amber-500/30 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-2">
+                      <div className="text-[10px] font-bold text-amber-300 tracking-[0.2em] uppercase">
+                          РАЗВЕДКА
+                      </div>
+                      <div className="flex gap-3 relative min-h-[56px] min-w-[120px] justify-center">
+                          {state.scoutCards.map((card, i) => (
+                              <motion.div
+                                  key={card.id + '_scout'}
+                                  initial={{ opacity: 0, scale: 0.5 }}
+                                  animate={
+                                      i === 0 // Top card (to be discarded)
+                                      ? { 
+                                          opacity: [0, 1, 1, 0], 
+                                          scale: [0.5, 1, 1, 0.5],
+                                          x: [0, 0, 0, 100],
+                                          y: [0, 0, 0, 50],
+                                          rotate: [0, 0, 0, 45]
+                                        }
+                                      : { opacity: 1, scale: 1 } // Second card (stays)
+                                  }
+                                  transition={
+                                      i === 0 
+                                      ? { duration: 2.5, times: [0, 0.2, 0.6, 1], ease: "easeInOut" }
+                                      : { delay: 0.1, type: "spring", stiffness: 300, damping: 25 }
+                                  }
+                                  className="w-12 h-12 md:w-14 md:h-14 relative"
+                              >
+                                  <CardComponent card={card} isDraggable={false} />
+                                  {i === 0 && (
+                                       <motion.div 
+                                          initial={{ opacity: 0 }}
+                                          animate={{ opacity: 1 }}
+                                          transition={{ delay: 0.5 }}
+                                          className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full"
+                                       >
+                                           <span className="text-xl">🗑️</span>
+                                       </motion.div>
+                                  )}
+                              </motion.div>
+                          ))}
                       </div>
                   </div>
               </motion.div>
