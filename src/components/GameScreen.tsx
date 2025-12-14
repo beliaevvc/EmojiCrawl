@@ -13,6 +13,7 @@ import { GameStatsOverlay } from './GameStatsOverlay';
 import { saveRun } from '../utils/statsStorage';
 import { ConfirmationModal } from './ConfirmationModal';
 import { SPELLS } from '../data/spells';
+import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
 
@@ -504,7 +505,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   }
 
   const handleCardClick = (card: Card) => {
-      if (card.type === 'spell') {
+      if (card.type === 'spell' || (card.type === 'monster' && card.ability)) {
           setSelectedCard(card);
       }
   }
@@ -754,7 +755,14 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                           <X size={20} />
                       </button>
                       <div className="flex flex-col items-center gap-4">
-                          <div className="text-6xl">{selectedCard.icon}</div>
+                          <div className="text-6xl relative">
+                              {selectedCard.icon}
+                              {selectedCard.type === 'monster' && selectedCard.ability && (
+                                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-stone-900 border border-stone-600 rounded-full flex items-center justify-center text-xl shadow-lg">
+                                       {MONSTER_ABILITIES.find(a => a.id === selectedCard.ability)?.icon}
+                                  </div>
+                              )}
+                          </div>
                           <h3 className="text-xl font-bold text-stone-100">{selectedCard.name || 'Карта'}</h3>
                           <p className="text-stone-300 text-center text-sm leading-relaxed">
                               {selectedCard.description || 'Описание отсутствует.'}
