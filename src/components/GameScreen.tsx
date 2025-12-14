@@ -971,9 +971,16 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                   exit={{ opacity: 0, y: -20 }}
                   className="absolute top-20 md:top-24 left-0 w-full z-[100] flex justify-center pointer-events-none"
               >
-                  <div className="bg-stone-900/90 backdrop-blur-md border border-indigo-500/30 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-2">
-                      <div className="text-[10px] font-bold text-indigo-300 tracking-[0.2em] uppercase">
-                          {state.peekType === 'whisper' ? 'ШЕПОТ ЛЕСА' : 'СЛЕДУЮЩИЕ КАРТЫ'}
+                  <div className={`
+                      backdrop-blur-md border rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-2
+                      ${state.peekType === 'beacon' ? 'bg-rose-900/90 border-rose-500/50' : 
+                        state.peekType === 'whisper' ? 'bg-stone-900/90 border-indigo-500/30' : 
+                        'bg-stone-900/90 border-indigo-500/30'}
+                  `}>
+                      <div className={`text-[10px] font-bold tracking-[0.2em] uppercase ${state.peekType === 'beacon' ? 'text-rose-200' : 'text-indigo-300'}`}>
+                          {state.peekType === 'whisper' ? 'ШЕПОТ ЛЕСА' : 
+                           state.peekType === 'beacon' ? 'МАЯК' : 
+                           'СЛЕДУЮЩИЕ КАРТЫ'}
                       </div>
                       <div className="flex gap-3">
                           {state.peekCards.map((card, i) => (

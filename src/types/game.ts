@@ -111,7 +111,7 @@ export interface GameState {
   stats: GameStats;
   activeEffects: (SpellType | 'miss')[];
   peekCards: Card[] | null;
-  peekType?: 'epiphany' | 'whisper';
+  peekType?: 'epiphany' | 'whisper' | 'beacon';
   scoutCards: Card[] | null;
 }
 

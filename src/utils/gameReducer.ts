@@ -258,6 +258,17 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             newState.player.hp = newHp;
             newState = addLog(newState, `БЛАГОСЛОВЕНИЕ: +${heal} HP.`, 'heal');
             break;
+        case 'beacon':
+             // Find next monster from top of deck (end of array)
+             const nextMonster = [...newState.deck].reverse().find(c => c.type === 'monster');
+             if (nextMonster) {
+                 newState.peekCards = [nextMonster];
+                 newState.peekType = 'beacon';
+                 newState = addLog(newState, 'МАЯК: Обнаружен следующий монстр.', 'info');
+             } else {
+                 newState = addLog(newState, 'МАЯК: Монстров больше нет.', 'info');
+             }
+             break;
         case 'bones': {
             const skullCard: Card = {
                 id: `skull_${Math.random().toString(36).substr(2, 5)}`,
@@ -666,18 +677,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
           let deck = [...s.deck];
           
           // Beacon Ability: increase monster chance (naive implementation: try pull monster from top 5)
-          const beaconActive = hasActiveAbility(s, 'beacon');
-
           for(let i=0; i<4; i++) {
              if (newSlots[i] === null && deck.length > 0) {
                 let cardToDraw: Card | undefined;
-                
-                if (beaconActive) {
-                    const monsterIdx = deck.slice(0, 5).findIndex(c => c.type === 'monster');
-                    if (monsterIdx !== -1) {
-                        cardToDraw = deck.splice(monsterIdx, 1)[0];
-                    }
-                }
                 
                 if (!cardToDraw) cardToDraw = deck.pop();
 
