@@ -1,4 +1,4 @@
-export type CardType = 'monster' | 'weapon' | 'shield' | 'potion' | 'coin' | 'spell';
+export type CardType = 'monster' | 'weapon' | 'shield' | 'potion' | 'coin' | 'spell' | 'skull';
 
 export type SpellType = 
     | 'escape' | 'leech' | 'potionify' | 'wind' | 'sacrifice' 

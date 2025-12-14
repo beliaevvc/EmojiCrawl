@@ -59,6 +59,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
       case 'potion': return 'border-emerald-700';
       case 'coin': return 'border-amber-500';
       case 'spell': return 'border-indigo-500';
+      case 'skull': return 'border-stone-600';
       default: return 'border-stone-700';
     }
   };
@@ -66,6 +67,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
   const getBgColor = () => {
     switch (card.type) {
        case 'monster': return 'bg-rose-950/40';
+       case 'skull': return 'bg-stone-950/60';
        default: return 'bg-stone-800/80';
     }
   }

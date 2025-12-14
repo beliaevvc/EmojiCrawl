@@ -265,7 +265,17 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const prevEnemySlots = useRef(state.enemySlots);
 
   // Calculate Deck Stats
-  const deckStats = state.deck.reduce((acc, card) => {
+  // Safety check: ensure cards in deck are NOT on table/hand (prevent ghost duplicates in stats)
+  const cardsInPlayIds = new Set([
+      ...state.enemySlots.filter(c => c).map(c => c!.id),
+      state.leftHand.card?.id,
+      state.rightHand.card?.id,
+      state.backpack?.id
+  ].filter(Boolean) as string[]);
+
+  const cleanDeck = state.deck.filter(c => !cardsInPlayIds.has(c.id));
+
+  const deckStats = cleanDeck.reduce((acc, card) => {
       acc[card.type] = (acc[card.type] || 0) + 1;
       return acc;
   }, {
@@ -274,7 +284,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       potion: 0,
       shield: 0,
       weapon: 0,
-      spell: 0
+      spell: 0,
+      skull: 0
   } as Record<string, number>);
 
   const activeBuffs = state.activeEffects.filter(e => BUFF_SPELLS.includes(e));
@@ -684,6 +695,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                             <DeckStatItem icon="🛡️" count={deckStats.shield} color="text-stone-300" />
                             <DeckStatItem icon="⚔️" count={deckStats.weapon} color="text-stone-300" />
                             <DeckStatItem icon="📜" count={deckStats.spell} color="text-indigo-400" />
+                            {deckStats.skull > 0 && <DeckStatItem icon="💀" count={deckStats.skull} color="text-stone-500" />}
                         </motion.div>
                     )}
                 </AnimatePresence>

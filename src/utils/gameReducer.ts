@@ -258,6 +258,25 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             newState.player.hp = newHp;
             newState = addLog(newState, `БЛАГОСЛОВЕНИЕ: +${heal} HP.`, 'heal');
             break;
+        case 'bones': {
+            const skullCard: Card = {
+                id: `skull_${Math.random().toString(36).substr(2, 5)}`,
+                type: 'skull',
+                value: 0,
+                icon: '💀',
+                name: 'Кости',
+                description: 'Бесполезные останки.'
+            };
+            
+            // Insert into random position in deck
+            const insertIdx = Math.floor(Math.random() * (newState.deck.length + 1));
+            const newDeck = [...newState.deck];
+            newDeck.splice(insertIdx, 0, skullCard);
+            newState.deck = newDeck;
+            
+            newState = addLog(newState, 'КОСТИ: Череп замешан в колоду.', 'info');
+            break;
+        }
         case 'graveyard':
             const deadMons = newState.discardPile.filter(c => c.type === 'monster');
             if (deadMons.length > 0) {
@@ -1614,7 +1633,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         let coinsToAdd = 0;
         if (card.type === 'weapon' || card.type === 'potion' || card.type === 'shield') {
             coinsToAdd = card.value;
-        } else if (card.type === 'coin') {
+        } else if (card.type === 'coin' || card.type === 'skull') {
              coinsToAdd = 0; 
         }
         
@@ -1636,7 +1655,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             itemsSold: nextState.stats.itemsSold + 1,
             coinsCollected: nextState.stats.coinsCollected + coinsToAdd 
         });
-        logMessage = `Продано: ${card.icon} за ${coinsToAdd} монет.`;
+        if (card.type === 'skull') {
+            logMessage = `Выброшено: ${card.icon}`;
+        } else {
+            logMessage = `Продано: ${card.icon} за ${coinsToAdd} монет.`;
+        }
         logType = 'gain';
         break;
     }
