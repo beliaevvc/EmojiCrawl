@@ -179,11 +179,36 @@ const DashboardCard = ({ title, stats, color }: { title: string, stats: { total:
     );
 };
 
+type FilterType = 'all' | 'standard' | 'custom' | 'template';
+
+const FilterButton = ({ label, active, onClick, color }: { label: string, active: boolean, onClick: () => void, color: string }) => (
+    <button
+        onClick={onClick}
+        className={`
+            px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all border
+            ${active 
+                ? `${color} text-white border-transparent shadow-lg scale-105` 
+                : 'bg-stone-900/50 text-stone-500 border-stone-800 hover:border-stone-600 hover:text-stone-300'}
+        `}
+    >
+        {label}
+    </button>
+);
+
 const StatsScreen = ({ onBack }: StatsScreenProps) => {
     const [history, setHistory] = useState(getRunHistory());
     const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const [filter, setFilter] = useState<FilterType>('all');
     
     const stats = calculateStats(history);
+
+    const filteredHistory = history.filter(entry => {
+        if (filter === 'all') return true;
+        if (filter === 'standard') return entry.runType === 'standard';
+        if (filter === 'custom') return entry.runType === 'custom' && !entry.templateName;
+        if (filter === 'template') return entry.runType === 'custom' && !!entry.templateName;
+        return true;
+    });
 
     const handleClear = () => {
         clearHistory();
@@ -231,10 +256,38 @@ const StatsScreen = ({ onBack }: StatsScreenProps) => {
                 <DashboardCard title="Шаблоны" stats={stats.template} color="bg-emerald-500" />
             </div>
 
+            {/* Filters */}
+            <div className="relative z-10 w-full max-w-2xl mx-auto mb-6 flex justify-center gap-2 md:gap-3">
+                <FilterButton 
+                    label="Все" 
+                    active={filter === 'all'} 
+                    onClick={() => setFilter('all')} 
+                    color="bg-stone-600"
+                />
+                <FilterButton 
+                    label="Стандарт" 
+                    active={filter === 'standard'} 
+                    onClick={() => setFilter('standard')} 
+                    color="bg-stone-500"
+                />
+                <FilterButton 
+                    label="Кастом" 
+                    active={filter === 'custom'} 
+                    onClick={() => setFilter('custom')} 
+                    color="bg-indigo-500"
+                />
+                <FilterButton 
+                    label="Шаблоны" 
+                    active={filter === 'template'} 
+                    onClick={() => setFilter('template')} 
+                    color="bg-emerald-500"
+                />
+            </div>
+
             {/* Content */}
             <div className="relative z-10 flex-1 w-full max-w-2xl mx-auto overflow-y-auto custom-scrollbar pr-2 pb-20">
-                {history.length > 0 ? (
-                    history.map((entry) => (
+                {filteredHistory.length > 0 ? (
+                    filteredHistory.map((entry) => (
                         <HistoryCard key={entry.id} entry={entry} />
                     ))
                 ) : (
