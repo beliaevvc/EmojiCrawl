@@ -12,9 +12,10 @@ interface SlotProps {
   canDropItem?: (item: any) => boolean;
   onInteract?: (item: any) => void;
   onCardClick?: () => void;
+  penalty?: number;
 }
 
-const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "", canDropItem, onInteract, onCardClick }: SlotProps) => {
+const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "", canDropItem, onInteract, onCardClick, penalty = 0 }: SlotProps) => {
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: accepts,
     canDrop: (item: any) => {
@@ -71,7 +72,7 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
       `}
     >
       {card ? (
-        <CardComponent card={card} isDraggable={!isBlocked} onClick={onCardClick} />
+        <CardComponent card={card} isDraggable={!isBlocked} onClick={onCardClick} penalty={penalty} />
       ) : (
         <span className="text-3xl md:text-5xl text-stone-600 opacity-40 select-none grayscale">
           {placeholderIcon}

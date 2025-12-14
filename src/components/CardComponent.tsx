@@ -9,11 +9,11 @@ interface CardProps {
   card: CardType;
   isDraggable?: boolean;
   onClick?: () => void;
-  isBlocked?: boolean; // Added isBlocked prop
-  // Removed onVisualEffect from props as it is handled by parent now
+  isBlocked?: boolean;
+  penalty?: number; // New prop for visual penalty
 }
 
-const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false }: CardProps) => { // Updated props
+const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, penalty = 0 }: CardProps) => { // Updated props
   const elementRef = useRef<HTMLDivElement>(null);
   const prevValueRef = useRef(card.value);
   const [isShaking, setIsShaking] = useState(false);
@@ -70,6 +70,9 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false }:
     }
   }
 
+  const displayValue = penalty ? Math.max(0, card.value + penalty) : card.value;
+  const isDebuffed = penalty !== 0;
+
   return (
     <motion.div
       ref={setRefs}
@@ -99,16 +102,24 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false }:
         ${(isDraggable && !isBlocked) ? 'cursor-grab active:cursor-grabbing hover:scale-105' : (onClick ? 'cursor-help' : 'cursor-default')} 
         select-none z-10
         ${isShaking ? 'ring-4 ring-rose-500' : ''}
+        ${isDebuffed ? 'ring-2 ring-rose-500/50' : ''} 
       `}
     >
       {card.type !== 'spell' && (
         <div className={`
           absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-5 h-5 md:w-7 md:h-7 rounded-full 
           flex items-center justify-center text-[10px] md:text-xs font-bold shadow-md z-10
-          ${card.type === 'monster' ? 'bg-rose-700 text-rose-100 border border-rose-500' : 'bg-stone-700 text-stone-200 border border-stone-500'}
+          ${isDebuffed ? 'bg-stone-900 text-rose-400 border border-rose-500' : (card.type === 'monster' ? 'bg-rose-700 text-rose-100 border border-rose-500' : 'bg-stone-700 text-stone-200 border border-stone-500')}
         `}>
-          {card.value}
+          {displayValue}
         </div>
+      )}
+      
+      {/* Penalty Indicator */}
+      {isDebuffed && (
+          <div className="absolute bottom-5 -right-2 md:bottom-7 md:-right-3 text-[10px] md:text-xs font-bold text-rose-500 drop-shadow-black animate-pulse bg-black/50 px-1 rounded">
+              {penalty}
+          </div>
       )}
       
       <span className="drop-shadow-md">{card.icon}</span>

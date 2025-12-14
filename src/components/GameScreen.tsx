@@ -555,6 +555,10 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const isSellBlocked = state.enemySlots.some(card => 
       card && card.type === 'monster' && card.ability === 'scream'
   );
+  
+  const hasRot = state.enemySlots.some(card => 
+      card && card.type === 'monster' && card.ability === 'rot'
+  );
 
   const handleSellDrop = (item: any) => {
      if (isSellBlocked) {
@@ -727,6 +731,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                                 isDraggable={true} 
                                 onClick={() => handleCardClick(card)}
                                 isBlocked={isStealthBlocked(card)}
+                                penalty={hasRot && card.type === 'potion' ? -2 : 0}
                            /> 
                         )}
                     </AnimatePresence>
@@ -750,6 +755,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                   // FIX: Only pass interaction handler if card is a SHIELD
                   onInteract={state.leftHand.card?.type === 'shield' ? handleMonsterInteraction('shield_left') : undefined}
                   onCardClick={() => state.leftHand.card && handleCardClick(state.leftHand.card)}
+                  penalty={hasRot && state.leftHand.card?.type === 'potion' ? -2 : 0}
               />
           </InteractionZone>
           
@@ -798,6 +804,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                   // FIX: Only pass interaction handler if card is a SHIELD
                   onInteract={state.rightHand.card?.type === 'shield' ? handleMonsterInteraction('shield_right') : undefined}
                   onCardClick={() => state.rightHand.card && handleCardClick(state.rightHand.card)}
+                  penalty={hasRot && state.rightHand.card?.type === 'potion' ? -2 : 0}
               />
           </InteractionZone>
 
@@ -809,6 +816,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               placeholderIcon="🎒"
               canDropItem={(item) => item.type !== 'monster'}
               onCardClick={() => state.backpack && handleCardClick(state.backpack)}
+              penalty={hasRot && state.backpack?.type === 'potion' ? -2 : 0}
           />
 
           </div>
