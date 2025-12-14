@@ -268,22 +268,38 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const rightHandRef = useRef<HTMLDivElement>(null);
   const backpackRef = useRef<HTMLDivElement>(null);
 
-  // Monitor Effects (Corrosion)
+  // Monitor Effects
   useEffect(() => {
-      if (state.lastEffect && state.lastEffect.type === 'corrosion') {
+      if (!state.lastEffect) return;
+
+      const { type, targetId, value } = state.lastEffect;
+
+      if (type === 'corrosion') {
           // Find target slot ref
           let ref = null;
           // Check IDs. Note: The card ID in state might be same, but we need to match it.
           // Since state is updated, we check current slots.
-          if (state.leftHand.card?.id === state.lastEffect.targetId) ref = leftHandRef;
-          else if (state.rightHand.card?.id === state.lastEffect.targetId) ref = rightHandRef;
-          else if (state.backpack?.id === state.lastEffect.targetId) ref = backpackRef;
+          if (state.leftHand.card?.id === targetId) ref = leftHandRef;
+          else if (state.rightHand.card?.id === targetId) ref = rightHandRef;
+          else if (state.backpack?.id === targetId) ref = backpackRef;
 
           if (ref && ref.current) {
                const rect = ref.current.getBoundingClientRect();
                const x = rect.left + rect.width / 2;
                const y = rect.top + rect.height / 2;
                addFloatingText(x, y, '☣️ -2', 'text-lime-400 font-bold text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] z-[100]', true);
+          }
+      } else if (type === 'corpseeater') {
+          const slotIdx = state.enemySlots.findIndex(c => c?.id === targetId);
+          if (slotIdx !== -1) {
+              setTimeout(() => {
+                  if (slotRefs.current[slotIdx]) {
+                      const rect = slotRefs.current[slotIdx]!.getBoundingClientRect();
+                      const x = rect.left + rect.width / 2;
+                      const y = rect.top;
+                      addFloatingText(x, y, `🧟 +${value} HP`, 'text-emerald-400 font-bold text-sm drop-shadow-black z-[100]', true);
+                  }
+              }, 600);
           }
       }
   }, [state.lastEffect]);

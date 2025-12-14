@@ -162,10 +162,12 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
                 // Let's assume we modify the card value in state.
                 const slotIdx = newState.enemySlots.findIndex(c => c?.id === card.id);
                 if (slotIdx !== -1) {
-                    const newCard = { ...card, value: card.value + deadMonsters };
+                    const newCard = { ...card, value: card.value + deadMonsters, maxHealth: (card.maxHealth || card.value) + deadMonsters };
                     const newSlots = [...newState.enemySlots];
                     newSlots[slotIdx] = newCard;
                     newState.enemySlots = newSlots;
+                    
+                    newState.lastEffect = { type: 'corpseeater', targetId: card.id, value: deadMonsters, timestamp: Date.now() };
                     newState = addLog(newState, `ТРУПОЕД (${card.icon}): +${deadMonsters} HP за мертвых монстров.`, 'info');
                 }
             }
