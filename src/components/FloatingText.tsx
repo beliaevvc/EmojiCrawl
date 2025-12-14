@@ -7,6 +7,7 @@ export interface FloatingTextItem {
   y: number;
   text: string;
   color: string;
+  centered?: boolean;
 }
 
 export const FloatingTextOverlay = ({ items, onComplete }: { items: FloatingTextItem[], onComplete: (id: string) => void }) => {
@@ -33,7 +34,7 @@ const FloatingNumber = ({ item, onComplete }: { item: FloatingTextItem, onComple
       animate={{ opacity: 1, y: -50, scale: 1.2 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      style={{ left: item.x, top: item.y }}
+      style={{ left: item.x, top: item.y, x: item.centered ? "-50%" : 0 }}
       className={`absolute font-black text-2xl md:text-4xl drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] ${item.color}`}
     >
       {item.text}

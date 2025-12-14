@@ -325,12 +325,12 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
 
           if (diff < 0) {
               // Damage
-              addFloatingText(x, y, `${diff}`, 'text-rose-500');
+              addFloatingText(x, y, `${diff}`, 'text-rose-500', true);
               setHeroShake(true);
               setTimeout(() => setHeroShake(false), 300);
           } else {
               // Heal
-              addFloatingText(x, y, `+${diff}`, 'text-emerald-400');
+              addFloatingText(x, y, `+${diff}`, 'text-emerald-400', true);
           }
       }
       prevHeroHp.current = state.player.hp;
@@ -368,8 +368,26 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               const rect = heroRef.current.getBoundingClientRect();
               const x = rect.left + rect.width / 2;
               const y = rect.top;
-              addFloatingText(x, y, '🛡️ BLOCKED', 'text-yellow-300 font-bold text-lg drop-shadow-md');
+              addFloatingText(x, y, '🛡️ BLOCKED', 'text-yellow-300 font-bold text-lg drop-shadow-md', true);
           }
+      }
+  }, [state.logs]);
+
+  // Monitor Logs for Silence Block
+  useEffect(() => {
+      const lastLog = state.logs[0];
+      if (lastLog && lastLog.message.includes('МОЛЧАНИЕ: Магия заблокирована')) {
+          let x = window.innerWidth / 2;
+          let y = window.innerHeight * 0.25;
+
+          if (slotRefs.current[0] && slotRefs.current[3]) {
+              const r1 = slotRefs.current[0].getBoundingClientRect();
+              const r2 = slotRefs.current[3].getBoundingClientRect();
+              x = (r1.left + r2.right) / 2;
+              y = r1.top - 30;
+          }
+
+          addFloatingText(x, y, '🚫 МАГИЯ ЗАБЛОКИРОВАНА', 'text-rose-400 font-bold text-xs md:text-sm drop-shadow-md bg-stone-900/95 px-3 py-1.5 rounded-lg border border-rose-500/40 backdrop-blur-md z-[100] tracking-wider', true);
       }
   }, [state.logs]);
 
@@ -418,13 +436,13 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
 
                   if (isSwap && card) {
                       // SWAP ANIMATION: Explicit transition visual
-                      addFloatingText(x, y, `🔄 ${newValue}`, 'text-indigo-400 font-bold text-xl drop-shadow-black');
+                      addFloatingText(x, y, `🔄 ${newValue}`, 'text-indigo-400 font-bold text-xl drop-shadow-black', true);
                   } else if (diff > 0) {
                       // Damage
-                      addFloatingText(x, y, `-${diff}`, 'text-rose-500');
+                      addFloatingText(x, y, `-${diff}`, 'text-rose-500', true);
                   } else if (diff < 0) {
                       // Heal (e.g. Parasite, Legacy)
-                      addFloatingText(x, y, `+${Math.abs(diff)}`, 'text-emerald-400');
+                      addFloatingText(x, y, `+${Math.abs(diff)}`, 'text-emerald-400', true);
                   }
               }
           }
@@ -432,9 +450,9 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       prevEnemySlots.current = state.enemySlots;
   }, [state.enemySlots, state.logs]);
 
-  const addFloatingText = (x: number, y: number, text: string, color: string) => {
+  const addFloatingText = (x: number, y: number, text: string, color: string, centered = false) => {
       const id = Math.random().toString(36).substr(2, 9);
-      setFloatingTexts(prev => [...prev, { id, x, y, text, color }]);
+      setFloatingTexts(prev => [...prev, { id, x, y, text, color, centered }]);
   };
 
   const removeFloatingText = (id: string) => {
