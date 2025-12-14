@@ -128,9 +128,62 @@ const HistoryCard = ({ entry }: { entry: RunHistoryEntry }) => {
     );
 };
 
+const calculateStats = (history: RunHistoryEntry[]) => {
+    const stats = {
+        standard: { total: 0, wins: 0 },
+        custom: { total: 0, wins: 0 },
+        template: { total: 0, wins: 0 }
+    };
+
+    history.forEach(entry => {
+        const isWin = entry.result === 'won';
+        
+        if (entry.runType === 'standard') {
+            stats.standard.total++;
+            if (isWin) stats.standard.wins++;
+        } else if (entry.runType === 'custom') {
+            if (entry.templateName) {
+                stats.template.total++;
+                if (isWin) stats.template.wins++;
+            } else {
+                stats.custom.total++;
+                if (isWin) stats.custom.wins++;
+            }
+        }
+    });
+
+    return stats;
+};
+
+const DashboardCard = ({ title, stats, color }: { title: string, stats: { total: number, wins: number }, color: string }) => {
+    const winRate = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+    const losses = stats.total - stats.wins;
+
+    return (
+        <div className="bg-stone-900/80 border border-stone-800 rounded-xl p-3 flex flex-col gap-1 relative overflow-hidden hover:border-stone-600 transition-all shadow-sm">
+            <div className={`absolute top-0 left-0 w-full h-0.5 ${color}`}></div>
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1">{title}</h3>
+            
+            <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-2xl font-mono font-bold text-stone-200 leading-none">{winRate}%</span>
+                <span className="text-[9px] text-stone-600 font-bold uppercase tracking-wider">Win Rate</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-[10px] font-bold font-mono w-full">
+                <span className="text-emerald-500">{stats.wins}W</span>
+                <span className="text-rose-500">{losses}L</span>
+                <div className="flex-1 border-b border-stone-800/50 mx-1"></div>
+                <span className="text-stone-500">{stats.total} TOTAL</span>
+            </div>
+        </div>
+    );
+};
+
 const StatsScreen = ({ onBack }: StatsScreenProps) => {
     const [history, setHistory] = useState(getRunHistory());
     const [showClearConfirm, setShowClearConfirm] = useState(false);
+    
+    const stats = calculateStats(history);
 
     const handleClear = () => {
         clearHistory();
@@ -148,7 +201,7 @@ const StatsScreen = ({ onBack }: StatsScreenProps) => {
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
             
             {/* Header */}
-            <div className="relative z-10 flex items-center justify-between mb-8 max-w-2xl mx-auto w-full">
+            <div className="relative z-10 flex items-center justify-between mb-6 max-w-2xl mx-auto w-full">
                 <button 
                     onClick={onBack}
                     className="flex items-center gap-2 text-stone-400 hover:text-stone-200 transition-colors group"
@@ -169,6 +222,13 @@ const StatsScreen = ({ onBack }: StatsScreenProps) => {
                 >
                     <Trash2 size={18} />
                 </button>
+            </div>
+
+            {/* Dashboard Stats */}
+            <div className="relative z-10 w-full max-w-2xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <DashboardCard title="Стандарт" stats={stats.standard} color="bg-stone-500" />
+                <DashboardCard title="Кастом" stats={stats.custom} color="bg-indigo-500" />
+                <DashboardCard title="Шаблоны" stats={stats.template} color="bg-emerald-500" />
             </div>
 
             {/* Content */}
