@@ -262,15 +262,40 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             const deadMons = newState.discardPile.filter(c => c.type === 'monster');
             if (deadMons.length > 0) {
                 const revived = deadMons[Math.floor(Math.random() * deadMons.length)];
-                // Find empty slot
-                const emptyIdx = newState.enemySlots.findIndex(c => c === null);
-                if (emptyIdx !== -1) {
+                
+                // Try to find empty slot first
+                let targetIdx = newState.enemySlots.findIndex(c => c === null);
+                
+                // If no empty slot, pick a random slot to replace
+                if (targetIdx === -1) {
+                    targetIdx = Math.floor(Math.random() * 4);
+                }
+
+                if (targetIdx !== -1) {
                     const newSlots = [...newState.enemySlots];
-                    newSlots[emptyIdx] = revived; // Revive as is (full HP?) usually yes.
+                    // If replacing existing card, move it to discard? Or it just vanishes? 
+                    // Usually "return to table" implies adding. Replacing might be harsh.
+                    // But user asked "return random monster to table". If table full, it must replace or fail.
+                    // Let's assume it replaces for now to ensure it works.
+                    // Or maybe it shouldn't replace if full? "If full, nothing happens" is safer.
+                    // Re-reading: "on death... return random monster from discard".
+                    // If table is full of monsters, adding one more is impossible unless replacing.
+                    // Let's prioritize empty slot. If full, do nothing?
+                    // "Should return random monster". Let's force it by replacing a random card if full.
+                    // Ideally replacing a non-monster if possible?
+                    // Let's stick to: Find empty -> if none, find non-monster -> if none, replace random.
+                    
+                    if (newSlots[targetIdx] !== null) {
+                         // We are overwriting something. Move old to discard to be safe/fair?
+                         // Or just overwrite. Let's overwrite.
+                    }
+
+                    newSlots[targetIdx] = revived; 
                     newState.enemySlots = newSlots;
                     newState.discardPile = newState.discardPile.filter(c => c.id !== revived.id);
                     newState = addLog(newState, `КЛАДБИЩЕ: ${revived.icon} восстал из мертвых!`, 'combat');
-                    // Apply spawn effects for revived? Potentially yes.
+                    
+                    // Apply spawn effects for revived
                     newState = applySpawnAbilities(newState, revived);
                 }
             }
@@ -448,6 +473,7 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
                 newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
                 newState.enemySlots = newSlots;
                 newState = applyKillAbilities(newState, targetMonster, 'other');
+                newState.discardPile = [...newState.discardPile, targetMonster];
             } else {
                 newSlots[targetIdx] = { ...targetMonster, value: newHp };
                 log = `ОТВОД: Урон (${damage}) отражен в ${targetMonster.icon}.`;
@@ -562,9 +588,12 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         newState.enemySlots = newSlots;
         newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
         log = `Монстр убит оружием (${damage} урона, Overkill: ${overdamage}).`;
-
-        // Apply Kill Abilities
+        
+        // Apply Kill Abilities (monster not in discard yet)
         newState = applyKillAbilities(newState, monster, 'weapon');
+
+        // Add to discard pile AFTER abilities trigger (so Graveyard won't pick self)
+        newState.discardPile = [...newState.discardPile, monster];
 
     } else {
         const newMonsterHp = monsterHp - damage;
@@ -985,9 +1014,12 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 
                 // Stats: Monster died attacking player
                 nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
-    
-                // Trigger Kill Abilities
+                
+                // Trigger Kill Abilities (before adding to discard)
                 nextState = applyKillAbilities(nextState, monster, 'other');
+
+                // Add to discard pile
+                nextState.discardPile = [...nextState.discardPile, monster];
             }
             
             if (res.log) {
@@ -1010,8 +1042,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                  // Stats: Monster died attacking shield
                  nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
                  
-                 // Trigger Kill Abilities
+                 // Trigger Kill Abilities (before adding to discard)
                  nextState = applyKillAbilities(nextState, monster, 'other');
+
+                 // Add to discard
+                 nextState.discardPile = [...nextState.discardPile, monster];
 
                  if (res.log) {
                      logMessage = res.log;
@@ -1212,6 +1247,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                              
                              // Trigger Abilities (Spell kill counts?)
                              newState = applyKillAbilities(newState, targetCard, 'spell');
+                             
+                             newState.discardPile = [...newState.discardPile, targetCard];
 
                         } else {
                              const newMonster = { ...targetCard, value: newHp };
@@ -1257,6 +1294,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         newState.enemySlots = newSlots;
                         newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
                         newState = applyKillAbilities(newState, targetCard, 'spell');
+                        newState.discardPile = [...newState.discardPile, targetCard];
                         logMessage = 'РАСЩЕПЛЕНИЕ: монстр уничтожен (слишком мал).';
                     }
                     spellUsed = true;
@@ -1304,6 +1342,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                                 ns[i] = null;
                                 newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
                                 newState = applyKillAbilities(newState, c, 'spell');
+                                newState.discardPile = [...newState.discardPile, c];
                             } else {
                                 ns[i] = { ...c, value: newVal };
                             }
@@ -1475,6 +1514,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         ns[idx] = null;
                         newState = updateStats(newState, { monstersKilled: newState.stats.monstersKilled + 1 });
                         newState = applyKillAbilities(newState, targetCard, 'spell');
+                        newState.discardPile = [...newState.discardPile, targetCard];
                     } else {
                         ns[idx] = { ...targetCard, value: newMonsterVal };
                     }

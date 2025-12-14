@@ -429,55 +429,68 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       const lastLog = state.logs[0];
       const isSwap = lastLog && lastLog.message.includes('ЗАМЕНА');
       const isMirror = lastLog && lastLog.message.includes('ЗЕРКАЛО');
+      const isGraveyard = lastLog && lastLog.message.includes('КЛАДБИЩЕ');
 
       state.enemySlots.forEach((card, i) => {
           const prevCard = prevEnemySlots.current[i];
           const slotEl = slotRefs.current[i];
 
-          if (prevCard && slotEl && prevCard.type === 'monster') {
+          if (slotEl) {
               let diff = 0;
               let hasChanged = false;
               let newValue = 0;
 
-              // Case 1: Monster changed (alive)
-              if (card && card.type === 'monster' && card.id === prevCard.id) {
-                  diff = prevCard.value - card.value;
-                  newValue = card.value;
-                  if (diff !== 0) hasChanged = true;
-              }
-              // Case 2: Monster died (card is null)
-              else if (!card) {
-                   // Check if removal was due to non-damage effects
-                   const recentLogs = state.logs.slice(0, 3);
-                   const isNonDamageRemoval = recentLogs.some(log => 
-                       log.message.includes('ВЕТЕР') || 
-                       log.message.includes('ПОБЕГ') || 
-                       log.message.includes('СБРОС') ||
-                       log.message.includes('БАРЬЕР')
-                   );
+              // Check if this specific card was just revived by Graveyard
+              const isNewCard = card && (!prevCard || prevCard.id !== card.id);
 
-                   if (!isNonDamageRemoval) {
-                       diff = prevCard.value;
-                       hasChanged = true;
-                   }
+              if (isNewCard && isGraveyard) {
+                   const rect = slotEl.getBoundingClientRect();
+                   const x = rect.left + rect.width / 2;
+                   const y = rect.top;
+                   addFloatingText(x, y, '👻 ВОСКРЕС!', 'text-purple-400 font-bold text-lg drop-shadow-md tracking-wider', true);
               }
 
-              if (hasChanged) {
-                  const rect = slotEl.getBoundingClientRect();
-                  const x = rect.left + rect.width / 2;
-                  const y = rect.top;
+              if (prevCard && prevCard.type === 'monster') {
+                  // Case 1: Monster changed (alive)
+                  if (card && card.type === 'monster' && card.id === prevCard.id) {
+                      diff = prevCard.value - card.value;
+                      newValue = card.value;
+                      if (diff !== 0) hasChanged = true;
+                  }
+                  // Case 2: Monster died (card is null)
+                  else if (!card) {
+                       // Check if removal was due to non-damage effects
+                       const recentLogs = state.logs.slice(0, 3);
+                       const isNonDamageRemoval = recentLogs.some(log => 
+                           log.message.includes('ВЕТЕР') || 
+                           log.message.includes('ПОБЕГ') || 
+                           log.message.includes('СБРОС') ||
+                           log.message.includes('БАРЬЕР')
+                       );
 
-                  if (isSwap && card) {
-                      // SWAP ANIMATION: Explicit transition visual
-                      addFloatingText(x, y, `🔄 ${newValue}`, 'text-indigo-400 font-bold text-xl drop-shadow-black', true);
-                  } else if (isMirror && card) {
-                      addFloatingText(x, y, `⚙️ ${newValue}`, 'text-cyan-400 font-bold text-xl drop-shadow-black', true);
-                  } else if (diff > 0) {
-                      // Damage
-                      addFloatingText(x, y, `-${diff}`, 'text-rose-500', true);
-                  } else if (diff < 0) {
-                      // Heal (e.g. Parasite, Legacy)
-                      addFloatingText(x, y, `+${Math.abs(diff)}`, 'text-emerald-400', true);
+                       if (!isNonDamageRemoval) {
+                           diff = prevCard.value;
+                           hasChanged = true;
+                       }
+                  }
+
+                  if (hasChanged) {
+                      const rect = slotEl.getBoundingClientRect();
+                      const x = rect.left + rect.width / 2;
+                      const y = rect.top;
+
+                      if (isSwap && card) {
+                          // SWAP ANIMATION
+                          addFloatingText(x, y, `🔄 ${newValue}`, 'text-indigo-400 font-bold text-xl drop-shadow-black', true);
+                      } else if (isMirror && card) {
+                          addFloatingText(x, y, `⚙️ ${newValue}`, 'text-cyan-400 font-bold text-xl drop-shadow-black', true);
+                      } else if (diff > 0) {
+                          // Damage
+                          addFloatingText(x, y, `-${diff}`, 'text-rose-500', true);
+                      } else if (diff < 0) {
+                          // Heal
+                          addFloatingText(x, y, `+${Math.abs(diff)}`, 'text-emerald-400', true);
+                      }
                   }
               }
           }
