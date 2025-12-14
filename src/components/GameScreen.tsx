@@ -419,6 +419,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
 
           addFloatingText(x, y, '🚫 МАГИЯ ЗАБЛОКИРОВАНА', 'text-rose-400 font-bold text-xs md:text-sm drop-shadow-md bg-stone-900/95 px-3 py-1.5 rounded-lg border border-rose-500/40 backdrop-blur-md z-[100] tracking-wider', true);
       }
+      // Add Stealth Miss Notification - Removed global watcher to use targeted local check
+      // if (lastLog && lastLog.message.includes('СКРЫТНОСТЬ: Нельзя атаковать')) { ... }
   }, [state.logs]);
 
   // Monitor Enemy Slots for damage numbers
@@ -492,6 +494,33 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       setFloatingTexts(prev => prev.filter(item => item.id !== id));
   };
 
+  const checkStealthBlock = (monsterId: string): boolean => {
+      const monsterIdx = state.enemySlots.findIndex(c => c?.id === monsterId);
+      if (monsterIdx === -1) return false;
+      const monster = state.enemySlots[monsterIdx];
+      if (!monster || monster.type !== 'monster' || monster.ability !== 'stealth') return false;
+
+      // Check if ANY other non-stealth monster exists.
+      const otherMonsters = state.enemySlots.filter(c => c?.type === 'monster' && c.id !== monsterId && c.ability !== 'stealth');
+      if (otherMonsters.length > 0) {
+          const slotEl = slotRefs.current[monsterIdx];
+          if (slotEl) {
+              const rect = slotEl.getBoundingClientRect();
+              const x = rect.left + rect.width / 2;
+              const y = rect.top;
+              addFloatingText(x, y, '👻 СКРЫТ', 'text-stone-400 font-bold text-lg md:text-xl drop-shadow-md z-[100] tracking-wider animate-bounce', true);
+          }
+          return true;
+      }
+      return false;
+  };
+
+  const isStealthBlocked = (card: Card) => {
+      if (card.type !== 'monster' || card.ability !== 'stealth') return false;
+      const otherMonsters = state.enemySlots.filter(c => c?.type === 'monster' && c.id !== card.id && c.ability !== 'stealth');
+      return otherMonsters.length > 0;
+  };
+
   const handleDropToHand = (hand: 'left' | 'right' | 'backpack') => (item: any) => {
      const targetCard = hand === 'left' ? state.leftHand.card 
                       : hand === 'right' ? state.rightHand.card 
@@ -517,6 +546,11 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   
   const handleMonsterInteraction = (target: 'player' | 'shield_left' | 'shield_right' | 'weapon_left' | 'weapon_right') => (item: any) => {
       if (item.type === 'monster') {
+          // Check Stealth Block for Monster -> Interaction (Now completely blocked)
+          if (checkStealthBlock(item.id)) {
+              return;
+          }
+
           dispatch({ 
               type: 'INTERACT_WITH_MONSTER', 
               monsterId: item.id, 
@@ -533,12 +567,22 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   
   const handleDropOnEnemy = (item: any, targetId: string) => {
       if (item.type === 'spell') {
+          // Check Stealth Block for Spell -> Monster interaction
+          if (checkStealthBlock(targetId)) {
+              return;
+          }
+          
           dispatch({ 
               type: 'USE_SPELL_ON_TARGET', 
               spellCardId: item.id, 
               targetId: targetId 
           });
       } else if (item.type === 'weapon') {
+          // Check Stealth Block for Weapon -> Monster interaction
+          if (checkStealthBlock(targetId)) {
+              return;
+          }
+
           // Find weapon location
           let handSide: 'left' | 'right' | null = null;
           if (state.leftHand.card?.id === item.id) handSide = 'left';
@@ -661,7 +705,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                                 key={card.id}
                                 card={card} 
                                 isDraggable={true} 
-                                onClick={() => handleCardClick(card)} 
+                                onClick={() => handleCardClick(card)}
+                                isBlocked={isStealthBlocked(card)}
                            /> 
                         )}
                     </AnimatePresence>

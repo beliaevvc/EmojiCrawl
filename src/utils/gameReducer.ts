@@ -962,11 +962,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         const monster = state.enemySlots[monsterIdx];
         if (!monster) return state;
 
-        // Stealth Check
-        if (hasActiveAbility(state, 'stealth')) {
-            const otherMonsters = state.enemySlots.filter(c => c?.type === 'monster' && c.id !== monster.id);
+        // Stealth Check (Redesigned)
+        // If monster has Stealth, check if ANY other non-stealth monster exists.
+        // If so, THIS monster is blocked from ALL interactions.
+        if (monster.ability === 'stealth') {
+            const otherMonsters = state.enemySlots.filter(c => c?.type === 'monster' && c.id !== monster.id && c.ability !== 'stealth');
             if (otherMonsters.length > 0) {
-                logMessage = 'СКРЫТНОСТЬ: Нельзя атаковать, пока живы другие монстры!';
+                logMessage = 'СКРЫТНОСТЬ: Монстр скрыт за спинами других!';
                 break;
             }
         }
@@ -1043,6 +1045,29 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (hasActiveAbility(state, 'silence')) {
             logMessage = 'МОЛЧАНИЕ: Магия заблокирована!';
             break;
+        }
+
+        // Stealth Check for Spells on Monsters
+        // (Wait, user said "blocked while other monster exists". Does this apply to spells? 
+        // "Interact with monster" usually means drag-drop interactions. 
+        // Let's assume complete block including spells for consistency, or just drag interactions?
+        // "Interact with monster" block above covers Drag Monster -> X.
+        // Spell -> Monster needs check here.
+        // Assuming "Hidden" means untargetable.)
+        
+        const targetLocPre = findCardLocation(state, targetId);
+        if (targetLocPre === 'enemySlots') {
+             const idx = state.enemySlots.findIndex(c => c?.id === targetId);
+             if (idx !== -1) {
+                 const targetMonster = state.enemySlots[idx];
+                 if (targetMonster && targetMonster.type === 'monster' && targetMonster.ability === 'stealth') {
+                     const otherMonsters = state.enemySlots.filter(c => c?.type === 'monster' && c.id !== targetId && c.ability !== 'stealth');
+                     if (otherMonsters.length > 0) {
+                         logMessage = 'СКРЫТНОСТЬ: Нельзя применить магию, монстр скрыт!';
+                         break;
+                     }
+                 }
+             }
         }
 
         const spellLoc = findCardLocation(state, spellCardId);

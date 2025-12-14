@@ -9,10 +9,11 @@ interface CardProps {
   card: CardType;
   isDraggable?: boolean;
   onClick?: () => void;
+  isBlocked?: boolean; // Added isBlocked prop
   // Removed onVisualEffect from props as it is handled by parent now
 }
 
-const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
+const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false }: CardProps) => { // Updated props
   const elementRef = useRef<HTMLDivElement>(null);
   const prevValueRef = useRef(card.value);
   const [isShaking, setIsShaking] = useState(false);
@@ -38,11 +39,11 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { id: card.id, type: card.type, value: card.value, spellType: card.spellType },
-    canDrag: isDraggable,
+    canDrag: isDraggable && !isBlocked, // Disable drag if blocked
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }), [card, isDraggable]);
+  }), [card, isDraggable, isBlocked]); // Added isBlocked to deps
 
   // Combine refs
   const setRefs = (element: HTMLDivElement | null) => {
@@ -76,7 +77,8 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ 
           scale: 1, 
-          opacity: isDragging ? 0.5 : 1,
+          opacity: isDragging ? 0.5 : (isBlocked ? 0.6 : 1), // Reduced opacity for blocked
+          filter: isBlocked ? 'grayscale(0.8)' : 'none', // Grayscale for blocked
           x: isShaking ? [0, -5, 5, -5, 5, 0] : 0,
       }}
       exit={{ 
@@ -94,7 +96,7 @@ const CardComponent = ({ card, isDraggable = true, onClick }: CardProps) => {
       className={`
         absolute inset-0 w-full h-full rounded-full border-2 ${getBorderColor()} ${getBgColor()}
         flex items-center justify-center text-3xl md:text-5xl shadow-lg 
-        ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:scale-105' : 'cursor-default'} 
+        ${(isDraggable && !isBlocked) ? 'cursor-grab active:cursor-grabbing hover:scale-105' : (onClick ? 'cursor-help' : 'cursor-default')} 
         select-none z-10
         ${isShaking ? 'ring-4 ring-rose-500' : ''}
       `}
