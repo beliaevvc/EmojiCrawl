@@ -220,13 +220,13 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             newState = addLog(newState, `КОМИССИЯ: Потеряно 3 💎.`, 'gain');
             break;
         case 'whisper':
-            const nextCoin = newState.deck.find(c => c.type === 'coin');
-            if (nextCoin) {
-                newState.peekCards = [nextCoin];
+            const nextCard = newState.deck[newState.deck.length - 1];
+            if (nextCard) {
+                newState.peekCards = [nextCard];
                 newState.peekType = 'whisper';
-                newState = addLog(newState, `ШЕПОТ ЛЕСА: Показана следующая монета.`, 'info');
+                newState = addLog(newState, `ШЕПОТ ЛЕСА: Показана следующая карта.`, 'info');
             } else {
-                newState = addLog(newState, `ШЕПОТ ЛЕСА: Монет в колоде больше нет.`, 'info');
+                newState = addLog(newState, `ШЕПОТ ЛЕСА: Колода пуста.`, 'info');
             }
             break;
         case 'breach':
