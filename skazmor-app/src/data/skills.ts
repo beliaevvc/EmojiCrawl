@@ -29,3 +29,4 @@ export const SKILLS: SkillDefinition[] = [
     { id: 'cut', name: 'Порез', description: 'Наносит 4 урона монстру, но вы теряете 2 HP.' },
 ];
 
+

@@ -34,3 +34,4 @@ export const PERKS: PerkDefinition[] = [
     { id: 'scavenger', name: 'Трупоед', description: 'При появлении: получает +1 Хп к здоровью, за каждого монстра в сбросе' },
 ];
 
+
