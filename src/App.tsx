@@ -3,6 +3,7 @@ import MainMenu from './components/MainMenu';
 import GameScreen from './components/GameScreen';
 import StatsScreen from './components/StatsScreen';
 import DeckbuilderScreen from './components/DeckbuilderScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -50,8 +51,9 @@ function App() {
 
   return (
     <DndProvider backend={Backend}>
-      <div className="bg-stone-950 min-h-screen text-stone-100 font-sans selection:bg-rose-500/30">
-         <AnimatePresence mode="wait">
+      <ErrorBoundary>
+        <div className="bg-stone-950 min-h-screen text-stone-100 font-sans selection:bg-rose-500/30">
+           <AnimatePresence mode="wait">
           {gameState === 'menu' && (
             <MainMenu 
                 key="menu" 
@@ -88,8 +90,9 @@ function App() {
           {gameState === 'stats' && (
             <StatsScreen key="stats" onBack={() => setGameState('menu')} />
           )}
-        </AnimatePresence>
-      </div>
+          </AnimatePresence>
+        </div>
+      </ErrorBoundary>
     </DndProvider>
   );
 }
