@@ -1631,7 +1631,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     
     case 'RESET_HAND': {
         const cost = state.isGodMode ? 0 : 5;
-        if (!state.isGodMode && state.player.hp <= 5) return state;
+        const cardsOnTable = state.enemySlots.filter(c => c !== null).length;
+        
+        if (!state.isGodMode && (state.player.hp <= 5 || cardsOnTable < 4)) return state;
 
         const newHp = state.player.hp - cost;
         const cardsToReturn = state.enemySlots.filter(c => c !== null) as any[];

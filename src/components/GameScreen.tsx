@@ -892,6 +892,9 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       dispatch({ type: 'RESET_HAND' }); 
   }
 
+  const cardsOnTable = state.enemySlots.filter(c => c !== null).length;
+  const canReset = state.isGodMode || (state.player.hp > 5 && cardsOnTable === 4);
+
   const handleCardClick = (card: Card) => {
       if (card.type === 'spell' || (card.type === 'monster' && card.ability)) {
           setSelectedCard(card);
@@ -981,7 +984,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
         {/* Left Side: Reset Button */}
         <div className="flex items-center justify-center w-20 md:w-32">
             <button 
-              className={`group flex flex-col items-center gap-1 active:scale-95 transition-transform scale-75 md:scale-100 ${state.player.hp <= 5 ? 'opacity-50 pointer-events-none grayscale' : ''}`}
+              className={`group flex flex-col items-center gap-1 active:scale-95 transition-transform scale-75 md:scale-100 ${!canReset ? 'opacity-50 pointer-events-none grayscale' : ''}`}
               onClick={handleReset}
             >
                 <div className="relative">
