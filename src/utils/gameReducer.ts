@@ -694,7 +694,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
           }
 
           const clearUsedHand = (hand: any): any => {
-             if (hand.card?.type === 'coin' || hand.card?.type === 'potion') {
+             if (hand.blocked) {
                  return { card: null, blocked: false };
              }
              return { ...hand, blocked: false };
@@ -722,7 +722,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
      
      if (cardsOnTable <= 1 && deckEmpty) {
          const clearUsedHand = (hand: any): any => {
-             if (hand.card?.type === 'coin' || hand.card?.type === 'potion') {
+             if (hand.card?.type === 'coin' || hand.card?.type === 'potion' || hand.card?.type === 'skull') {
                  return { card: null, blocked: false };
              }
              return { ...hand, blocked: false };
@@ -1005,13 +1005,23 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                  logMessage += ` (Overheal: ${overheal})`;
                  nextState = updateOverheads(nextState, 'overheal', overheal);
              }
+        }
+        logType = 'heal';
+     } else if (card.type === 'skull') {
+         if (action.hand === 'backpack') {
+              logMessage += `В рюкзак положено: ${card.icon}`;
+              nextState = newState;
+         } else {
+              // Used passively in hand
+              blocked = true;
+              logMessage += `Взято в руку: ${card.icon} (бесполезно)`;
+              nextState = newState;
          }
-         logType = 'heal';
-      } else {
-         if (action.hand === 'backpack') logMessage += `В рюкзак положено: ${card.icon}`;
-         else logMessage += `Взято в руку: ${card.icon}`;
-         nextState = newState;
-      }
+     } else {
+        if (action.hand === 'backpack') logMessage += `В рюкзак положено: ${card.icon}`;
+        else logMessage += `Взято в руку: ${card.icon}`;
+        nextState = newState;
+     }
 
       const updatedHand = { card: card, blocked };
       const slotName = action.hand === 'left' ? 'leftHand' : (action.hand === 'right' ? 'rightHand' : 'backpack');

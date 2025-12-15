@@ -856,6 +856,11 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
          return;
      }
 
+     // Prevent selling Skull from backpack
+     if (item.type === 'skull' && (item.location === 'backpack' || currentState.backpack.card?.id === item.id)) {
+         return;
+     }
+
      // Now just dispatch SELL_ITEM with cardId, reducer handles location
      
      // Visual feedback for Spells and Coins (0 value sales)
@@ -872,6 +877,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
          addFloatingText(fxX, fxY, 'Сброшено', 'text-indigo-300 font-bold text-[11px] tracking-widest uppercase bg-black/80 px-2 py-0.5 rounded border border-indigo-500/30 backdrop-blur-sm shadow-sm origin-bottom', true, 1.0);
      } else if (item.type === 'coin') {
          addFloatingText(fxX, fxY, 'Спасибо', 'text-amber-300 font-bold text-[11px] tracking-widest uppercase bg-black/80 px-2 py-0.5 rounded border border-amber-500/30 backdrop-blur-sm shadow-sm origin-bottom', true, 1.0);
+     } else if (item.type === 'skull') {
+         addFloatingText(fxX, fxY, 'Спасибо', 'text-stone-400 font-bold text-[11px] tracking-widest uppercase bg-black/80 px-2 py-0.5 rounded border border-stone-500/30 backdrop-blur-sm shadow-sm origin-bottom', true, 1.0);
      }
 
      dispatch({ type: 'SELL_ITEM', cardId: item.id });
