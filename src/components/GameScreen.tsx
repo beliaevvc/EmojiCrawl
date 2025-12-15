@@ -759,6 +759,13 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                           // Heal
                           addFloatingText(x, y, `+${Math.abs(diff)}`, 'text-emerald-400', true);
                       }
+
+                      // Visual effect for Junk/Bones abilities (Skull spawn)
+                      if (!card && prevCard && (prevCard.ability === 'junk' || prevCard.ability === 'bones')) {
+                          setTimeout(() => {
+                              addFloatingText(x, y - 20, '💀', 'text-2xl drop-shadow-md animate-pulse', true, 1.0);
+                          }, 150);
+                      }
                   }
               }
           }
