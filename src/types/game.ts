@@ -2,7 +2,7 @@ export type CardType = 'monster' | 'weapon' | 'shield' | 'potion' | 'coin' | 'sp
 
 export type SpellType = 
     | 'escape' | 'leech' | 'potionify' | 'wind' | 'sacrifice' 
-    | 'split' | 'barrier' | 'merchant' | 'volley' 
+    | 'split' | 'merchant' | 'volley' 
     | 'trophy' | 'epiphany' | 'deflection' | 'echo' | 'snack' 
     | 'swap' | 'anvil' | 'armor' | 'archive' | 'scout' | 'cut';
 

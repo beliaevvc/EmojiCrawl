@@ -727,8 +727,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                            const isNonDamageRemoval = recentLogs.some(log => 
                                log.message.includes('ВЕТЕР') || 
                                log.message.includes('ПОБЕГ') || 
-                               log.message.includes('СБРОС') ||
-                               log.message.includes('БАРЬЕР')
+                               log.message.includes('СБРОС')
                            );
 
                            if (!isNonDamageRemoval) {

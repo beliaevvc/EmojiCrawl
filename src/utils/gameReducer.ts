@@ -1388,18 +1388,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 }
                 break;
 
-            case 'barrier':
-                if (targetCard?.type === 'monster') {
-                    const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
-                    const newSlots = [...newState.enemySlots];
-                    // Set value to 0 instead of removing
-                    newSlots[idx] = { ...targetCard, value: 0 }; 
-                    newState.enemySlots = newSlots;
-                    logMessage = 'БАРЬЕР: монстр ослаблен (атака 0).';
-                    spellUsed = true;
-                }
-                break;
-
             case 'merchant':
                 if (targetCard && (targetCard.type === 'weapon' || targetCard.type === 'shield' || targetCard.type === 'potion')) {
                     const newCard = { ...targetCard, priceMultiplier: 2 };
