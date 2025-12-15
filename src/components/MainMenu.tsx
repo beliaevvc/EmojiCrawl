@@ -117,7 +117,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
             src: '/images/IMG_0051.png', 
             id: 'img1', 
             caption: 'Ну это же красиво, правда',
-            extra: '/images/IMG_3088 1.png' 
+            extra: '/images/IMG_3088_1.png' 
           },
           { ...getStyle(side2), src: '/images/IMG_0010.png', id: 'img2', caption: 'Мы точно релизнемся когда-нибудь' }
       ];
