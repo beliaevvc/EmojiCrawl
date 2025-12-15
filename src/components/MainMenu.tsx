@@ -99,6 +99,33 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
 
+  // Stickers Configuration
+  const [stickers] = useState(() => {
+      const side1 = Math.random() > 0.5 ? 'left' : 'right';
+      const side2 = side1 === 'left' ? 'right' : 'left';
+
+      const getStyle = (side: 'left' | 'right') => ({
+          top: `${10 + Math.random() * 50}%`,
+          left: side === 'left' ? `${3 + Math.random() * 12}%` : undefined,
+          right: side === 'right' ? `${3 + Math.random() * 12}%` : undefined,
+          rotate: -15 + Math.random() * 30
+      });
+
+      return [
+          { 
+            ...getStyle(side1), 
+            src: '/images/IMG_0051.png', 
+            id: 'img1', 
+            caption: 'Ну это же красиво, правда',
+            extra: '/images/IMG_3088 1.png' 
+          },
+          { ...getStyle(side2), src: '/images/IMG_0010.png', id: 'img2', caption: 'Мы точно релизнемся когда-нибудь' }
+      ];
+  });
+  
+  const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
+  const selectedSticker = stickers.find(s => s.id === selectedStickerId);
+
   useEffect(() => {
     const interval = setInterval(() => {
         setQuoteIndex(prev => {
@@ -166,6 +193,98 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
        {/* Эмодзи декор */}
        <div className="absolute top-1/4 left-10 text-8xl opacity-5 rotate-12 select-none pointer-events-none">🗡️</div>
        <div className="absolute bottom-1/4 right-10 text-8xl opacity-5 -rotate-12 select-none pointer-events-none">💀</div>
+
+       {/* Random Sticker Images */}
+       {stickers.map((sticker, i) => (
+           <motion.div
+                key={sticker.id}
+                initial={{ opacity: 0, scale: 1, rotate: sticker.rotate }}
+                animate={{ opacity: 1, scale: 1, rotate: sticker.rotate }}
+                transition={{ duration: 0.4, ease: "backOut" }}
+                className="absolute z-0 hidden md:block"
+                style={{ 
+                    top: sticker.top, 
+                    left: sticker.left, 
+                    right: sticker.right,
+                    width: '220px',
+                    transformOrigin: 'top center'
+                }}
+           >
+                {/* Attached Mini Photo (Underneath) */}
+                {(sticker as any).extra && (
+                    <div className="absolute -bottom-24 -left-8 w-36 h-auto -rotate-12 -z-10 pointer-events-none">
+                            <img 
+                                src={(sticker as any).extra} 
+                                alt="Extra"
+                                className="w-full h-auto block drop-shadow-lg filter brightness-105"
+                            />
+                    </div>
+                )}
+
+                {/* Photo Frame */}
+                <motion.div 
+                    layoutId={`sticker-${sticker.id}`}
+                    onClick={() => setSelectedStickerId(sticker.id)}
+                    whileHover={{ 
+                        scale: 1.1, 
+                        rotate: (i % 2 === 0 ? 3 : -3),
+                        zIndex: 50
+                    }}
+                    className="group bg-stone-200 p-3 pb-10 shadow-[0_15px_30px_rgba(0,0,0,0.3)] rotate-1 transform-gpu relative cursor-pointer will-change-transform"
+                >
+                    {/* Tape */}
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-16 h-7 bg-white/30 backdrop-blur-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.1)] -rotate-1 z-20 pointer-events-none"></div>
+
+                    <img 
+                        src={sticker.src}
+                        alt="Memorable moment" 
+                        className="w-full h-auto grayscale contrast-110 border border-stone-300/50 relative z-10 pointer-events-none transition-all duration-500 ease-out group-hover:grayscale-0"
+                    />
+                </motion.div>
+           </motion.div>
+       ))}
+
+       {/* Fullscreen Image Overlay */}
+       <AnimatePresence>
+           {selectedSticker && (
+               <motion.div
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   transition={{ duration: 0.2 }}
+                   className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 cursor-zoom-out"
+                   onClick={() => setSelectedStickerId(null)}
+               >
+                   <motion.div
+                       layoutId={`sticker-${selectedSticker.id}`}
+                       className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center will-change-transform cursor-zoom-out"
+                       onClick={() => setSelectedStickerId(null)} 
+                       transition={{ type: "spring", stiffness: 250, damping: 25 }}
+                       style={{ rotate: 0 }}
+                   >
+                        {/* Enlarged Photo Frame */}
+                        <div className="bg-stone-200 p-4 pb-20 shadow-2xl transform-gpu relative max-h-[85vh] w-auto inline-block">
+                            <img 
+                                src={selectedSticker.src}
+                                alt="Full size" 
+                                className="w-auto h-auto max-h-[75vh] min-w-[300px] object-contain grayscale-[0.1] contrast-110 border border-stone-300/50"
+                            />
+                            
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="absolute bottom-6 left-0 right-0 text-center px-4"
+                            >
+                                <span className="font-handwriting font-serif italic text-2xl md:text-3xl text-stone-800 opacity-90">
+                                    {selectedSticker.caption}
+                                </span>
+                            </motion.div>
+                        </div>
+                   </motion.div>
+               </motion.div>
+           )}
+       </AnimatePresence>
 
        <AnimatePresence>
            {showLoadTemplate && (
