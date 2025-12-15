@@ -11,9 +11,10 @@ interface CardProps {
   onClick?: () => void;
   isBlocked?: boolean;
   penalty?: number; // New prop for visual penalty
+  onDragChange?: (isDragging: boolean) => void;
 }
 
-const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, penalty = 0 }: CardProps) => { // Updated props
+const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, penalty = 0, onDragChange }: CardProps) => { // Updated props
   const elementRef = useRef<HTMLDivElement>(null);
   const prevValueRef = useRef(card.value);
   const [isShaking, setIsShaking] = useState(false);
@@ -44,6 +45,13 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
       isDragging: !!monitor.isDragging(),
     }),
   }), [card, isDraggable, isBlocked]); // Added isBlocked to deps
+
+  // Notify parent about drag state
+  useEffect(() => {
+    if (onDragChange) {
+        onDragChange(isDragging);
+    }
+  }, [isDragging, onDragChange]);
 
   // Combine refs
   const setRefs = (element: HTMLDivElement | null) => {
@@ -82,7 +90,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ 
           scale: 1, 
-          opacity: isDragging ? 0.5 : (isBlocked ? 0.6 : 1), // Reduced opacity for blocked
+          opacity: isDragging ? 0 : (isBlocked ? 0.6 : 1), // Hide original when dragging to show slot underneath
           filter: isBlocked ? 'grayscale(0.8)' : 'none', // Grayscale for blocked
           x: isShaking ? [0, -5, 5, -5, 5, 0] : 0,
       }}

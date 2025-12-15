@@ -1,4 +1,5 @@
 import { useDrop } from 'react-dnd';
+import { useState, useEffect } from 'react';
 import { Card as CardType } from '../types/game';
 import CardComponent from './CardComponent';
 
@@ -16,6 +17,13 @@ interface SlotProps {
 }
 
 const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "", canDropItem, onInteract, onCardClick, penalty = 0 }: SlotProps) => {
+  const [isChildDragging, setIsChildDragging] = useState(false);
+
+  // Reset drag state when card changes
+  useEffect(() => {
+      setIsChildDragging(false);
+  }, [card]);
+
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: accepts,
     canDrop: (item: any) => {
@@ -57,6 +65,8 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
   
   // Visual feedback logic
   const isInteraction = canDrop && onInteract && isOver; 
+  
+  const showBackground = !card || isChildDragging;
 
   return (
     <div
@@ -68,15 +78,24 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
         ${isActive ? 'scale-105 ring-2' : ''} 
         ${isActive && !isInteraction ? 'bg-stone-700/50 border-stone-400 ring-indigo-500' : ''}
         ${isActive && isInteraction ? 'bg-rose-900/30 border-rose-500 ring-rose-500' : ''}
-        ${!card && !isBlocked ? 'border-2 border-dashed border-stone-700/50 bg-stone-800/30' : ''}
+        ${showBackground && !isBlocked ? 'border-2 border-dashed border-stone-700/50 bg-stone-800/30' : ''}
       `}
     >
-      {card ? (
-        <CardComponent card={card} isDraggable={!isBlocked} onClick={onCardClick} penalty={penalty} />
-      ) : (
-        <span className="text-3xl md:text-5xl text-stone-600 opacity-40 select-none grayscale">
+      {/* Render placeholder only when background is shown (empty or dragging) */}
+      {placeholderIcon && (
+        <span className={`absolute inset-0 flex items-center justify-center text-3xl md:text-5xl text-stone-600 select-none grayscale pointer-events-none z-0 transition-opacity duration-200 ${showBackground ? 'opacity-40' : 'opacity-0'}`}>
           {placeholderIcon}
         </span>
+      )}
+
+      {card && (
+        <CardComponent 
+            card={card} 
+            isDraggable={!isBlocked} 
+            onClick={onCardClick} 
+            penalty={penalty} 
+            onDragChange={setIsChildDragging}
+        />
       )}
     </div>
   );
