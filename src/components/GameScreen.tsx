@@ -455,7 +455,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
           // Since state is updated, we check current slots.
           if (state.leftHand.card?.id === targetId) ref = leftHandRef;
           else if (state.rightHand.card?.id === targetId) ref = rightHandRef;
-          else if (state.backpack?.id === targetId) ref = backpackRef;
+          else if (state.backpack.card?.id === targetId) ref = backpackRef;
 
           if (ref && ref.current) {
                const rect = ref.current.getBoundingClientRect();
@@ -484,7 +484,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       ...state.enemySlots.filter(c => c).map(c => c!.id),
       state.leftHand.card?.id,
       state.rightHand.card?.id,
-      state.backpack?.id
+      state.backpack.card?.id
   ].filter(Boolean) as string[]);
 
   const cleanDeck = state.deck.filter(c => !cardsInPlayIds.has(c.id));
