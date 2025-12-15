@@ -171,10 +171,12 @@ const DeckStatItem = ({ icon, count, color }: { icon: string, count: number, col
 // Overhead Stats Component
 const OverheadStatsWindow = ({ overheads }: { overheads: Overheads }) => (
     <motion.div 
+        drag
+        dragMomentum={false}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 20 }}
-        className="absolute top-24 right-4 z-30 bg-stone-900/80 backdrop-blur-md border border-stone-700 rounded-xl p-3 shadow-xl w-48 pointer-events-none select-none"
+        className="absolute top-24 right-4 z-30 bg-stone-900/80 backdrop-blur-md border border-stone-700 rounded-xl p-3 shadow-xl w-48 select-none cursor-move active:cursor-grabbing"
     >
         <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2 border-b border-stone-800 pb-1 flex items-center gap-2">
             <Activity size={12} /> Аналитика
