@@ -701,6 +701,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
               }
 
               if (prevCard && prevCard.type === 'monster') {
+                  let isFlee = false;
                   // Case 1: Monster changed (alive)
                   if (card && card.type === 'monster' && card.id === prevCard.id) {
                       diff = prevCard.value - card.value;
@@ -711,16 +712,29 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                   else if (!card) {
                        // Check if removal was due to non-damage effects
                        const recentLogs = state.logs.slice(0, 3);
-                       const isNonDamageRemoval = recentLogs.some(log => 
-                           log.message.includes('ВЕТЕР') || 
-                           log.message.includes('ПОБЕГ') || 
-                           log.message.includes('СБРОС') ||
-                           log.message.includes('БАРЬЕР')
-                       );
+                       
+                       // Check specifically for Flee log to show partial damage
+                       const fleeLog = recentLogs.find(log => log.message.includes('БЕГСТВО'));
+                       
+                       if (fleeLog) {
+                           const match = fleeLog.message.match(/получил урон (\d+)/);
+                           if (match) {
+                               diff = parseInt(match[1]);
+                               hasChanged = true;
+                               isFlee = true;
+                           }
+                       } else {
+                           const isNonDamageRemoval = recentLogs.some(log => 
+                               log.message.includes('ВЕТЕР') || 
+                               log.message.includes('ПОБЕГ') || 
+                               log.message.includes('СБРОС') ||
+                               log.message.includes('БАРЬЕР')
+                           );
 
-                       if (!isNonDamageRemoval) {
-                           diff = prevCard.value;
-                           hasChanged = true;
+                           if (!isNonDamageRemoval) {
+                               diff = prevCard.value;
+                               hasChanged = true;
+                           }
                        }
                   }
 
@@ -737,6 +751,11 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                       } else if (diff > 0) {
                           // Damage
                           addFloatingText(x, y, `-${diff}`, 'text-rose-500', true);
+                          if (isFlee) {
+                              setTimeout(() => {
+                                  addFloatingText(x, y + 30, '💨 УБЕЖАЛ', 'text-stone-400 font-bold text-[10px] tracking-widest uppercase drop-shadow-md', true, 1.0);
+                              }, 200);
+                          }
                       } else if (diff < 0) {
                           // Heal
                           addFloatingText(x, y, `+${Math.abs(diff)}`, 'text-emerald-400', true);

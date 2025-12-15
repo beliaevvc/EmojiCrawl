@@ -674,7 +674,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
             newState.enemySlots = newSlots;
             // Return to deck
             newState.deck = shuffleDeck([...newState.deck, { ...monster, value: newMonsterHp }]);
-            log = `Монстр ранен (${damage}), но сбежал в колоду (БЕГСТВО)!`;
+            log = `Монстр получил урон ${damage}, но сбежал в колоду с ${newMonsterHp} HP (БЕГСТВО)!`;
         } else {
             const newMonster = { ...monster, value: newMonsterHp };
             const newSlots = [...newState.enemySlots];
