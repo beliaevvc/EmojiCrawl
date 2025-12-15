@@ -1,8 +1,9 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { useDrop } from 'react-dnd';
+import { loadUIPositions, saveUIPositions, WindowPosition } from '../utils/uiStorage';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
@@ -227,7 +228,7 @@ const MiniCard = ({ card }: { card: Card }) => {
     );
 };
 
-const CardsViewer = ({ cards, label, className = "top-40" }: { cards: Card[], label: string, className?: string }) => {
+const CardsViewer = ({ cards, label, className = "top-40", position, onPositionChange }: { cards: Card[], label: string, className?: string, position?: WindowPosition, onPositionChange?: (pos: WindowPosition) => void }) => {
     const [offset, setOffset] = useState(0);
     const visibleCount = 8;
     
@@ -247,13 +248,21 @@ const CardsViewer = ({ cards, label, className = "top-40" }: { cards: Card[], la
 
     if (displayCards.length === 0 && label !== "Сброс") return null; 
 
+    const x = position?.x || 0;
+    const y = position?.y || 0;
+
     return (
         <motion.div 
             drag
             dragMomentum={false}
-            initial={{ opacity: 0, y: label === "Сброс" ? 20 : -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: label === "Сброс" ? 20 : -20 }}
+            onDragEnd={(e, info) => {
+                if (onPositionChange) {
+                    onPositionChange({ x: x + info.offset.x, y: y + info.offset.y });
+                }
+            }}
+            initial={{ opacity: 0, y: label === "Сброс" ? y + 20 : y - 20, x }}
+            animate={{ opacity: 1, y, x }}
+            exit={{ opacity: 0, y: label === "Сброс" ? y + 20 : y - 20, x }}
             className={`absolute left-0 right-0 mx-auto w-fit z-20 flex items-center justify-center gap-2 overflow-visible cursor-move active:cursor-grabbing ${className}`}
         >
              <button 
@@ -289,15 +298,20 @@ const CardsViewer = ({ cards, label, className = "top-40" }: { cards: Card[], la
 };
 
 // Overhead Stats Component
-const OverheadStatsWindow = ({ overheads }: { overheads: Overheads }) => (
-    <motion.div 
-        drag
-        dragMomentum={false}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 20 }}
-        className="absolute top-24 right-4 z-30 bg-stone-900/80 backdrop-blur-md border border-stone-700 rounded-xl p-3 shadow-xl w-48 select-none cursor-move active:cursor-grabbing"
-    >
+const OverheadStatsWindow = ({ overheads, position, onPositionChange }: { overheads: Overheads, position?: WindowPosition, onPositionChange?: (pos: WindowPosition) => void }) => {
+    const x = position?.x || 0;
+    const y = position?.y || 0;
+
+    return (
+        <motion.div 
+            drag
+            dragMomentum={false}
+            onDragEnd={(e, info) => onPositionChange && onPositionChange({ x: x + info.offset.x, y: y + info.offset.y })}
+            initial={{ opacity: 0, x: x + 20, y }}
+            animate={{ opacity: 1, x, y }}
+            exit={{ opacity: 0, x: x + 20, y }}
+            className="absolute top-24 right-4 z-30 bg-stone-900/80 backdrop-blur-md border border-stone-700 rounded-xl p-3 shadow-xl w-48 select-none cursor-move active:cursor-grabbing"
+        >
         <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2 border-b border-stone-800 pb-1 flex items-center gap-2">
             <Activity size={12} /> Аналитика
         </h3>
@@ -316,12 +330,15 @@ const OverheadStatsWindow = ({ overheads }: { overheads: Overheads }) => (
             </div>
         </div>
     </motion.div>
-);
+    );
+};
 
 // Game Log Component
-const GameLogWindow = ({ logs }: { logs: LogEntry[] }) => {
+const GameLogWindow = ({ logs, position, onPositionChange }: { logs: LogEntry[], position?: WindowPosition, onPositionChange?: (pos: WindowPosition) => void }) => {
     const [expanded, setExpanded] = useState(false);
     const dragControls = useDragControls();
+    const x = position?.x || 0;
+    const y = position?.y || 0;
 
     return (
         <motion.div 
@@ -329,9 +346,10 @@ const GameLogWindow = ({ logs }: { logs: LogEntry[] }) => {
             dragListener={false}
             dragControls={dragControls}
             dragMomentum={false}
-            initial={{ opacity: 0, y: 20, height: '8rem' }}
-            animate={{ opacity: 1, y: 0, height: expanded ? '60vh' : '8rem' }}
-            exit={{ opacity: 0, y: 20, height: '8rem' }}
+            onDragEnd={(e, info) => onPositionChange && onPositionChange({ x: x + info.offset.x, y: y + info.offset.y })}
+            initial={{ opacity: 0, y: y + 20, x, height: '8rem' }}
+            animate={{ opacity: 1, y, x, height: expanded ? '60vh' : '8rem' }}
+            exit={{ opacity: 0, y: y + 20, x, height: '8rem' }}
             transition={{ duration: 0.3 }} // Global transition for animate props
             className={`
                 absolute bottom-24 right-4 z-40 
@@ -386,6 +404,20 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showInfo, setShowInfo] = useState(false); // Deck Stats & Logs Toggle
   const [showGodModeToggle, setShowGodModeToggle] = useState(false); // Visibility of God Mode button
+  const [isResetHovered, setIsResetHovered] = useState(false);
+  
+  const [windowPositions, setWindowPositions] = useState<Record<string, WindowPosition>>(() => loadUIPositions());
+
+  const updateWindowPosition = (key: string, pos: WindowPosition) => {
+      const newPositions = { ...windowPositions, [key]: pos };
+      setWindowPositions(newPositions);
+      saveUIPositions(newPositions);
+  };
+
+  const handleResetLayout = () => {
+      setWindowPositions({});
+      saveUIPositions({});
+  };
   
   // Visual Effects State
   const [floatingTexts, setFloatingTexts] = useState<FloatingTextItem[]>([]);
@@ -883,8 +915,20 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       <AnimatePresence>
           {showInfo && (
               <>
-                <CardsViewer cards={state.deck} label="Колода" className="top-40" />
-                <CardsViewer cards={state.discardPile} label="Сброс" className="bottom-40" />
+                <CardsViewer 
+                    cards={state.deck} 
+                    label="Колода" 
+                    className="top-40" 
+                    position={windowPositions['deck']}
+                    onPositionChange={(pos) => updateWindowPosition('deck', pos)}
+                />
+                <CardsViewer 
+                    cards={state.discardPile} 
+                    label="Сброс" 
+                    className="bottom-40" 
+                    position={windowPositions['discard']}
+                    onPositionChange={(pos) => updateWindowPosition('discard', pos)}
+                />
               </>
           )}
       </AnimatePresence>
@@ -1080,16 +1124,44 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
 
          <AnimatePresence>
             {showInfo && (
-                <motion.button
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0 }}
-                    onClick={() => setShowGodModeToggle(!showGodModeToggle)}
-                    className="flex items-center justify-center p-3 text-stone-600/40 hover:text-stone-300 transition-all ml-1"
-                    title={showGodModeToggle ? "Скрыть читы" : "Показать читы"}
-                >
-                    {showGodModeToggle ? <EyeOff size={20} /> : <Eye size={20} />}
-                </motion.button>
+                <>
+                    <motion.button
+                        key="reset-layout"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0 }}
+                        onClick={handleResetLayout}
+                        onMouseEnter={() => setIsResetHovered(true)}
+                        onMouseLeave={() => setIsResetHovered(false)}
+                        className="relative flex items-center justify-center p-3 text-stone-600/40 hover:text-stone-300 transition-all ml-1"
+                    >
+                        <RotateCcw size={18} />
+                        <AnimatePresence>
+                            {isResetHovered && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 5 }}
+                                    className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-stone-800 border border-stone-600 text-stone-200 text-[10px] rounded shadow-lg whitespace-nowrap pointer-events-none z-50"
+                                >
+                                    Сбросить окна
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.button>
+
+                    <motion.button
+                        key="god-mode-toggle"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0 }}
+                        onClick={() => setShowGodModeToggle(!showGodModeToggle)}
+                        className="flex items-center justify-center p-3 text-stone-600/40 hover:text-stone-300 transition-all ml-1"
+                        title={showGodModeToggle ? "Скрыть читы" : "Показать читы"}
+                    >
+                        {showGodModeToggle ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </motion.button>
+                </>
             )}
          </AnimatePresence>
 
@@ -1139,8 +1211,16 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       <AnimatePresence>
           {showInfo && (
               <>
-                 <OverheadStatsWindow overheads={state.overheads} />
-                 <GameLogWindow logs={state.logs} />
+                 <OverheadStatsWindow 
+                    overheads={state.overheads} 
+                    position={windowPositions['stats']}
+                    onPositionChange={(pos) => updateWindowPosition('stats', pos)}
+                 />
+                 <GameLogWindow 
+                    logs={state.logs} 
+                    position={windowPositions['log']}
+                    onPositionChange={(pos) => updateWindowPosition('log', pos)}
+                 />
               </>
           )}
       </AnimatePresence>
