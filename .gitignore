@@ -96,7 +96,6 @@ out
 
 # Docusaurus cache and generated files
 .cache
-public
 
 # Serverless directories
 .serverless/
