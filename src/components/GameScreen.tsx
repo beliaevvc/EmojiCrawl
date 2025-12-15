@@ -245,7 +245,7 @@ const CardsViewer = ({ cards, label, className = "top-40" }: { cards: Card[], la
     const handleLeft = () => setOffset(Math.max(0, currentOffset - 1));
     const handleRight = () => setOffset(Math.min(maxOffset, currentOffset + 1));
 
-    if (displayCards.length === 0 && label !== "Сброс") return null; // Show discard even if empty? Or hide? Let's hide if empty for cleaner look usually.
+    if (displayCards.length === 0 && label !== "Сброс") return null; 
 
     return (
         <motion.div 
