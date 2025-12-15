@@ -318,48 +318,6 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             newState = addLog(newState, 'КОСТИ: Череп замешан в колоду.', 'info');
             break;
         }
-        case 'graveyard':
-            const deadMons = newState.discardPile.filter(c => c.type === 'monster');
-            if (deadMons.length > 0) {
-                const revived = deadMons[Math.floor(Math.random() * deadMons.length)];
-                
-                // Try to find empty slot first
-                let targetIdx = newState.enemySlots.findIndex(c => c === null);
-                
-                // If no empty slot, pick a random slot to replace
-                if (targetIdx === -1) {
-                    targetIdx = Math.floor(Math.random() * 4);
-                }
-
-                if (targetIdx !== -1) {
-                    const newSlots = [...newState.enemySlots];
-                    // If replacing existing card, move it to discard? Or it just vanishes? 
-                    // Usually "return to table" implies adding. Replacing might be harsh.
-                    // But user asked "return random monster to table". If table full, it must replace or fail.
-                    // Let's assume it replaces for now to ensure it works.
-                    // Or maybe it shouldn't replace if full? "If full, nothing happens" is safer.
-                    // Re-reading: "on death... return random monster from discard".
-                    // If table is full of monsters, adding one more is impossible unless replacing.
-                    // Let's prioritize empty slot. If full, do nothing?
-                    // "Should return random monster". Let's force it by replacing a random card if full.
-                    // Ideally replacing a non-monster if possible?
-                    // Let's stick to: Find empty -> if none, find non-monster -> if none, replace random.
-                    
-                    if (newSlots[targetIdx] !== null) {
-                         // We are overwriting something. Move old to discard to be safe/fair?
-                         // Or just overwrite. Let's overwrite.
-                    }
-
-                    newSlots[targetIdx] = revived; 
-                    newState.enemySlots = newSlots;
-                    newState.discardPile = newState.discardPile.filter(c => c.id !== revived.id);
-                    newState = addLog(newState, `КЛАДБИЩЕ: ${revived.icon} восстал из мертвых!`, 'combat');
-                    
-                    // Apply spawn effects for revived
-                    newState = applySpawnAbilities(newState, revived);
-                }
-            }
-            break;
         case 'legacy':
             const legacySlots = [...newState.enemySlots];
             let buffed = false;

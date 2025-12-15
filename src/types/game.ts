@@ -8,7 +8,7 @@ export type SpellType =
 
 export type MonsterAbilityType = 
     | 'commission' | 'whisper' | 'silence' | 'breach' | 'disarm' | 'blessing'
-    | 'trample' | 'mirror' | 'stealth' | 'graveyard' | 'scream' | 'legacy'
+    | 'trample' | 'mirror' | 'stealth' | 'scream' | 'legacy'
     | 'flee' | 'offering' | 'ambush' | 'theft' | 'rot' | 'web' | 'bones'
     | 'beacon' | 'parasite' | 'corrosion' | 'exhaustion' | 'junk' | 'miss' | 'corpseeater';
 
