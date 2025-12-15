@@ -926,10 +926,6 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
             danger={true}
          />
          <SystemButton 
-            icon={<RefreshCw size={20} />} 
-            label="2x" 
-         />
-         <SystemButton 
             icon={<Search size={20} />} 
             label="Info" 
             active={showInfo}
