@@ -227,17 +227,17 @@ const MiniCard = ({ card }: { card: Card }) => {
     );
 };
 
-const DeckViewer = ({ deck }: { deck: Card[] }) => {
+const CardsViewer = ({ cards, label, className = "top-40" }: { cards: Card[], label: string, className?: string }) => {
     const [offset, setOffset] = useState(0);
     const visibleCount = 8;
     
-    // Reversed deck order: [Next, ..., Last]
-    const displayDeck = [...deck].reverse();
+    // Reversed order: [Last In, ..., First In]
+    const displayCards = [...cards].reverse();
     
-    const maxOffset = Math.max(0, displayDeck.length - visibleCount);
+    const maxOffset = Math.max(0, displayCards.length - visibleCount);
     const currentOffset = Math.min(offset, maxOffset); 
 
-    const visibleCards = displayDeck.slice(currentOffset, currentOffset + visibleCount);
+    const visibleCardsSlice = displayCards.slice(currentOffset, currentOffset + visibleCount);
     
     const canGoLeft = currentOffset > 0;
     const canGoRight = currentOffset < maxOffset;
@@ -245,18 +245,18 @@ const DeckViewer = ({ deck }: { deck: Card[] }) => {
     const handleLeft = () => setOffset(Math.max(0, currentOffset - 1));
     const handleRight = () => setOffset(Math.min(maxOffset, currentOffset + 1));
 
-    if (displayDeck.length === 0) return null;
+    if (displayCards.length === 0 && label !== "Сброс") return null; // Show discard even if empty? Or hide? Let's hide if empty for cleaner look usually.
 
     return (
         <motion.div 
             drag
             dragMomentum={false}
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: label === "Сброс" ? 20 : -20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-40 left-0 right-0 mx-auto w-fit z-20 flex items-center justify-center gap-2 overflow-visible cursor-move active:cursor-grabbing"
+            exit={{ opacity: 0, y: label === "Сброс" ? 20 : -20 }}
+            className={`absolute left-0 right-0 mx-auto w-fit z-20 flex items-center justify-center gap-2 overflow-visible cursor-move active:cursor-grabbing ${className}`}
         >
-             <button  
+             <button 
                 disabled={!canGoLeft} 
                 onClick={handleLeft}
                 className={`p-1 rounded-full transition-colors ${canGoLeft ? 'text-stone-400 hover:text-white hover:bg-white/10' : 'text-stone-800'}`}
@@ -264,13 +264,13 @@ const DeckViewer = ({ deck }: { deck: Card[] }) => {
                  <ChevronLeft size={20} />
              </button>
              
-             <div className="flex gap-1 md:gap-2 px-2 py-2 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm shadow-inner min-h-[4.5rem]">
+             <div className="flex gap-1 md:gap-2 px-2 py-2 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm shadow-inner min-h-[4.5rem] min-w-[3rem] justify-center">
                  <AnimatePresence mode='popLayout'>
-                     {visibleCards.map((card, i) => (
+                     {visibleCardsSlice.map((card, i) => (
                          <MiniCard key={card.id || i} card={card} />
                      ))}
                  </AnimatePresence>
-                 {visibleCards.length === 0 && <span className="text-xs text-stone-600 self-center px-4">Колода пуста</span>}
+                 {visibleCardsSlice.length === 0 && <span className="text-xs text-stone-600 self-center px-4">Пусто</span>}
              </div>
              
              <button 
@@ -281,8 +281,8 @@ const DeckViewer = ({ deck }: { deck: Card[] }) => {
                  <ChevronRight size={20} />
              </button>
              
-             <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-widest text-stone-600 bg-stone-950 px-2 rounded-full border border-stone-800">
-                Колода ({currentOffset + 1}-{Math.min(displayDeck.length, currentOffset + visibleCount)})
+             <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-widest text-stone-600 bg-stone-950 px-2 rounded-full border border-stone-800 whitespace-nowrap">
+                {label} ({displayCards.length > 0 ? currentOffset + 1 : 0}-{Math.min(displayCards.length, currentOffset + visibleCount)})
              </div>
         </motion.div>
     );
@@ -867,7 +867,12 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       </div>
 
       <AnimatePresence>
-          {showInfo && <DeckViewer deck={state.deck} />}
+          {showInfo && (
+              <>
+                <CardsViewer cards={state.deck} label="Колода" className="top-40" />
+                <CardsViewer cards={state.discardPile} label="Сброс" className="bottom-40" />
+              </>
+          )}
       </AnimatePresence>
 
       {/* --- Main Game Area --- */}
