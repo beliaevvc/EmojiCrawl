@@ -364,22 +364,6 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
                 newState = addLog(newState, 'ПОХИЩЕНИЕ: предмет украден!', 'combat');
             }
             break;
-        case 'bones':
-            const deadCoin: Card = {
-                id: `dead_coin_${Math.random()}`,
-                type: 'coin',
-                value: 0,
-                icon: '☠️',
-                name: 'Мертвая монета',
-                description: 'Ничего не стоит.'
-            };
-            // Add to deck
-            const insertIdx = Math.floor(Math.random() * newState.deck.length);
-            const newDeck = [...newState.deck];
-            newDeck.splice(insertIdx, 0, deadCoin);
-            newState.deck = newDeck;
-            newState = addLog(newState, 'КОСТИ: Мертвая монета замешана в колоду.', 'info');
-            break;
         case 'corrosion':
             const invItems = [];
             if (newState.leftHand.card) invItems.push(newState.leftHand.card);

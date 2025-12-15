@@ -1,9 +1,9 @@
+/* Подключаем шрифт Alegreya SC */
+@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Подключаем шрифт Alegreya SC */
-@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700;900&display=swap');
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

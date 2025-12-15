@@ -3,27 +3,20 @@ import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { useDrop } from 'react-dnd';
-import { loadUIPositions, saveUIPositions, WindowPosition } from '../utils/uiStorage';
+import { WindowPosition } from '../utils/uiStorage';
 import { gameReducer, initialState } from '../utils/gamePlusReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
-import { Card, LogEntry, Overheads, DeckConfig } from '../types/game';
+import { Card, LogEntry, Overheads } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
 import { GameStatsOverlay } from './GameStatsOverlay';
-// import { saveRun } from '../utils/statsStorage'; // Disabled for Game Plus
+import { saveRun } from '../utils/statsStorage';
 import { ConfirmationModal } from './ConfirmationModal';
 import { SPELLS } from '../data/spells';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
-
-interface GameScreenProps {
-  onExit: () => void;
-  deckConfig?: DeckConfig;
-  runType?: 'standard' | 'custom';
-  templateName?: string;
-}
 
 // ... (Other components remain the same)
 // Interaction Drop Zone Wrapper
