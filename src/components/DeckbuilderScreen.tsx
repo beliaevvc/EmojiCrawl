@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save, Play, Swords, RotateCcw, Share2, Download, Copy, Check, X } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import CharacterEditor from './CharacterEditor';
 import ShieldsEditor from './ShieldsEditor';
 import WeaponsEditor from './WeaponsEditor';
