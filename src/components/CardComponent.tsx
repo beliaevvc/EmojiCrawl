@@ -12,9 +12,10 @@ interface CardProps {
   isBlocked?: boolean;
   penalty?: number; // New prop for visual penalty
   onDragChange?: (isDragging: boolean) => void;
+  location?: 'hand' | 'backpack' | 'field'; // Added location prop
 }
 
-const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, penalty = 0, onDragChange }: CardProps) => { // Updated props
+const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, penalty = 0, onDragChange, location }: CardProps) => { // Updated props
   const elementRef = useRef<HTMLDivElement>(null);
   const prevValueRef = useRef(card.value);
   const [isShaking, setIsShaking] = useState(false);
@@ -39,12 +40,12 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
-    item: { id: card.id, type: card.type, value: card.value, spellType: card.spellType },
+    item: { ...card, location }, // Include location in drag item
     canDrag: isDraggable && !isBlocked, // Disable drag if blocked
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }), [card, isDraggable, isBlocked]); // Added isBlocked to deps
+  }), [card, isDraggable, isBlocked, location]); // Added location to deps
 
   // Notify parent about drag state
   useEffect(() => {

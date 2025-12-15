@@ -405,6 +405,10 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [showInfo, setShowInfo] = useState(false); // Deck Stats & Logs Toggle
   const [showGodModeToggle, setShowGodModeToggle] = useState(false); // Visibility of God Mode button
   const [isResetHovered, setIsResetHovered] = useState(false);
+
+  // Sync state ref for dnd callbacks
+  const stateRef = useRef(state);
+  stateRef.current = state;
   
   const [windowPositions, setWindowPositions] = useState<Record<string, WindowPosition>>(() => loadUIPositions());
 
@@ -428,6 +432,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   // Coin Effect State
   const prevCoinsRef = useRef(state.player.coins);
   const [coinPulse, setCoinPulse] = useState(false);
+  const sellButtonRef = useRef<HTMLButtonElement>(null); // Ref for sell button positioning
 
   // Track Enemy Slots for animations
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -718,9 +723,9 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       prevEnemySlots.current = state.enemySlots;
   }, [state.enemySlots, state.logs]);
 
-  const addFloatingText = (x: number, y: number, text: string, color: string, centered = false) => {
+  const addFloatingText = (x: number, y: number, text: string, color: string, centered = false, scale?: number) => {
       const id = Math.random().toString(36).substr(2, 9);
-      setFloatingTexts(prev => [...prev, { id, x, y, text, color, centered }]);
+      setFloatingTexts(prev => [...prev, { id, x, y, text, color, centered, scale }]);
   };
 
   const removeFloatingText = (id: string) => {
@@ -757,7 +762,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const handleDropToHand = (hand: 'left' | 'right' | 'backpack') => (item: any) => {
      const targetCard = hand === 'left' ? state.leftHand.card 
                       : hand === 'right' ? state.rightHand.card 
-                      : state.backpack;
+                      : state.backpack.card;
 
      if (!targetCard) {
          dispatch({ type: 'TAKE_CARD_TO_HAND', cardId: item.id, hand });
@@ -785,10 +790,47 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   );
 
   const handleSellDrop = (item: any) => {
-     if (isSellBlocked) {
+     const currentState = stateRef.current;
+     
+     // Re-calculate local block conditions to ensure freshness inside callback
+     const isCurrentSellBlocked = currentState.enemySlots.some(card => 
+        card && card.type === 'monster' && card.ability === 'scream'
+     );
+
+     if (isCurrentSellBlocked) {
          return;
      }
+
+     console.log('Attempting sell:', item.id, 'Location:', item.location);
+
+     // Prevent selling items equipped in hands (using explicit location tag + fallback ID check)
+     if (item.location === 'hand' || currentState.leftHand.card?.id === item.id || currentState.rightHand.card?.id === item.id) {
+         return;
+     }
+
+     // Prevent selling blocked items from backpack (e.g. used coins)
+     if (currentState.backpack.card?.id === item.id && currentState.backpack.blocked) {
+         return;
+     }
+
      // Now just dispatch SELL_ITEM with cardId, reducer handles location
+     
+     // Visual feedback for Spells and Coins (0 value sales)
+     let fxX = window.innerWidth - 85;
+     let fxY = window.innerHeight - 110;
+
+     if (sellButtonRef.current) {
+         const rect = sellButtonRef.current.getBoundingClientRect();
+         fxX = rect.left + rect.width / 2;
+         fxY = rect.top - 30;
+     }
+
+     if (item.type === 'spell') {
+         addFloatingText(fxX, fxY, 'Сброшено', 'text-indigo-300 font-bold text-[11px] tracking-widest uppercase bg-black/80 px-2 py-0.5 rounded border border-indigo-500/30 backdrop-blur-sm shadow-sm origin-bottom', true, 1.0);
+     } else if (item.type === 'coin') {
+         addFloatingText(fxX, fxY, 'Спасибо', 'text-amber-300 font-bold text-[11px] tracking-widest uppercase bg-black/80 px-2 py-0.5 rounded border border-amber-500/30 backdrop-blur-sm shadow-sm origin-bottom', true, 1.0);
+     }
+
      dispatch({ type: 'SELL_ITEM', cardId: item.id });
   };
   
@@ -1003,6 +1045,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                       onInteract={state.leftHand.card?.type === 'shield' ? handleMonsterInteraction('shield_left') : undefined}
                       onCardClick={() => state.leftHand.card && handleCardClick(state.leftHand.card)}
                       penalty={hasRot && state.leftHand.card?.type === 'potion' ? -2 : 0}
+                      location="hand"
                   />
               </div>
           </InteractionZone>
@@ -1063,6 +1106,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                       onInteract={state.rightHand.card?.type === 'shield' ? handleMonsterInteraction('shield_right') : undefined}
                       onCardClick={() => state.rightHand.card && handleCardClick(state.rightHand.card)}
                       penalty={hasRot && state.rightHand.card?.type === 'potion' ? -2 : 0}
+                      location="hand"
                   />
               </div>
           </InteractionZone>
@@ -1070,14 +1114,15 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
           {/* Backpack */}
           <div className="relative" ref={backpackRef}>
               <Slot 
-                  card={state.backpack} 
+                  card={state.backpack.card} 
                   onDrop={handleDropToHand('backpack')} 
                   accepts={['card']} 
                   placeholderIcon="🎒"
-                  isBlocked={hasWeb}
-                  canDropItem={(item) => item.type !== 'monster'}
-                  onCardClick={() => state.backpack && handleCardClick(state.backpack)}
-                  penalty={hasRot && state.backpack?.type === 'potion' ? -2 : 0}
+                  isBlocked={hasWeb || state.backpack.blocked}
+                  canDropItem={(item) => item.type !== 'monster' && item.location !== 'hand'}
+                  onCardClick={() => state.backpack.card && handleCardClick(state.backpack.card)}
+                  penalty={hasRot && state.backpack.card?.type === 'potion' ? -2 : 0}
+                  location="backpack"
               />
               {hasWeb && (
                   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
@@ -1092,6 +1137,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
         <div className="flex items-center justify-center w-20 md:w-32">
             <SellZone onSell={handleSellDrop}>
               <button 
+                ref={sellButtonRef}
                 className={`group flex flex-col items-center gap-1 active:scale-95 transition-transform scale-75 md:scale-100 ${isSellBlocked ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                 disabled={isSellBlocked}
               >

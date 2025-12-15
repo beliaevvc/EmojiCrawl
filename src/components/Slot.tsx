@@ -14,9 +14,10 @@ interface SlotProps {
   onInteract?: (item: any) => void;
   onCardClick?: () => void;
   penalty?: number;
+  location?: 'hand' | 'backpack' | 'field'; // Added location prop
 }
 
-const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "", canDropItem, onInteract, onCardClick, penalty = 0 }: SlotProps) => {
+const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "", canDropItem, onInteract, onCardClick, penalty = 0, location }: SlotProps) => {
   const [isChildDragging, setIsChildDragging] = useState(false);
 
   // Reset drag state when card changes
@@ -95,6 +96,7 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
             onClick={onCardClick} 
             penalty={penalty} 
             onDragChange={setIsChildDragging}
+            location={location} // Pass location prop
         />
       )}
     </div>

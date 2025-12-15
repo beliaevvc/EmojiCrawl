@@ -102,7 +102,7 @@ export interface GameState {
   enemySlots: (Card | null)[]; // Fixed 4 slots
   leftHand: HandSlot;
   rightHand: HandSlot;
-  backpack: Card | null;
+  backpack: HandSlot;
   player: Player;
   round: number;
   status: 'playing' | 'won' | 'lost';

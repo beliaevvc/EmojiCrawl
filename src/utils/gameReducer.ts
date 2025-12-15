@@ -25,7 +25,7 @@ export const initialState: GameState = {
   enemySlots: [null, null, null, null],
   leftHand: { card: null, blocked: false },
   rightHand: { card: null, blocked: false },
-  backpack: null,
+  backpack: { card: null, blocked: false },
   player: {
     hp: 13, // Assuming MAX_HP is 13
     maxHp: 13,
@@ -97,7 +97,7 @@ const findCardInSlots = (slots: (any)[], id: string): number => {
 const findCardLocation = (state: GameState, cardId: string): 'leftHand' | 'rightHand' | 'backpack' | 'enemySlots' | null => {
    if (state.leftHand.card?.id === cardId) return 'leftHand';
    if (state.rightHand.card?.id === cardId) return 'rightHand';
-   if (state.backpack?.id === cardId) return 'backpack';
+   if (state.backpack.card?.id === cardId) return 'backpack';
    if (state.enemySlots.some(c => c?.id === cardId)) return 'enemySlots';
    return null;
 }
@@ -117,9 +117,9 @@ const removeCardFromSource = (state: GameState, cardId: string): { newState: Gam
     return { newState, card, fromWhere };
   }
   
-  if (newState.backpack?.id === cardId) {
-    card = newState.backpack;
-    newState.backpack = null;
+  if (newState.backpack.card?.id === cardId) {
+    card = newState.backpack.card;
+    newState.backpack = { ...newState.backpack, card: null };
     fromWhere = 'backpack';
     return { newState, card, fromWhere };
   }
@@ -234,13 +234,13 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             const shields = [];
             if (newState.leftHand.card?.type === 'shield') shields.push('leftHand');
             if (newState.rightHand.card?.type === 'shield') shields.push('rightHand');
-            if (newState.backpack?.type === 'shield') shields.push('backpack');
+            if (newState.backpack.card?.type === 'shield') shields.push('backpack');
             
             if (shields.length > 0) {
                 const targetLoc = shields[Math.floor(Math.random() * shields.length)];
                 if (targetLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
                 else if (targetLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
-                else if (targetLoc === 'backpack') newState.backpack = null;
+                else if (targetLoc === 'backpack') newState.backpack = { ...newState.backpack, card: null };
                 newState = addLog(newState, 'ПРОЛОМ: Щит уничтожен.', 'combat');
             }
             break;
@@ -248,13 +248,13 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             const weapons = [];
             if (newState.leftHand.card?.type === 'weapon') weapons.push('leftHand');
             if (newState.rightHand.card?.type === 'weapon') weapons.push('rightHand');
-            if (newState.backpack?.type === 'weapon') weapons.push('backpack');
+            if (newState.backpack.card?.type === 'weapon') weapons.push('backpack');
             
             if (weapons.length > 0) {
                 const targetLoc = weapons[Math.floor(Math.random() * weapons.length)];
                 if (targetLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
                 else if (targetLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
-                else if (targetLoc === 'backpack') newState.backpack = null;
+                else if (targetLoc === 'backpack') newState.backpack = { ...newState.backpack, card: null };
                 newState = addLog(newState, 'ОБЕЗОРУЖИВАНИЕ: Оружие выбито.', 'combat');
             }
             break;
@@ -354,13 +354,13 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             const items = [];
             if (newState.leftHand.card) items.push('leftHand');
             if (newState.rightHand.card) items.push('rightHand');
-            if (newState.backpack) items.push('backpack');
+            if (newState.backpack.card) items.push('backpack');
             
             if (items.length > 0) {
                 const targetLoc = items[Math.floor(Math.random() * items.length)];
                 if (targetLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
                 else if (targetLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
-                else if (targetLoc === 'backpack') newState.backpack = null;
+                else if (targetLoc === 'backpack') newState.backpack = { ...newState.backpack, card: null };
                 newState = addLog(newState, 'ПОХИЩЕНИЕ: предмет украден!', 'combat');
             }
             break;
@@ -368,7 +368,7 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             const invItems = [];
             if (newState.leftHand.card) invItems.push(newState.leftHand.card);
             if (newState.rightHand.card) invItems.push(newState.rightHand.card);
-            if (newState.backpack) invItems.push(newState.backpack);
+            if (newState.backpack.card) invItems.push(newState.backpack.card);
             
             const validInv = invItems.filter(c => c.value > 0);
             if (validInv.length > 0) {
@@ -393,8 +393,8 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
                     newState.leftHand.card = applyDamage(target);
                 } else if (newState.rightHand.card?.id === target.id) {
                     newState.rightHand.card = applyDamage(target);
-                } else if (newState.backpack?.id === target.id) {
-                    newState.backpack = applyDamage(target);
+                } else if (newState.backpack.card?.id === target.id) {
+                    newState.backpack = { ...newState.backpack, card: applyDamage(target) };
                 }
                 
                 newState.lastEffect = { type: 'corrosion', targetId: target.id, value: -2, timestamp: Date.now() };
@@ -417,8 +417,8 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
                 description: 'Бесполезные останки.'
             };
             
-            if (!newState.backpack && !hasActiveAbility(newState, 'web')) {
-                newState.backpack = junkSkull;
+            if (!newState.backpack.card && !newState.backpack.blocked && !hasActiveAbility(newState, 'web')) {
+                newState.backpack = { ...newState.backpack, card: junkSkull };
                 newState = addLog(newState, 'ХЛАМ: Кости добавлены в рюкзак.', 'info');
             } else {
                 newState = addLog(newState, 'ХЛАМ: Рюкзак полон или заблокирован.', 'info');
@@ -439,7 +439,7 @@ const updateMirrorMonsters = (state: GameState): GameState => {
     let maxDmg = 0;
     if (state.leftHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.leftHand.card.value);
     if (state.rightHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.rightHand.card.value);
-    if (state.backpack?.type === 'weapon') maxDmg = Math.max(maxDmg, state.backpack.value);
+    if (state.backpack.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.backpack.card.value);
 
     let newState = { ...state };
     const newSlots = [...newState.enemySlots];
@@ -730,6 +730,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              enemySlots: newSlots,
              leftHand: clearUsedHand(s.leftHand),
              rightHand: clearUsedHand(s.rightHand),
+             backpack: clearUsedHand(s.backpack),
              round: s.round + 1
           };
           
@@ -903,7 +904,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         },
         leftHand: { card: null, blocked: false },
         rightHand: { card: null, blocked: false },
-        backpack: null,
+        backpack: { card: null, blocked: false },
         round: 1,
         logs: [createLog("Новая игра началась!", 'info')],
         overheads: { overheal: 0, overdamage: 0, overdef: 0 },
@@ -933,26 +934,21 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       
       if (!card) return state;
 
-      if (action.hand === 'backpack') {
-         if (newState.backpack) return state;
-         nextState = { ...newState, backpack: card };
-         logMessage = `В рюкзак положено: ${card.icon}`;
-         break;
-      }
+      const targetHand = action.hand === 'left' ? newState.leftHand : 
+                        (action.hand === 'right' ? newState.rightHand : newState.backpack);
       
-      const targetHand = action.hand === 'left' ? newState.leftHand : newState.rightHand;
       if (targetHand.card || targetHand.blocked) return state;
 
       let blocked = false;
       let playerUpdates = {};
 
-      if (newState.activeEffects.includes('echo')) {
+      if (action.hand !== 'backpack' && newState.activeEffects.includes('echo')) {
           // Consume spell immediately
           newState.activeEffects = newState.activeEffects.filter(e => e !== 'echo');
 
-          if (!newState.backpack && !hasActiveAbility(state, 'web')) { 
+          if (!newState.backpack.card && !newState.backpack.blocked && !hasActiveAbility(state, 'web')) { 
               const copy = { ...card, id: card.id + '_echo_' + Math.random().toString(36).substr(2, 5) };
-              newState.backpack = copy;
+              newState.backpack = { ...newState.backpack, card: copy };
               logMessage = 'ЭХО: Предмет дублирован в рюкзак. ';
           } else {
               logMessage = 'ЭХО: Магия рассеялась (рюкзак занят). ';
@@ -999,7 +995,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              logType = 'gain';
              nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + card.value });
          }
-      } else if (card.type === 'potion') {
+      } else if (card.type === 'potion' && action.hand !== 'backpack') {
          newState.discardPile = [...newState.discardPile, card]; // Add to discard
          blocked = true;
          const healAmount = card.value;
@@ -1036,16 +1032,18 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          }
          logType = 'heal';
       } else {
-         logMessage += `Взято в руку: ${card.icon}`;
+         if (action.hand === 'backpack') logMessage += `В рюкзак положено: ${card.icon}`;
+         else logMessage += `Взято в руку: ${card.icon}`;
          nextState = newState;
       }
 
       const updatedHand = { card: card, blocked };
-      
+      const slotName = action.hand === 'left' ? 'leftHand' : (action.hand === 'right' ? 'rightHand' : 'backpack');
+
       nextState = {
         ...nextState,
         player: { ...nextState.player, ...playerUpdates },
-        [action.hand === 'left' ? 'leftHand' : 'rightHand']: updatedHand
+        [slotName]: updatedHand
       };
       break;
     }
@@ -1184,9 +1182,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (targetLoc === 'enemySlots') {
             const idx = state.enemySlots.findIndex(c => c?.id === targetId);
             if (idx !== -1) targetCard = state.enemySlots[idx];
-        } else if (targetLoc === 'leftHand') targetCard = state.leftHand.card;
+        }         else if (targetLoc === 'leftHand') targetCard = state.leftHand.card;
         else if (targetLoc === 'rightHand') targetCard = state.rightHand.card;
-        else if (targetLoc === 'backpack') targetCard = state.backpack;
+        else if (targetLoc === 'backpack') targetCard = state.backpack.card;
         
         let newState = { ...state };
         let spellUsed = false;
@@ -1395,7 +1393,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         newState.enemySlots = ns;
                     } else if (targetLoc === 'leftHand') newState.leftHand.card = newCard;
                     else if (targetLoc === 'rightHand') newState.rightHand.card = newCard;
-                    else if (targetLoc === 'backpack') newState.backpack = newCard;
+                    else if (targetLoc === 'backpack') newState.backpack = { ...newState.backpack, card: newCard };
 
                     logMessage = `СКУПЩИК: предмет теперь стоит в 2 раза дороже при продаже.`;
                     spellUsed = true;
@@ -1515,7 +1513,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     const newCard = { ...targetCard, value: targetCard.value + 2 };
                     if (targetLoc === 'leftHand') newState.leftHand.card = newCard;
                     else if (targetLoc === 'rightHand') newState.rightHand.card = newCard;
-                    else if (targetLoc === 'backpack') newState.backpack = newCard;
+                    else if (targetLoc === 'backpack') newState.backpack = { ...newState.backpack, card: newCard };
                     else {
                         const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
                         const ns = [...newState.enemySlots];
@@ -1539,9 +1537,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 if (targetId === 'player') {
                     if (newState.discardPile.length > 0) {
                         const valid = newState.discardPile.filter(c => c.type !== 'monster');
-                        if (valid.length > 0 && !newState.backpack && !hasActiveAbility(state, 'web')) {
+                        if (valid.length > 0 && !newState.backpack.card && !newState.backpack.blocked && !hasActiveAbility(state, 'web')) {
                             const randomCard = valid[Math.floor(Math.random() * valid.length)];
-                            newState.backpack = randomCard;
+                            newState.backpack = { ...newState.backpack, card: randomCard };
                             newState.discardPile = newState.discardPile.filter(c => c.id !== randomCard.id);
                             logMessage = `АРХИВ: ${randomCard.icon} возвращен в рюкзак.`;
                             spellUsed = true;
@@ -1623,7 +1621,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             // Remove spell card
             if (spellLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
             else if (spellLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
-            else if (spellLoc === 'backpack') newState.backpack = null;
+            else if (spellLoc === 'backpack') newState.backpack = { ...newState.backpack, card: null };
             nextState = newState;
         } else {
             return state;
@@ -1663,7 +1661,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         let cardToSell: Card | null = null;
         if (state.leftHand.card?.id === action.cardId) cardToSell = state.leftHand.card;
         else if (state.rightHand.card?.id === action.cardId) cardToSell = state.rightHand.card;
-        else if (state.backpack?.id === action.cardId) cardToSell = state.backpack;
+        else if (state.backpack.card?.id === action.cardId) cardToSell = state.backpack.card;
         else {
              const idx = state.enemySlots.findIndex(c => c?.id === action.cardId);
              if (idx !== -1) cardToSell = state.enemySlots[idx];
@@ -1708,6 +1706,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         });
         if (card.type === 'skull') {
             logMessage = `Выброшено: ${card.icon}`;
+        } else if (card.type === 'spell') {
+            logMessage = `Сброшено: ${card.icon}`;
+        } else if (card.type === 'coin') {
+            logMessage = `Спасибо: ${card.icon}`;
         } else {
             logMessage = `Продано: ${card.icon} за ${coinsToAdd} монет.`;
         }
