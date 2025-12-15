@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Save, Play, Swords, RotateCcw } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ArrowLeft, Save, Play, Swords, RotateCcw, Share2, Download, Copy, Check, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import CharacterEditor from './CharacterEditor';
 import ShieldsEditor from './ShieldsEditor';
 import WeaponsEditor from './WeaponsEditor';
@@ -13,6 +13,109 @@ import { BASE_SPELLS } from '../data/spells';
 import { ConfirmationModal } from './ConfirmationModal';
 import SaveTemplateModal from './SaveTemplateModal';
 import { saveTemplate } from '../utils/storage';
+import { encodeDeckConfig, decodeDeckConfig } from '../utils/shareUtils';
+
+// ... (CategoryCard component remains same)
+
+const ExportModal = ({ config, onClose }: { config: DeckConfig, onClose: () => void }) => {
+    const [copied, setCopied] = useState(false);
+    const code = encodeDeckConfig(config);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-lg w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-500 hover:text-white transition-colors">
+                    <X size={24} />
+                </button>
+                <h2 className="text-xl font-bold text-stone-200 mb-2 uppercase tracking-widest flex items-center gap-2">
+                    <Share2 size={20} className="text-indigo-400" /> Поделиться колодой
+                </h2>
+                <p className="text-stone-400 text-sm mb-4">Скопируйте этот код, чтобы передать вашу колоду другу.</p>
+                
+                <div className="bg-stone-950 border border-stone-800 rounded-lg p-3 mb-4 relative group">
+                    <div className="text-stone-300 font-mono text-xs break-all max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                        {code}
+                    </div>
+                </div>
+
+                <button 
+                    onClick={handleCopy}
+                    className={`w-full py-3 rounded-lg font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all ${copied ? 'bg-emerald-900/50 text-emerald-400 border border-emerald-500/50' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}
+                >
+                    {copied ? <><Check size={16} /> Скопировано!</> : <><Copy size={16} /> Копировать код</>}
+                </button>
+            </div>
+        </motion.div>
+    );
+};
+
+const ImportModal = ({ onImport, onClose }: { onImport: (config: DeckConfig) => void, onClose: () => void }) => {
+    const [code, setCode] = useState("");
+    const [error, setError] = useState<string | null>(null);
+
+    const handleImport = () => {
+        if (!code.trim()) return;
+        const config = decodeDeckConfig(code.trim());
+        if (config) {
+            onImport(config);
+            onClose();
+        } else {
+            setError("Неверный код колоды. Проверьте правильность.");
+        }
+    };
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <div className="bg-stone-900 border border-stone-700 rounded-xl p-6 max-w-lg w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 text-stone-500 hover:text-white transition-colors">
+                    <X size={24} />
+                </button>
+                <h2 className="text-xl font-bold text-stone-200 mb-2 uppercase tracking-widest flex items-center gap-2">
+                    <Download size={20} className="text-amber-400" /> Импорт колоды
+                </h2>
+                <p className="text-stone-400 text-sm mb-4">Вставьте код колоды, полученный от друга.</p>
+                
+                <textarea 
+                    value={code}
+                    onChange={(e) => {
+                        setCode(e.target.value);
+                        setError(null);
+                    }}
+                    placeholder="Вставьте код здесь..."
+                    className="w-full h-32 bg-stone-950 border border-stone-800 rounded-lg p-3 text-stone-300 font-mono text-xs focus:outline-none focus:border-indigo-500 transition-colors resize-none mb-2"
+                />
+                
+                {error && <p className="text-rose-400 text-xs mb-4 flex items-center gap-1"><X size={12}/> {error}</p>}
+
+                <button 
+                    onClick={handleImport}
+                    disabled={!code.trim()}
+                    className="w-full py-3 bg-stone-100 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed text-stone-900 rounded-lg font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all"
+                >
+                    <Download size={16} /> Загрузить
+                </button>
+            </div>
+        </motion.div>
+    );
+};
 
 interface DeckbuilderScreenProps {
     onBack: () => void;
@@ -102,6 +205,8 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const [showMonstersEditor, setShowMonstersEditor] = useState(false);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     // Checks
     const arraysEqual = (a: any[], b: any[]) => {
@@ -160,6 +265,16 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
         // Maybe show toast? Or just close.
     };
 
+    const handleImportConfig = (config: DeckConfig) => {
+        setCustomPlayer({ ...config.character, maxHp: config.character.hp });
+        setCustomShields(config.shields);
+        setCustomWeapons(config.weapons);
+        setCustomPotions(config.potions);
+        setCustomCoins(config.coins);
+        setCustomSpells(config.spells);
+        setCustomMonsters(config.monsters);
+    };
+
     return (
         <motion.div 
             initial={{ opacity: 0 }}
@@ -189,6 +304,21 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setShowImportModal(true)}
+                        className="flex items-center gap-2 text-stone-500 hover:text-amber-400 transition-colors group"
+                        title="Импорт колоды"
+                    >
+                        <Download size={18} className="group-hover:scale-110 transition-transform" />
+                    </button>
+                    <button 
+                        onClick={() => setShowExportModal(true)}
+                        className="flex items-center gap-2 text-stone-500 hover:text-indigo-400 transition-colors group"
+                        title="Поделиться колодой"
+                    >
+                        <Share2 size={18} className="group-hover:scale-110 transition-transform" />
+                    </button>
+                    <div className="w-px h-4 bg-stone-800 mx-1"></div>
                     <button 
                         onClick={() => setShowResetConfirm(true)}
                         className="flex items-center gap-2 text-stone-500 hover:text-rose-400 transition-colors group"
@@ -390,6 +520,18 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                     <SaveTemplateModal 
                         onSave={handleSaveTemplate}
                         onCancel={() => setShowSaveTemplate(false)}
+                    />
+                )}
+                {showExportModal && (
+                    <ExportModal 
+                        config={getCurrentConfig()}
+                        onClose={() => setShowExportModal(false)}
+                    />
+                )}
+                {showImportModal && (
+                    <ImportModal 
+                        onImport={handleImportConfig}
+                        onClose={() => setShowImportModal(false)}
                     />
                 )}
             </AnimatePresence>
