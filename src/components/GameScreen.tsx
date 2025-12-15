@@ -255,7 +255,7 @@ const CardsViewer = ({ cards, label, className = "top-40", position, onPositionC
         <motion.div 
             drag
             dragMomentum={false}
-            onDragEnd={(e, info) => {
+            onDragEnd={(_, info) => {
                 if (onPositionChange) {
                     onPositionChange({ x: x + info.offset.x, y: y + info.offset.y });
                 }
@@ -306,7 +306,7 @@ const OverheadStatsWindow = ({ overheads, position, onPositionChange }: { overhe
         <motion.div 
             drag
             dragMomentum={false}
-            onDragEnd={(e, info) => onPositionChange && onPositionChange({ x: x + info.offset.x, y: y + info.offset.y })}
+            onDragEnd={(_, info) => onPositionChange && onPositionChange({ x: x + info.offset.x, y: y + info.offset.y })}
             initial={{ opacity: 0, x: x + 20, y }}
             animate={{ opacity: 1, x, y }}
             exit={{ opacity: 0, x: x + 20, y }}
@@ -346,7 +346,7 @@ const GameLogWindow = ({ logs, position, onPositionChange }: { logs: LogEntry[],
             dragListener={false}
             dragControls={dragControls}
             dragMomentum={false}
-            onDragEnd={(e, info) => onPositionChange && onPositionChange({ x: x + info.offset.x, y: y + info.offset.y })}
+            onDragEnd={(_, info) => onPositionChange && onPositionChange({ x: x + info.offset.x, y: y + info.offset.y })}
             initial={{ opacity: 0, y: y + 20, x, height: '8rem' }}
             animate={{ opacity: 1, y, x, height: expanded ? '60vh' : '8rem' }}
             exit={{ opacity: 0, y: y + 20, x, height: '8rem' }}
