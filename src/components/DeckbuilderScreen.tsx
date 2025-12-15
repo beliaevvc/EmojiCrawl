@@ -285,24 +285,15 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
 
             {/* Header */}
-            <div className="relative z-10 flex items-center justify-between mb-8 max-w-4xl mx-auto w-full">
+            <div className="relative z-10 flex items-center justify-between mb-4 md:mb-8 max-w-4xl mx-auto w-full">
                 <button 
                     onClick={onBack}
                     className="flex items-center gap-2 text-stone-400 hover:text-stone-200 transition-colors group"
                 >
                     <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="font-bold tracking-widest uppercase text-sm">Назад</span>
+                    <span className="font-bold tracking-widest uppercase text-sm hidden md:inline">Назад</span>
                 </button>
                 
-                <div className="text-center">
-                    <h2 className="text-3xl md:text-4xl font-display font-bold text-stone-200 uppercase tracking-tighter">
-                        Deckbuilder
-                    </h2>
-                    <p className="text-stone-500 text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase mt-1">
-                        {initialTemplate ? `Шаблон: ${initialTemplate.name}` : 'Конструктор колоды'}
-                    </p>
-                </div>
-
                 <div className="flex items-center gap-4">
                     <button 
                         onClick={() => setShowImportModal(true)}
@@ -336,7 +327,17 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
 
             {/* Content Area */}
             <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl mx-auto z-10 relative">
-                <h3 className="text-stone-500 font-bold uppercase tracking-widest text-sm mb-12">Выберите категорию</h3>
+                
+                <div className="text-center mb-8 md:mb-12">
+                    <h2 className="text-4xl md:text-5xl font-display font-bold text-stone-200 uppercase tracking-tighter drop-shadow-2xl">
+                        Deckbuilder
+                    </h2>
+                    <p className="text-stone-500 text-xs font-bold tracking-[0.3em] uppercase mt-2">
+                        {initialTemplate ? `Шаблон: ${initialTemplate.name}` : 'Конструктор колоды'}
+                    </p>
+                </div>
+
+                <h3 className="text-stone-500 font-bold uppercase tracking-widest text-sm mb-8">Выберите категорию</h3>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12 mb-12">
                      {/* Character */}
