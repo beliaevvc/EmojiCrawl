@@ -96,6 +96,13 @@ export interface DeckTemplate {
     createdAt: number;
 }
 
+export interface HpUpdate {
+    from: number;
+    to: number;
+    source: string;
+    timestamp: number;
+}
+
 export interface GameState {
   deck: Card[];
   discardPile: Card[];
@@ -104,6 +111,7 @@ export interface GameState {
   rightHand: HandSlot;
   backpack: HandSlot;
   player: Player;
+  hpUpdates: HpUpdate[];
   round: number;
   status: 'playing' | 'won' | 'lost';
   logs: LogEntry[];

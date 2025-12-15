@@ -1,5 +1,5 @@
 // ... imports
-import { GameState, LogEntry, Overheads, GameStats, Card, SpellType, MonsterGroupConfig, MonsterAbilityType } from '../types/game';
+import { GameState, LogEntry, Overheads, GameStats, Card, SpellType, MonsterGroupConfig, MonsterAbilityType, HpUpdate } from '../types/game';
 import { createDeck, shuffleDeck } from './gameLogic';
 import { SPELLS } from '../data/spells';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
@@ -40,7 +40,8 @@ export const initialState: GameState = {
   peekCards: null,
   peekType: undefined,
   scoutCards: null,
-  isGodMode: false
+  isGodMode: false,
+  hpUpdates: []
 };
 
 // ... (Action Types)
@@ -87,6 +88,23 @@ const updateStats = (state: GameState, updates: Partial<GameStats>): GameState =
             ...state.stats,
             ...updates
         }
+    };
+}
+
+const setPlayerHp = (state: GameState, newHp: number, source: string): GameState => {
+    const update: HpUpdate = {
+        from: state.player.hp,
+        to: newHp,
+        source,
+        timestamp: Date.now() + Math.random()
+    };
+    
+    const newUpdates = [...state.hpUpdates, update].slice(-20);
+    
+    return {
+        ...state,
+        player: { ...state.player, hp: newHp },
+        hpUpdates: newUpdates
     };
 }
 
@@ -153,7 +171,7 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
     switch (card.ability) {
         case 'ambush':
             if (!newState.isGodMode) {
-                newState.player.hp = Math.max(0, newState.player.hp - 1);
+                newState = setPlayerHp(newState, Math.max(0, newState.player.hp - 1), 'ambush');
             }
             newState = addLog(newState, `ЗАСАДА (${card.icon}): Герой получил 1 урон при появлении монстра.${newState.isGodMode ? ' (GOD)' : ''}`, 'combat');
             break;
@@ -179,7 +197,9 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
         case 'exhaustion':
             // Reduce max HP while alive
             newState.player.maxHp = Math.max(1, newState.player.maxHp - 1);
-            if (newState.player.hp > newState.player.maxHp) newState.player.hp = newState.player.maxHp;
+            if (newState.player.hp > newState.player.maxHp) {
+                newState = setPlayerHp(newState, newState.player.maxHp, 'exhaustion_clamp');
+            }
             newState = addLog(newState, `ИЗНУРЕНИЕ (${card.icon}): Макс. HP снижено на 1.`, 'info');
             break;
     }
@@ -259,9 +279,13 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
             }
             break;
         case 'blessing':
+            if (newState.player.hp <= 0) {
+                 newState = addLog(newState, `БЛАГОСЛОВЕНИЕ: не сработало (герой погиб).`, 'info');
+                 break;
+            }
             const heal = 2;
             const newHp = Math.min(newState.player.maxHp, newState.player.hp + heal);
-            newState.player.hp = newHp;
+            newState = setPlayerHp(newState, newHp, 'blessing');
             newState = addLog(newState, `БЛАГОСЛОВЕНИЕ: +${heal} HP.`, 'heal');
             break;
         case 'beacon':
@@ -404,7 +428,7 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
         case 'exhaustion':
             // Restore Max HP when killed
             newState.player.maxHp = Math.min(13, newState.player.maxHp + 1); 
-            newState.player.hp = Math.min(newState.player.maxHp, newState.player.hp + 1);
+            newState = setPlayerHp(newState, Math.min(newState.player.maxHp, newState.player.hp + 1), 'exhaustion_restore');
             newState = addLog(newState, 'ИЗНУРЕНИЕ: Макс. HP восстановлено (+1 HP).', 'info');
             break;
         case 'junk':
@@ -535,10 +559,7 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
         if (newState.isGodMode) {
              log = `Получен урон от монстра: -${damage} HP (GOD MODE: Урон заблокирован)`;
         } else {
-            newState.player = {
-                ...newState.player,
-                hp: Math.max(0, newState.player.hp - damage)
-            };
+            newState = setPlayerHp(newState, Math.max(0, newState.player.hp - damage), 'monster_attack');
             newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + damage });
             log = `Получен урон от монстра: -${damage} HP`;
         }
@@ -594,10 +615,7 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
             if (newState.isGodMode) {
                 log += ` Прошло урона: -${overflow} HP (GOD MODE: Урон заблокирован)`;
             } else {
-                newState.player = {
-                    ...newState.player,
-                    hp: Math.max(0, newState.player.hp - overflow)
-                };
+                newState = setPlayerHp(newState, Math.max(0, newState.player.hp - overflow), 'monster_attack_overflow');
                 log += ` Прошло урона: -${overflow} HP`;
             }
         }
@@ -1011,12 +1029,12 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          const actualHeal = Math.min(effectiveHeal, neededHeal);
          
          const newHp = newState.player.hp + actualHeal;
-         playerUpdates = { hp: newHp };
+         nextState = setPlayerHp(newState, newHp, 'potion');
          
          logMessage += `Выпито зелье: +${actualHeal} HP`;
          if (rotMod < 0) logMessage += ' (ГНИЛЬ: -2)';
          
-         nextState = updateStats(newState, { hpHealed: newState.stats.hpHealed + actualHeal });
+         nextState = updateStats(nextState, { hpHealed: newState.stats.hpHealed + actualHeal });
 
          if (overheal > 0) {
              if (newState.activeEffects.includes('snack')) {
@@ -1024,7 +1042,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                  playerUpdates = { ...playerUpdates, coins: (playerUpdates as any).coins ? (playerUpdates as any).coins + coinsFromSnack : newState.player.coins + coinsFromSnack };
                  newState.activeEffects = newState.activeEffects.filter(e => e !== 'snack');
                  logMessage += ` (Закуска: +${coinsFromSnack} 💎 из Overheal)`;
-                 nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + coinsFromSnack });
+                 nextState = updateStats(nextState, { coinsCollected: newState.stats.coinsCollected + coinsFromSnack });
              } else {
                  logMessage += ` (Overheal: ${overheal})`;
                  nextState = updateOverheads(nextState, 'overheal', overheal);
@@ -1213,7 +1231,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     const actualHeal = Math.min(healAmount, neededHeal);
                     
                     const newHp = newState.player.hp + actualHeal;
-                    newState.player = { ...newState.player, hp: newHp };
+                    newState = setPlayerHp(newState, newHp, 'leech');
                     
                     newState = updateStats(newState, { hpHealed: newState.stats.hpHealed + actualHeal });
 
@@ -1606,7 +1624,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
                     // Damage Player
                     const dmgToTake = newState.isGodMode ? 0 : selfDmg;
-                    newState.player = { ...newState.player, hp: Math.max(0, newState.player.hp - dmgToTake) };
+                    newState = setPlayerHp(newState, Math.max(0, newState.player.hp - dmgToTake), 'cut');
                     newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + selfDmg }); // Stats still count taken? Usually yes for testing
 
                     logMessage = `ПОРЕЗ: 4 урона монстру, -2 HP герою.${newState.isGodMode ? ' (GOD)' : ''}`;
@@ -1643,10 +1661,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
         nextState = {
             ...state,
-            player: { ...state.player, hp: newHp },
+            player: state.player,
             enemySlots: emptySlots,
             deck: newDeck
         };
+        nextState = setPlayerHp(nextState, newHp, 'reset');
         nextState = updateStats(nextState, { resetsUsed: nextState.stats.resetsUsed + 1 });
         logMessage = `СБРОС: карты убраны, потрачено ${cost} HP.${state.isGodMode ? ' (GOD)' : ''}`;
         break;
