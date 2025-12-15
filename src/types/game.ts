@@ -114,6 +114,7 @@ export interface GameState {
   peekType?: 'epiphany' | 'whisper' | 'beacon';
   scoutCards: Card[] | null;
   lastEffect?: { type: string; targetId: string; value?: number; timestamp: number };
+  isGodMode: boolean;
 }
 
 export const MAX_HP = 13;

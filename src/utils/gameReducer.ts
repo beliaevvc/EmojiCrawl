@@ -39,12 +39,14 @@ export const initialState: GameState = {
   activeEffects: [],
   peekCards: null,
   peekType: undefined,
-  scoutCards: null
+  scoutCards: null,
+  isGodMode: false
 };
 
 // ... (Action Types)
 export type GameAction =
   | { type: 'INIT_GAME' }
+  | { type: 'TOGGLE_GOD_MODE' }
   | { type: 'START_GAME'; deckConfig?: { character: { hp: number; coins: number }; shields: number[]; weapons: number[]; potions: number[]; coins: number[]; spells: SpellType[]; monsters: MonsterGroupConfig[] }; runType?: 'standard' | 'custom'; templateName?: string }
   | { type: 'TAKE_CARD_TO_HAND'; cardId: string; hand: 'left' | 'right' | 'backpack' }
   | { type: 'INTERACT_WITH_MONSTER'; monsterId: string; target: 'player' | 'shield_left' | 'shield_right' | 'weapon_left' | 'weapon_right' }
@@ -150,8 +152,10 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
 
     switch (card.ability) {
         case 'ambush':
-            newState.player.hp = Math.max(0, newState.player.hp - 1);
-            newState = addLog(newState, `ЗАСАДА (${card.icon}): Герой получил 1 урон при появлении монстра.`, 'combat');
+            if (!newState.isGodMode) {
+                newState.player.hp = Math.max(0, newState.player.hp - 1);
+            }
+            newState = addLog(newState, `ЗАСАДА (${card.icon}): Герой получил 1 урон при появлении монстра.${newState.isGodMode ? ' (GOD)' : ''}`, 'combat');
             break;
         case 'corpseeater':
             const deadMonsters = newState.discardPile.filter(c => c.type === 'monster').length;
@@ -544,12 +548,16 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
             return { state: newState, log, logType: 'combat', monsterKept: true };
         }
 
-        newState.player = {
-            ...newState.player,
-            hp: Math.max(0, newState.player.hp - damage)
-        };
-        newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + damage });
-        log = `Получен урон от монстра: -${damage} HP`;
+        if (newState.isGodMode) {
+             log = `Получен урон от монстра: -${damage} HP (GOD MODE: Урон заблокирован)`;
+        } else {
+            newState.player = {
+                ...newState.player,
+                hp: Math.max(0, newState.player.hp - damage)
+            };
+            newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + damage });
+            log = `Получен урон от монстра: -${damage} HP`;
+        }
 
     } else if (defenseType === 'shield' && shieldHand) {
         const hand = shieldHand === 'left' ? newState.leftHand : newState.rightHand;
@@ -599,11 +607,15 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
         }
 
         if (overflow > 0) {
-            newState.player = {
-                ...newState.player,
-                hp: Math.max(0, newState.player.hp - overflow)
-            };
-            log += ` Прошло урона: -${overflow} HP`;
+            if (newState.isGodMode) {
+                log += ` Прошло урона: -${overflow} HP (GOD MODE: Урон заблокирован)`;
+            } else {
+                newState.player = {
+                    ...newState.player,
+                    hp: Math.max(0, newState.player.hp - overflow)
+                };
+                log += ` Прошло урона: -${overflow} HP`;
+            }
         }
     }
     return { state: newState, log, logType };
@@ -773,6 +785,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     case 'INIT_GAME':
       return { ...initialState, stats: { ...initialStats, startTime: Date.now() } };
       
+    case 'TOGGLE_GOD_MODE':
+      nextState = { ...state, isGodMode: !state.isGodMode };
+      logMessage = nextState.isGodMode ? '👑 РЕЖИМ БОГА ВКЛЮЧЕН' : 'РЕЖИМ БОГА ВЫКЛЮЧЕН';
+      break;
+
     case 'START_GAME': {
       const runType = action.runType || 'standard';
       let newDeck: Card[] = [];
@@ -1606,10 +1623,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     newState.enemySlots = ns;
 
                     // Damage Player
-                    newState.player = { ...newState.player, hp: Math.max(0, newState.player.hp - selfDmg) };
-                    newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + selfDmg });
+                    const dmgToTake = newState.isGodMode ? 0 : selfDmg;
+                    newState.player = { ...newState.player, hp: Math.max(0, newState.player.hp - dmgToTake) };
+                    newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + selfDmg }); // Stats still count taken? Usually yes for testing
 
-                    logMessage = `ПОРЕЗ: 4 урона монстру, -2 HP герою.`;
+                    logMessage = `ПОРЕЗ: 4 урона монстру, -2 HP герою.${newState.isGodMode ? ' (GOD)' : ''}`;
                     spellUsed = true;
                 }
                 break;
@@ -1630,9 +1648,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
     
     case 'RESET_HAND': {
-        if (state.player.hp <= 5) return state;
+        const cost = state.isGodMode ? 0 : 5;
+        if (!state.isGodMode && state.player.hp <= 5) return state;
 
-        const newHp = state.player.hp - 5;
+        const newHp = state.player.hp - cost;
         const cardsToReturn = state.enemySlots.filter(c => c !== null) as any[];
         // Add to deck? Or discard? Original logic: Shuffle back into deck.
         const newDeck = shuffleDeck([...state.deck, ...cardsToReturn]);
@@ -1645,7 +1664,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             deck: newDeck
         };
         nextState = updateStats(nextState, { resetsUsed: nextState.stats.resetsUsed + 1 });
-        logMessage = 'СБРОС: карты убраны, потрачено 5 HP.';
+        logMessage = `СБРОС: карты убраны, потрачено ${cost} HP.${state.isGodMode ? ' (GOD)' : ''}`;
         break;
     }
     

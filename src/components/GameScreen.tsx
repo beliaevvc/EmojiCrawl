@@ -1,7 +1,7 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity } from 'lucide-react';
+import { RefreshCw, Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff } from 'lucide-react';
 import { useDrop } from 'react-dnd';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
@@ -251,6 +251,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showInfo, setShowInfo] = useState(false); // Deck Stats & Logs Toggle
+  const [showGodModeToggle, setShowGodModeToggle] = useState(false); // Visibility of God Mode button
   
   // Visual Effects State
   const [floatingTexts, setFloatingTexts] = useState<FloatingTextItem[]>([]);
@@ -920,7 +921,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       </div>
 
       {/* --- Bottom Panel and Overlays --- */}
-      <div className="flex gap-3 md:gap-6 items-end justify-start z-10 w-full px-4 md:px-6 pb-6 md:pb-8">
+      <div className="flex gap-3 md:gap-6 items-end justify-start z-10 w-full px-4 md:px-6 pb-6 md:pb-8 min-h-[3.5rem]">
          <SystemButton 
             icon={<Flag size={20} />} 
             label="New Game" 
@@ -933,6 +934,62 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
             active={showInfo}
             onClick={() => setShowInfo(!showInfo)} 
          />
+
+         <AnimatePresence>
+            {showInfo && (
+                <motion.button
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0 }}
+                    onClick={() => setShowGodModeToggle(!showGodModeToggle)}
+                    className="flex items-center justify-center p-3 text-stone-600/40 hover:text-stone-300 transition-all ml-1"
+                    title={showGodModeToggle ? "Скрыть читы" : "Показать читы"}
+                >
+                    {showGodModeToggle ? <EyeOff size={20} /> : <Eye size={20} />}
+                </motion.button>
+            )}
+         </AnimatePresence>
+
+         <AnimatePresence>
+             {showInfo && showGodModeToggle && (
+                 <motion.div
+                    initial={{ width: 0, opacity: 0, x: -10 }}
+                    animate={{ width: "auto", opacity: 1, x: 0 }}
+                    exit={{ width: 0, opacity: 0, x: -10 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="overflow-hidden ml-2 flex-shrink-0 flex items-end" // Убрал -mb-2
+                 >
+                     <div className="px-1 pt-2 pb-0"> {/* pt-2 (8px) для ховера. pb-0. */}
+                        <button
+                            onClick={() => dispatch({ type: 'TOGGLE_GOD_MODE' })}
+                            className={`
+                                group flex items-center gap-3 px-5 py-3 
+                                backdrop-blur-md border 
+                                rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 
+                                transition-all duration-200 whitespace-nowrap
+                                ${state.isGodMode 
+                                    ? 'bg-yellow-500/90 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.4)]' 
+                                    : 'bg-stone-900/80 border-stone-700 hover:border-yellow-500/50'}
+                            `}
+                        >
+                            <div className={`
+                                ${state.isGodMode ? 'text-stone-900' : 'text-stone-400 group-hover:text-yellow-400'}
+                                transition-colors
+                            `}>
+                                <Crown size={20} fill={state.isGodMode ? "currentColor" : "none"} />
+                            </div>
+                            <span className={`
+                                text-[10px] md:text-xs font-bold tracking-widest uppercase
+                                ${state.isGodMode ? 'text-stone-900' : 'text-stone-500 group-hover:text-yellow-200'}
+                                transition-colors
+                            `}>
+                                {state.isGodMode ? 'GOD ON' : 'God Mode'}
+                            </span>
+                        </button>
+                     </div>
+                 </motion.div>
+             )}
+         </AnimatePresence>
       </div>
 
       {/* Game Log Window & Overhead Stats */}
