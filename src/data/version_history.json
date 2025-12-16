@@ -1,7 +1,12 @@
 {
-  "version": "0.0.93",
-  "buildDate": "12/16/2025, 10:30:23 AM",
+  "version": "0.0.94",
+  "buildDate": "12/16/2025, 10:32:29 AM",
   "commits": [
+    {
+      "hash": "bb80843",
+      "date": "16.12.2025 10:32",
+      "message": "Update Chalkboard component import statement for cleaner code structure."
+    },
     {
       "hash": "457589f",
       "date": "16.12.2025 10:30",
@@ -246,11 +251,6 @@
       "hash": "f766768",
       "date": "15.12.2025 03:55",
       "message": "Enhance GameScreen and gameReducer to support 'beacon' ability mechanics. Update peekType handling and visual feedback in GameScreen based on the new ability, ensuring players receive clear notifications about upcoming monsters. Modify monsterAbilities description for clarity on 'beacon' functionality, improving gameplay dynamics and user experience."
-    },
-    {
-      "hash": "76754f5",
-      "date": "15.12.2025 03:52",
-      "message": "Add skull card type and related mechanics in CardComponent, GameScreen, and gameReducer. Update deck stats to include skull cards, implement random insertion of skull cards into the deck, and adjust log messages for skull interactions, enhancing gameplay dynamics and user experience."
     }
   ]
 }

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.87.3",
     "clsx": "^2.1.0",
     "dnd-core": "^16.0.1",
     "framer-motion": "^11.0.0",
@@ -19,7 +20,8 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dnd-touch-backend": "^16.0.1",
     "react-dom": "^18.2.0",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
@@ -37,6 +39,3 @@
     "vite": "^5.1.4"
   }
 }
-
-
-

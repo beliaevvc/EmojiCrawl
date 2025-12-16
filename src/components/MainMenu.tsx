@@ -1,11 +1,13 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, PlusSquare, FileUp, BarChart3, Info } from 'lucide-react';
+import { Play, PlusSquare, FileUp, BarChart3, Info, User as UserIcon, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { DeckTemplate } from '../types/game';
 import LoadTemplateModal from './LoadTemplateModal';
 import { VersionModal } from './VersionModal';
+import { AuthModal } from './AuthModal';
 import { Chalkboard } from './Chalkboard';
 import versionData from '../data/version_history.json';
+import { useAuthStore } from '../stores/useAuthStore';
 
 const QUOTES = [
     "Серега конечно красавчик, такой прототип запилил",
@@ -101,7 +103,14 @@ interface MainMenuProps {
 const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: MainMenuProps) => {
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
+  
+  const { user, initializeAuth, signOut } = useAuthStore();
+
+  useEffect(() => {
+    initializeAuth();
+  }, []);
 
   // Stickers Configuration
   const [stickers] = useState(() => {
@@ -162,6 +171,53 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="mb-12 text-center z-10 relative"
       >
+        <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex items-center gap-4">
+             {/* Auth Button / User Profile */}
+             <AnimatePresence mode="wait">
+                {user ? (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center gap-3 bg-stone-900/80 backdrop-blur-md border border-stone-800 rounded-full pl-1 pr-4 py-1"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center text-xl shadow-inner border border-stone-700">
+                            {['Bjorn', 'Wolf', 'Bear', 'Fox', 'Owl'][Math.abs(user.email?.length || 0) % 5] === 'Bjorn' ? '🐻' : 
+                             ['Bjorn', 'Wolf', 'Bear', 'Fox', 'Owl'][Math.abs(user.email?.length || 0) % 5] === 'Wolf' ? '🐺' :
+                             ['Bjorn', 'Wolf', 'Bear', 'Fox', 'Owl'][Math.abs(user.email?.length || 0) % 5] === 'Bear' ? '🐼' :
+                             ['Bjorn', 'Wolf', 'Bear', 'Fox', 'Owl'][Math.abs(user.email?.length || 0) % 5] === 'Fox' ? '🦊' : '🦉'}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider leading-none mb-0.5">Player</span>
+                            <span className="text-xs text-stone-300 font-mono leading-none max-w-[100px] truncate" title={user.email}>
+                                {user.email?.split('@')[0]}
+                            </span>
+                        </div>
+                        <button 
+                            onClick={() => signOut()}
+                            className="ml-2 p-1.5 text-stone-500 hover:text-red-400 hover:bg-stone-800 rounded-full transition-colors"
+                            title="Выйти"
+                        >
+                            <LogOut size={14} />
+                        </button>
+                    </motion.div>
+                ) : (
+                    <motion.button
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        onClick={() => setShowAuthModal(true)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="bg-stone-900/80 backdrop-blur-md border border-stone-800 hover:border-emerald-500/50 text-stone-400 hover:text-emerald-400 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg"
+                    >
+                        <UserIcon size={14} />
+                        Войти
+                    </motion.button>
+                )}
+             </AnimatePresence>
+        </div>
+
         <h1 className="text-6xl md:text-8xl font-display font-bold text-stone-200 tracking-tighter uppercase drop-shadow-xl relative inline-flex items-center">
           Skazmor
           
@@ -316,6 +372,9 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
            )}
            {showVersionHistory && (
                <VersionModal onClose={() => setShowVersionHistory(false)} />
+           )}
+           {showAuthModal && (
+               <AuthModal onClose={() => setShowAuthModal(false)} />
            )}
        </AnimatePresence>
 
