@@ -1,7 +1,12 @@
 {
-  "version": "0.0.88",
-  "buildDate": "12/16/2025, 10:00:12 AM",
+  "version": "0.0.89",
+  "buildDate": "12/16/2025, 10:04:23 AM",
   "commits": [
+    {
+      "hash": "8a194a6",
+      "date": "16.12.2025 10:04",
+      "message": "Update package.json scripts to include version generation and enhance MainMenu with version history feature. Add version badge and modal for displaying version information, improving user experience and accessibility to version details."
+    },
     {
       "hash": "b31dfc5",
       "date": "16.12.2025 09:30",
@@ -246,11 +251,6 @@
       "hash": "183fd27",
       "date": "15.12.2025 02:52",
       "message": "Implement sell block functionality in GameScreen to prevent selling monsters with the 'scream' ability. Update sell button appearance and behavior based on sell block state, enhancing user feedback and gameplay mechanics."
-    },
-    {
-      "hash": "b5eb2e6",
-      "date": "15.12.2025 02:40",
-      "message": "Enhance GameScreen and gameReducer to support graveyard revival mechanics. Implement visual feedback for revived monsters in GameScreen, including floating text notifications. Update gameReducer to manage monster revival logic, ensuring proper handling of empty slots and discard pile interactions."
     }
   ]
 }

@@ -1,5 +1,4 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, GitCommit, Clock } from 'lucide-react';
 import versionData from '../data/version_history.json';
 
@@ -47,7 +46,7 @@ export const VersionModal = ({ onClose }: VersionModalProps) => {
 
                 {/* List */}
                 <div className="overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                    {versionData.commits.map((commit: any, idx: number) => (
+                    {versionData.commits.map((commit: any) => (
                         <div 
                             key={commit.hash} 
                             className="bg-stone-800/50 border border-stone-700/50 rounded-lg p-3 hover:bg-stone-800 transition-colors group"
