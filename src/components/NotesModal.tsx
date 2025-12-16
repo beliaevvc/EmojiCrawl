@@ -543,9 +543,6 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                                    </span>
                                )}
                            </div>
-                           <p className="text-xs text-stone-500 line-clamp-2 h-8 leading-relaxed">
-                               {note.content ? note.content.replace(/<[^>]*>/g, '').slice(0, 100) : <span className="italic opacity-50">Нет текста...</span>}
-                           </p>
                            <div className="flex justify-between items-center mt-3 pt-3 border-t border-stone-800/50">
                                <span className="text-[10px] text-stone-600">
                                    {note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Локально'}
