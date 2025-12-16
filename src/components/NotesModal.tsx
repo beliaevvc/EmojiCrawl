@@ -57,6 +57,13 @@ const DEFAULT_CONTENT = `<b>Общие ограничения</b>
 Второй автоматически получает другой уникальный перк
 = Получаем 2 мини-босса ✅`;
 
+interface WindowState {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   const [notes, setNotes] = useState<Note[]>(() => {
     try {
@@ -100,15 +107,26 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
   
   // Window State
-  const [size, setSize] = useState({ width: 400, height: 500 });
-  const [position, setPosition] = useState(() => ({
-    x: typeof window !== 'undefined' ? window.innerWidth - 450 : 100,
-    y: 96 // top-24 approx
-  }));
+  const [windowState, setWindowState] = useState<WindowState>(() => {
+      try {
+          const saved = localStorage.getItem('skazmor_notes_window');
+          if (saved) {
+              return JSON.parse(saved);
+          }
+      } catch (e) {
+          // ignore
+      }
+      return {
+          x: typeof window !== 'undefined' ? window.innerWidth - 450 : 100,
+          y: 96,
+          width: 400,
+          height: 500
+      };
+  });
 
   // Interaction State
   const interactionRef = useRef<{
-    type: 'move' | 'resize-se' | 'resize-sw' | null;
+    type: 'move' | 'resize-se' | 'resize-sw' | 'resize-e' | 'resize-w' | null;
     startX: number;
     startY: number;
     startLeft: number;
@@ -128,6 +146,10 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   useEffect(() => {
     localStorage.setItem('skazmor_notes', JSON.stringify(notes));
   }, [notes]);
+
+  useEffect(() => {
+      localStorage.setItem('skazmor_notes_window', JSON.stringify(windowState));
+  }, [windowState]);
 
   const activeNote = notes.find(n => n.id === activeNoteId) || notes[0];
 
@@ -171,7 +193,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   }, []);
 
   // Interaction Handlers
-  const startInteraction = (e: React.PointerEvent, type: 'move' | 'resize-se' | 'resize-sw') => {
+  const startInteraction = (e: React.PointerEvent, type: 'move' | 'resize-se' | 'resize-sw' | 'resize-e' | 'resize-w') => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -182,10 +204,10 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
         type,
         startX: e.clientX,
         startY: e.clientY,
-        startLeft: position.x,
-        startTop: position.y,
-        startWidth: size.width,
-        startHeight: size.height
+        startLeft: windowState.x,
+        startTop: windowState.y,
+        startWidth: windowState.width,
+        startHeight: windowState.height
     };
 
     window.addEventListener('pointermove', handleInteraction);
@@ -200,26 +222,39 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
     const deltaY = e.clientY - startY;
 
     if (type === 'move') {
-        setPosition({
+        setWindowState(prev => ({
+            ...prev,
             x: startLeft + deltaX,
             y: startTop + deltaY
-        });
+        }));
     } else if (type === 'resize-se') {
-        setSize({
+        setWindowState(prev => ({
+            ...prev,
             width: Math.max(300, startWidth + deltaX),
             height: Math.max(300, startHeight + deltaY)
-        });
+        }));
     } else if (type === 'resize-sw') {
         const newWidth = Math.max(300, startWidth - deltaX);
-        // Only update left position if width actually changed (respected min-width)
         const effectiveDeltaX = startWidth - newWidth; 
         
-        setSize({
-            width: newWidth,
-            height: Math.max(300, startHeight + deltaY)
-        });
-        setPosition(prev => ({
+        setWindowState(prev => ({
             ...prev,
+            width: newWidth,
+            height: Math.max(300, startHeight + deltaY),
+            x: startLeft + effectiveDeltaX
+        }));
+    } else if (type === 'resize-e') {
+        setWindowState(prev => ({
+            ...prev,
+            width: Math.max(300, startWidth + deltaX)
+        }));
+    } else if (type === 'resize-w') {
+        const newWidth = Math.max(300, startWidth - deltaX);
+        const effectiveDeltaX = startWidth - newWidth;
+        
+        setWindowState(prev => ({
+            ...prev,
+            width: newWidth,
             x: startLeft + effectiveDeltaX
         }));
     }
@@ -269,16 +304,15 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <>
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+        {/* Use a simple div first to mount immediately, then animate if needed, 
+            but for now we prioritize instant appearance to fix "micro-delay" */}
+        <div
             className="fixed z-40 bg-stone-900 border border-stone-700 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-opacity-95"
             style={{ 
-                width: size.width, 
-                height: size.height,
-                left: position.x,
-                top: position.y
+                width: windowState.width, 
+                height: windowState.height,
+                left: windowState.x,
+                top: windowState.y
             }}
         >
         {/* Header / Tabs */}
@@ -317,8 +351,12 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             {/* Reset Size Button */}
             <button 
                 onClick={() => {
-                    setSize({ width: 400, height: 500 });
-                    setPosition({ x: window.innerWidth - 450, y: 96 });
+                    setWindowState({ 
+                        width: 400, 
+                        height: 500,
+                        x: window.innerWidth - 450,
+                        y: 96
+                    });
                 }} 
                 onPointerDown={e => e.stopPropagation()}
                 title="Сбросить размер и позицию"
@@ -361,7 +399,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             {/* Bottom Left Resize */}
             <div 
                 onPointerDown={(e) => startInteraction(e, 'resize-sw')}
-                className="cursor-nesw-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 left-0 z-10"
+                className="cursor-nesw-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 left-0 z-20"
             >
                 <ArrowDownLeft size={16} />
             </div>
@@ -375,12 +413,25 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             {/* Bottom Right Resize */}
             <div 
                 onPointerDown={(e) => startInteraction(e, 'resize-se')}
-                className="cursor-nwse-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 right-0 z-10"
+                className="cursor-nwse-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 right-0 z-20"
             >
                 <ArrowDownRight size={16} />
             </div>
         </div>
-        </motion.div>
+
+        {/* Side Resize Handles (Invisible click areas) */}
+        {/* Right Side */}
+        <div 
+            className="absolute top-0 right-0 w-2 h-full cursor-ew-resize z-10 hover:bg-white/5 transition-colors"
+            onPointerDown={(e) => startInteraction(e, 'resize-e')}
+        />
+        {/* Left Side */}
+        <div 
+            className="absolute top-0 left-0 w-2 h-full cursor-ew-resize z-10 hover:bg-white/5 transition-colors"
+            onPointerDown={(e) => startInteraction(e, 'resize-w')}
+        />
+
+        </div>
 
         {/* Floating Toolbar */}
         <AnimatePresence>
@@ -390,7 +441,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.9 }}
                     transition={{ duration: 0.1 }}
-                    className="fixed z-[45] flex items-center gap-1 p-1 bg-stone-800 border border-stone-600 rounded-lg shadow-xl"
+                    className="fixed z-[60] flex items-center gap-1 p-1 bg-stone-800 border border-stone-600 rounded-lg shadow-xl"
                     style={{ 
                         top: toolbarPosition.top,  
                         left: toolbarPosition.left,
