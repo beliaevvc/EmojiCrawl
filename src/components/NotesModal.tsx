@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Bold, Italic, Underline, Link as LinkIcon, List, RotateCcw, ArrowDownRight, ArrowDownLeft, Cloud, CloudOff, Loader2 } from 'lucide-react';
+import { X, Plus, Bold, Italic, Underline, Link as LinkIcon, List, RotateCcw, ArrowDownRight, ArrowDownLeft, Cloud, CloudOff, Loader2, LayoutGrid, ChevronLeft } from 'lucide-react';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useNotesStore, Note } from '../stores/useNotesStore';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -103,6 +103,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   const notes = user ? remoteNotes : localNotes;
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null); // For custom modal
+  const [viewMode, setViewMode] = useState<'editor' | 'list'>('editor'); // New view mode state
 
   // Sync with remote when user changes
   useEffect(() => {
@@ -429,10 +430,20 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             onPointerDown={(e) => startInteraction(e, 'move')}
         >
             <div className="flex-1 flex overflow-x-auto scrollbar-hide gap-1 pr-2">
-                {isEmptyState ? (
+                {/* List View Toggle Button - Always First */}
+                <button
+                    onClick={() => setViewMode(prev => prev === 'editor' ? 'list' : 'editor')}
+                    onPointerDown={e => e.stopPropagation()}
+                    className={`px-2 py-1.5 rounded-lg transition-colors mr-2 ${viewMode === 'list' ? 'bg-indigo-900/50 text-indigo-300' : 'text-stone-500 hover:text-stone-300'}`}
+                    title={viewMode === 'editor' ? "Список заметок" : "Вернуться к редактору"}
+                >
+                    {viewMode === 'editor' ? <LayoutGrid size={16} /> : <ChevronLeft size={16} />}
+                </button>
+
+                {isEmptyState && viewMode === 'editor' ? (
                     <span className="px-3 py-1.5 text-xs text-stone-500 italic">Нет заметок</span>
                 ) : (
-                    notes.map(note => (
+                    viewMode === 'editor' && notes.map(note => (
                         <div 
                             key={note.id}
                             onClick={() => setActiveNoteId(note.id)}
@@ -455,7 +466,9 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                     ))
                 )}
                 
-                {!loadingRemote && (
+                {viewMode === 'list' && <span className="text-xs font-bold text-stone-400 py-1.5 px-2">Все заметки ({notes.length})</span>}
+
+                {!loadingRemote && viewMode === 'editor' && (
                     <button 
                         onClick={handleAddNote} 
                         onPointerDown={e => e.stopPropagation()}
@@ -493,7 +506,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
         </div>
 
         {/* Empty State Body */}
-        {isEmptyState ? (
+        {isEmptyState && viewMode === 'editor' ? (
             <div className="flex-1 flex flex-col items-center justify-center text-stone-500 gap-4">
                 <p>Список заметок пуст</p>
                 <button 
@@ -503,6 +516,66 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                     <Plus size={16} />
                     Создать первую заметку
                 </button>
+            </div>
+        ) : viewMode === 'list' ? (
+            /* List View Body */
+            <div className="flex-1 p-4 overflow-y-auto bg-stone-900/50">
+               <div className="grid grid-cols-1 gap-3">
+                   {notes.map(note => (
+                       <div 
+                            key={note.id}
+                            onClick={() => {
+                                setActiveNoteId(note.id);
+                                setViewMode('editor');
+                            }}
+                            className={`
+                                p-4 rounded-xl border transition-all cursor-pointer group
+                                ${activeNoteId === note.id 
+                                    ? 'bg-stone-800/80 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.1)]' 
+                                    : 'bg-stone-800/30 border-stone-800 hover:bg-stone-800/60 hover:border-stone-700'}
+                            `}
+                       >
+                           <div className="flex justify-between items-start mb-2">
+                               <h3 className={`font-bold text-sm truncate pr-4 ${activeNoteId === note.id ? 'text-indigo-300' : 'text-stone-300'}`}>
+                                   {note.title || 'Без названия'}
+                               </h3>
+                               {note.author_email && (
+                                   <span className="text-[10px] bg-stone-900/50 text-stone-500 px-1.5 py-0.5 rounded border border-stone-800">
+                                       {note.author_email.split('@')[0]}
+                                   </span>
+                               )}
+                           </div>
+                           <p className="text-xs text-stone-500 line-clamp-2 h-8 leading-relaxed">
+                               {note.content ? note.content.replace(/<[^>]*>/g, '').slice(0, 100) : <span className="italic opacity-50">Нет текста...</span>}
+                           </p>
+                           <div className="flex justify-between items-center mt-3 pt-3 border-t border-stone-800/50">
+                               <span className="text-[10px] text-stone-600">
+                                   {note.created_at ? new Date(note.created_at).toLocaleDateString() : 'Локально'}
+                               </span>
+                               {(user && user.id === note.user_id) || (!user && note.user_id === 'local') ? (
+                                   <button 
+                                        onClick={(e) => handleRemoveNote(e, note.id)}
+                                        className="p-1.5 text-stone-600 hover:text-rose-500 hover:bg-rose-900/20 rounded transition-colors"
+                                        title="Удалить"
+                                   >
+                                       <X size={12} />
+                                   </button>
+                               ) : null}
+                           </div>
+                       </div>
+                   ))}
+               </div>
+               {/* Add Note Button in List View */}
+               <button 
+                    onClick={() => {
+                        handleAddNote();
+                        setViewMode('editor');
+                    }}
+                    className="w-full mt-4 py-3 rounded-xl border border-dashed border-stone-700 text-stone-500 hover:bg-stone-800/30 hover:border-indigo-500/30 hover:text-indigo-400 transition-all flex items-center justify-center gap-2 text-sm font-medium"
+               >
+                   <Plus size={16} />
+                   Создать новую заметку
+               </button>
             </div>
         ) : (
             <>
