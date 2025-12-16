@@ -405,7 +405,13 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   // Render minimal UI if no notes exist yet
   const isEmptyState = !activeNote && !loadingRemote;
 
-  return (
+    const handlePaste = (e: React.ClipboardEvent) => {
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+    };
+
+    return (
     <>
         <div
             className="fixed z-40 bg-stone-900 border border-stone-700 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-opacity-95"
@@ -521,6 +527,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                     contentEditable={!loadingRemote}
                     onInput={updateContent}
                     onBlur={updateContent}
+                    onPaste={handlePaste}
                     className="flex-1 p-4 outline-none text-stone-300 text-sm overflow-y-auto [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&>a]:text-indigo-400 [&>a]:underline selection:bg-indigo-500/30 selection:text-indigo-200 disabled:opacity-50"
                     style={{ whiteSpace: 'pre-wrap' }}
                 />
