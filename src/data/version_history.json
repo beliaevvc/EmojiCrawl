@@ -1,7 +1,12 @@
 {
-  "version": "0.0.89",
-  "buildDate": "12/16/2025, 10:04:23 AM",
+  "version": "0.0.90",
+  "buildDate": "12/16/2025, 10:06:43 AM",
   "commits": [
+    {
+      "hash": "e507de4",
+      "date": "16.12.2025 10:06",
+      "message": "Update VersionModal component and version history data for version 0.0.89, improving commit list rendering and adding new commit details."
+    },
     {
       "hash": "8a194a6",
       "date": "16.12.2025 10:04",
@@ -246,11 +251,6 @@
       "hash": "48553c6",
       "date": "15.12.2025 03:07",
       "message": "Refactor 'offering' ability in gameReducer to enhance healing mechanics for monsters. Update log messages for clarity on healing actions and conditions, ensuring better player feedback during gameplay."
-    },
-    {
-      "hash": "183fd27",
-      "date": "15.12.2025 02:52",
-      "message": "Implement sell block functionality in GameScreen to prevent selling monsters with the 'scream' ability. Update sell button appearance and behavior based on sell block state, enhancing user feedback and gameplay mechanics."
     }
   ]
 }

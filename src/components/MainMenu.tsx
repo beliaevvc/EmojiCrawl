@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { DeckTemplate } from '../types/game';
 import LoadTemplateModal from './LoadTemplateModal';
 import { VersionModal } from './VersionModal';
+import { Chalkboard } from './Chalkboard';
 import versionData from '../data/version_history.json';
 
 const QUOTES = [
@@ -148,8 +149,11 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       transition={{ duration: 0.5 }}
       className="relative w-full h-screen bg-stone-950 flex flex-col items-center justify-center p-4 overflow-hidden"
     >
+      {/* Chalkboard Background */}
+      <Chalkboard />
+
       {/* Фоновый шум/текстура */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none z-0"></div>
 
       {/* Логотип */}
       <motion.div
