@@ -358,35 +358,30 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
       }
   }
 
+  // Ref to track previous ID to detect switch
+  const prevNoteIdRef = useRef<string | null>(null);
+
   // Sync editor content when active note changes
   useEffect(() => {
     if (editorRef.current && activeNote) {
-        // Only update if content is significantly different to avoid cursor jumps
-        // AND if we are not the ones typing (which is hard to know).
-        // Best bet: Only update if activeNoteId CHANGED.
+        const isNoteSwitch = prevNoteIdRef.current !== activeNoteId;
         
-        // But what if initial load? activeNoteId is set, then content loads later.
-        // We can check if editor is empty?
-        
-        // Let's rely on checking if innerHTML matches to avoid reset?
-        // No, that doesn't help if remote is old.
-        
-        // Strategy: Only force update content if we switched notes.
-        // For realtime updates from others, we might miss them while typing, but that's a tradeoff.
+        if (isNoteSwitch) {
+            // Always update on switch
+            editorRef.current.innerHTML = activeNote.content || '';
+            prevNoteIdRef.current = activeNoteId;
+        } else {
+            // Same note, content changed from outside (or optimistic update loop back)
+            // Only update if content is actually different
+            if (editorRef.current.innerHTML !== activeNote.content) {
+                // AND only if we are NOT focused (to avoid cursor jumps)
+                if (document.activeElement !== editorRef.current) {
+                    editorRef.current.innerHTML = activeNote.content || '';
+                }
+            }
+        }
     }
-  }, [activeNoteId]); // Remove activeNote from dependency to avoid overwriting while typing!
-
-  // Separate effect for initial load of content?
-  useEffect(() => {
-      if (editorRef.current && activeNote) {
-          if (editorRef.current.innerHTML !== activeNote.content) {
-               // Only update if we are NOT focused? 
-               if (document.activeElement !== editorRef.current) {
-                   editorRef.current.innerHTML = activeNote.content || '';
-               }
-          }
-      }
-  }, [activeNote?.content, activeNoteId]); // This handles updates but checks focus 
+  }, [activeNoteId, activeNote?.content]); 
 
   // Don't render until client-side hydration (window check) 
   // If loading, show loader. If no notes and loaded, show empty state.

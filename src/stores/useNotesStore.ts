@@ -87,6 +87,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }
 
     set({ error: null }); // Clear previous errors
+    
+    // Optimistic Update: Update local state immediately
+    set(state => ({
+        notes: state.notes.map(n => n.id === id ? { ...n, ...updates } : n)
+    }));
+
     try {
       const { error } = await supabase
         .from('notes')
