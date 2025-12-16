@@ -133,6 +133,17 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   }, [notes, activeNoteId, loadingRemote, user]);
 
   const activeNote = notes.find(n => n.id === activeNoteId) || notes[0];
+  
+  // Local state for title to prevent cursor jumps and lag
+  const [localTitle, setLocalTitle] = useState('');
+  
+  // Sync local title when active note changes
+  useEffect(() => {
+    if (activeNote) {
+        setLocalTitle(activeNote.title || '');
+    }
+  }, [activeNoteId, activeNote?.id]); // Only when ID changes, or if remote title updates from SOMEONE ELSE (requires deeper check, but this is safer for typing)
+  
   const editorRef = useRef<HTMLDivElement>(null);
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
   
@@ -322,13 +333,13 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newTitle = e.target.value;
+      setLocalTitle(newTitle); // Immediate UI update
+
       if (user && activeNote) {
           if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
           updateTimeoutRef.current = setTimeout(() => {
               updateNote(activeNote.id, { title: newTitle });
-          }, 1000);
-          // Optimistic title update not implemented easily without causing cursor jumps in input
-          // due to fetch. Let's rely on fast DB or implement local optimistic state later.
+          }, 800); // 800ms debounce
       } else {
           setLocalNotes(prev => prev.map(n => n.id === activeNoteId ? { ...n, title: newTitle } : n));
       }
@@ -463,16 +474,16 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             </div>
         ) : (
             <>
-                {/* Title Input */}
-                <div className="p-3 border-b border-stone-800 bg-stone-900/50 flex items-center gap-2">
-                    <input 
-                        value={activeNote?.title || ''}
-                        onChange={handleTitleChange}
-                        disabled={loadingRemote}
-                        className="flex-1 bg-transparent text-stone-200 font-bold text-lg outline-none placeholder-stone-600 disabled:opacity-50"
-                        placeholder="Заголовок..."
-                    />
-                    {activeNote?.author_email && (
+        {/* Title Input */}
+        <div className="p-3 border-b border-stone-800 bg-stone-900/50 flex items-center gap-2">
+            <input 
+                value={localTitle}
+                onChange={handleTitleChange}
+                disabled={loadingRemote}
+                className="flex-1 bg-transparent text-stone-200 font-bold text-lg outline-none placeholder-stone-600 disabled:opacity-50"
+                placeholder="Заголовок..."
+            />
+            {activeNote?.author_email && (
                         <span className="text-[9px] bg-stone-800 text-stone-400 px-1.5 py-0.5 rounded border border-stone-700" title={activeNote.author_email}>
                             by {activeNote.author_email.split('@')[0] || 'Unknown'}
                         </span>
