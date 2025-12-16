@@ -662,13 +662,6 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   );
 };
 
-// Helper for random glitch transform
-const getRandomGlitch = () => {
-    const rX = (Math.random() - 0.5) * 20;
-    const rY = (Math.random() - 0.5) * 20;
-    return `translate(${rX}px, ${rY}px)`;
-};
-
 // Компонент одной кнопки меню
 const MenuButton = ({ icon, label, delay, primary = false, small = false, chaos = false, onClick }: { icon: React.ReactNode, label: string, delay: number, primary?: boolean, small?: boolean, chaos?: boolean, onClick?: () => void }) => {
   // Generate consistent random values for chaos effect trajectory
@@ -705,7 +698,8 @@ const MenuButton = ({ icon, label, delay, primary = false, small = false, chaos 
           // Instant return if coming back from chaos, else normal spring
           duration: 0.1, // Snap back instantly
           type: "tween",
-          ease: "circOut"
+          ease: "circOut",
+          delay: delay // Use delay here only when NOT in chaos mode
       }}
       className={`
         relative group flex items-center justify-center gap-3 w-full 
