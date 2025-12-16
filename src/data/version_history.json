@@ -1,7 +1,12 @@
 {
-  "version": "0.0.91",
-  "buildDate": "12/16/2025, 10:20:15 AM",
+  "version": "0.0.92",
+  "buildDate": "12/16/2025, 10:23:26 AM",
   "commits": [
+    {
+      "hash": "e0aae57",
+      "date": "16.12.2025 10:23",
+      "message": "Update Chalkboard component to start fading strokes after 10 seconds instead of 5 seconds, enhancing visual effects."
+    },
     {
       "hash": "efd998b",
       "date": "16.12.2025 10:19",
@@ -246,11 +251,6 @@
       "hash": "84a1552",
       "date": "15.12.2025 03:20",
       "message": "Add web ability handling in GameScreen to block card interactions. Introduce visual feedback for web status in the backpack slot, enhancing gameplay dynamics and user experience."
-    },
-    {
-      "hash": "afdc682",
-      "date": "15.12.2025 03:17",
-      "message": "Enhance CardComponent, GameScreen, and Slot to support new penalty mechanics. Introduce penalty prop for visual effects in CardComponent and update GameScreen to apply penalties based on monster abilities. Ensure consistent handling of penalties across components, improving gameplay dynamics and visual feedback."
     }
   ]
 }

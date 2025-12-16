@@ -15,7 +15,6 @@ export const Chalkboard = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [isDrawing, setIsDrawing] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     // Fade out effect
     useEffect(() => {
@@ -103,10 +102,6 @@ export const Chalkboard = () => {
             });
         };
 
-        // We hook into the same animation loop effectively via strokes dependency in useEffect
-        // But for smoother drawing, we should render immediately on stroke update?
-        // Actually, requestAnimationFrame is better.
-        // Let's set up a separate render loop
         let renderFrame: number;
         const loop = () => {
             render();
@@ -120,49 +115,58 @@ export const Chalkboard = () => {
         };
     }, [strokes]);
 
-    const handlePointerDown = (e: React.PointerEvent) => {
-        // Only draw if we are clicking on the container itself (empty space)
-        // or the canvas.
-        // We will rely on z-index. The canvas is at the bottom.
-        // If an element is above it, it will capture the event.
-        setIsDrawing(true);
-        const point = { x: e.clientX, y: e.clientY };
-        setStrokes(prev => [...prev, { points: [point], timestamp: Date.now(), opacity: 1 }]);
-    };
-
-    const handlePointerMove = (e: React.PointerEvent) => {
-        if (!isDrawing) return;
-        
-        const point = { x: e.clientX, y: e.clientY };
-        setStrokes(prev => {
-            const last = prev[prev.length - 1];
-            if (!last) return prev;
+    // Attach global listeners to capture events everywhere
+    useEffect(() => {
+        const handlePointerDown = (e: PointerEvent) => {
+            // Left click only
+            if (e.button !== 0) return;
             
-            // Optimization: don't add point if too close
-            const lastPoint = last.points[last.points.length - 1];
-            const dist = Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y);
-            if (dist < 5) return prev; // Minimum distance
+            setIsDrawing(true);
+            const point = { x: e.clientX, y: e.clientY };
+            setStrokes(prev => [...prev, { points: [point], timestamp: Date.now(), opacity: 1 }]);
+        };
 
-            return [
-                ...prev.slice(0, -1),
-                { ...last, points: [...last.points, point] }
-            ];
-        });
-    };
+        const handlePointerMove = (e: PointerEvent) => {
+            if (!isDrawing) return;
+            
+            const point = { x: e.clientX, y: e.clientY };
+            setStrokes(prev => {
+                const last = prev[prev.length - 1];
+                if (!last) return prev;
+                
+                const lastPoint = last.points[last.points.length - 1];
+                const dist = Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y);
+                if (dist < 5) return prev;
 
-    const handlePointerUp = () => {
-        setIsDrawing(false);
-    };
+                return [
+                    ...prev.slice(0, -1),
+                    { ...last, points: [...last.points, point] }
+                ];
+            });
+        };
+
+        const handlePointerUp = () => {
+            setIsDrawing(false);
+        };
+
+        // We listen on window to catch everything
+        // But this might block scrolling if we prevent default? 
+        // We won't prevent default, so buttons still work.
+        window.addEventListener('pointerdown', handlePointerDown);
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+        window.addEventListener('pointercancel', handlePointerUp);
+
+        return () => {
+            window.removeEventListener('pointerdown', handlePointerDown);
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+            window.removeEventListener('pointercancel', handlePointerUp);
+        };
+    }, [isDrawing]);
 
     return (
-        <div 
-            ref={containerRef}
-            className="absolute inset-0 z-0 overflow-hidden"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
-        >
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             <canvas 
                 ref={canvasRef}
                 className="absolute inset-0 w-full h-full pointer-events-none"
@@ -170,4 +174,3 @@ export const Chalkboard = () => {
         </div>
     );
 };
-
