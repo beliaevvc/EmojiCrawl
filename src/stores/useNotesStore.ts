@@ -118,9 +118,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   subscribeToNotes: () => {
-    const subscription = supabase
+    supabase
       .channel('public:notes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, () => {
         // Simple reload on any change
         get().fetchNotes();
       })

@@ -63,7 +63,7 @@ interface WindowState {
 export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   // Global State
   const { user } = useAuthStore();
-  const { notes: remoteNotes, loading: loadingRemote, error: remoteError, fetchNotes, createNote, updateNote, deleteNote, subscribeToNotes, unsubscribeFromNotes } = useNotesStore();
+  const { notes: remoteNotes, loading: loadingRemote, fetchNotes, createNote, updateNote, deleteNote, subscribeToNotes, unsubscribeFromNotes } = useNotesStore();
 
   // Local State
   const [localNotes, setLocalNotes] = useState<Note[]>(() => {
