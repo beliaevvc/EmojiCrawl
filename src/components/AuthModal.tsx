@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, LogIn, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuthStore } from '../stores/useAuthStore';
 
 interface AuthModalProps {
     onClose: () => void;
@@ -29,7 +28,7 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
             // but we can make it smart later.
             
             if (mode === 'signup') {
-                const { data, error: signUpError } = await supabase.auth.signUp({
+                const { error: signUpError } = await supabase.auth.signUp({
                     email,
                     password,
                 });
@@ -37,7 +36,7 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                 // If successful and no confirm needed, we are logged in!
                 onClose();
             } else {
-                const { data, error: signInError } = await supabase.auth.signInWithPassword({
+                const { error: signInError } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
