@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Bold, Italic, Underline, Link as LinkIcon, List, RotateCcw, ArrowDownRight, ArrowDownLeft } from 'lucide-react';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-}
+import { X, Plus, Bold, Italic, Underline, Link as LinkIcon, List, RotateCcw, ArrowDownRight, ArrowDownLeft, Cloud, CloudOff, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../stores/useAuthStore';
+import { useNotesStore, Note } from '../stores/useNotesStore';
 
 const DEFAULT_CONTENT = `<b>Общие ограничения</b>
 
@@ -65,44 +61,68 @@ interface WindowState {
 }
 
 export const NotesModal = ({ onClose }: { onClose: () => void }) => {
-  const [notes, setNotes] = useState<Note[]>(() => {
+  // Global State
+  const { user } = useAuthStore();
+  const { notes: remoteNotes, loading: loadingRemote, error: remoteError, fetchNotes, createNote, updateNote, deleteNote, subscribeToNotes, unsubscribeFromNotes } = useNotesStore();
+
+  // Local State
+  const [localNotes, setLocalNotes] = useState<Note[]>(() => {
     try {
         const saved = localStorage.getItem('skazmor_notes');
         let parsed: Note[] = saved ? JSON.parse(saved) : [];
-        
         if (!Array.isArray(parsed)) parsed = [];
 
-        // Ensure Balance note exists
+        // Ensure Balance note exists locally
         const hasBalanceNote = parsed.some(n => n.id === 'balance_perks');
-        
         if (!hasBalanceNote) {
-             // Remove old versions if they exist to update content
              const filtered = parsed.filter(n => n.id !== 'balance_info' && !n.title.includes('Баланс'));
-             
-             const balanceNote = { id: 'balance_perks', title: 'Баланс Перков (ограничения)', content: DEFAULT_CONTENT };
+             const balanceNote = { id: 'balance_perks', title: 'Баланс Перков (ограничения)', content: DEFAULT_CONTENT, user_id: 'local' };
              return [balanceNote, ...filtered];
         }
         
-        // Always update the content of the balance note to the latest version
+        // Update balance note content
         const balanceIndex = parsed.findIndex(n => n.id === 'balance_perks');
         if (balanceIndex !== -1) {
              parsed[balanceIndex].content = DEFAULT_CONTENT;
              parsed[balanceIndex].title = 'Баланс Перков (ограничения)';
-             // Move to top
              const balanceNote = parsed.splice(balanceIndex, 1)[0];
              return [balanceNote, ...parsed];
         }
 
         if (parsed.length === 0) {
-             return [{ id: 'balance_perks', title: 'Баланс Перков (ограничения)', content: DEFAULT_CONTENT }];
+             return [{ id: 'balance_perks', title: 'Баланс Перков (ограничения)', content: DEFAULT_CONTENT, user_id: 'local' }];
         }
-
         return parsed;
     } catch (e) {
-        return [{ id: 'balance_perks', title: 'Баланс Перков (ограничения)', content: DEFAULT_CONTENT }];
+        return [{ id: 'balance_perks', title: 'Баланс Перков (ограничения)', content: DEFAULT_CONTENT, user_id: 'local' }];
     }
   });
-  const [activeNoteId, setActiveNoteId] = useState<string>(notes[0]?.id || '1');
+
+  // Effective Notes (Local or Remote based on auth)
+  const notes = user ? remoteNotes : localNotes;
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+
+  // Sync with remote when user changes
+  useEffect(() => {
+    if (user) {
+        fetchNotes();
+        subscribeToNotes();
+        // If we switch to remote and have no active note, wait for fetch
+    } else {
+        unsubscribeFromNotes();
+        // Fallback to local
+    }
+    return () => unsubscribeFromNotes();
+  }, [user]);
+
+  // Set active note when notes load
+  useEffect(() => {
+    if (notes.length > 0 && (!activeNoteId || !notes.find(n => n.id === activeNoteId))) {
+        setActiveNoteId(notes[0].id);
+    }
+  }, [notes, activeNoteId]);
+
+  const activeNote = notes.find(n => n.id === activeNoteId) || notes[0];
   const editorRef = useRef<HTMLDivElement>(null);
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
   
@@ -143,20 +163,38 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
     startHeight: 0
   });
 
+  // Save Local Notes
   useEffect(() => {
-    localStorage.setItem('skazmor_notes', JSON.stringify(notes));
-  }, [notes]);
+    if (!user) {
+        localStorage.setItem('skazmor_notes', JSON.stringify(localNotes));
+    }
+  }, [localNotes, user]);
 
   useEffect(() => {
       localStorage.setItem('skazmor_notes_window', JSON.stringify(windowState));
   }, [windowState]);
 
-  const activeNote = notes.find(n => n.id === activeNoteId) || notes[0];
+  // Debounce updates for remote to avoid spamming DB
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const updateContent = () => {
-    if (editorRef.current) {
+    if (editorRef.current && activeNote) {
       const content = editorRef.current.innerHTML;
-      setNotes(prev => prev.map(n => n.id === activeNoteId ? { ...n, content } : n));
+      
+      if (user) {
+          // Remote Update (Debounced)
+          // Optimistic update locally in store? Store handles fetching. 
+          // We can't easily optimistic update without complex store logic.
+          // For now, let's just trigger updateNote with debounce.
+          
+          if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+          updateTimeoutRef.current = setTimeout(() => {
+              updateNote(activeNote.id, { content });
+          }, 1000); // 1 sec delay
+      } else {
+          // Local Update (Instant)
+          setLocalNotes(prev => prev.map(n => n.id === activeNoteId ? { ...n, content } : n));
+      }
     }
   };
 
@@ -192,14 +230,11 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
       return () => document.removeEventListener('selectionchange', checkSelection);
   }, []);
 
-  // Interaction Handlers
+  // Interaction Handlers (same as before)
   const startInteraction = (e: React.PointerEvent, type: 'move' | 'resize-se' | 'resize-sw' | 'resize-e' | 'resize-w' | 'resize-s') => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Clear selection to avoid interfering with drag
     window.getSelection()?.removeAllRanges();
-
     interactionRef.current = {
         type,
         startX: e.clientX,
@@ -209,7 +244,6 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
         startWidth: windowState.width,
         startHeight: windowState.height
     };
-
     window.addEventListener('pointermove', handleInteraction);
     window.addEventListener('pointerup', stopInteraction);
   };
@@ -222,46 +256,21 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
     const deltaY = e.clientY - startY;
 
     if (type === 'move') {
-        setWindowState(prev => ({
-            ...prev,
-            x: startLeft + deltaX,
-            y: startTop + deltaY
-        }));
+        setWindowState(prev => ({ ...prev, x: startLeft + deltaX, y: startTop + deltaY }));
     } else if (type === 'resize-se') {
-        setWindowState(prev => ({
-            ...prev,
-            width: Math.max(300, startWidth + deltaX),
-            height: Math.max(300, startHeight + deltaY)
-        }));
+        setWindowState(prev => ({ ...prev, width: Math.max(300, startWidth + deltaX), height: Math.max(300, startHeight + deltaY) }));
     } else if (type === 'resize-sw') {
         const newWidth = Math.max(300, startWidth - deltaX);
         const effectiveDeltaX = startWidth - newWidth; 
-        
-        setWindowState(prev => ({
-            ...prev,
-            width: newWidth,
-            height: Math.max(300, startHeight + deltaY),
-            x: startLeft + effectiveDeltaX
-        }));
+        setWindowState(prev => ({ ...prev, width: newWidth, height: Math.max(300, startHeight + deltaY), x: startLeft + effectiveDeltaX }));
     } else if (type === 'resize-e') {
-        setWindowState(prev => ({
-            ...prev,
-            width: Math.max(300, startWidth + deltaX)
-        }));
+        setWindowState(prev => ({ ...prev, width: Math.max(300, startWidth + deltaX) }));
     } else if (type === 'resize-w') {
         const newWidth = Math.max(300, startWidth - deltaX);
         const effectiveDeltaX = startWidth - newWidth;
-        
-        setWindowState(prev => ({
-            ...prev,
-            width: newWidth,
-            x: startLeft + effectiveDeltaX
-        }));
+        setWindowState(prev => ({ ...prev, width: newWidth, x: startLeft + effectiveDeltaX }));
     } else if (type === 'resize-s') {
-        setWindowState(prev => ({
-            ...prev,
-            height: Math.max(300, startHeight + deltaY)
-        }));
+        setWindowState(prev => ({ ...prev, height: Math.max(300, startHeight + deltaY) }));
     }
   };
 
@@ -271,46 +280,68 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
     window.removeEventListener('pointerup', stopInteraction);
   };
 
-  const addNote = () => {
-    const newNote = {
-      id: Date.now().toString(),
-      title: 'Новая заметка',
-      content: ''
-    };
-    setNotes(prev => [...prev, newNote]);
-    setActiveNoteId(newNote.id);
+  const handleAddNote = () => {
+    if (user) {
+        createNote('Новая заметка', '');
+    } else {
+        const newNote = {
+            id: Date.now().toString(),
+            title: 'Новая заметка',
+            content: '',
+            user_id: 'local'
+        };
+        setLocalNotes(prev => [...prev, newNote]);
+        setActiveNoteId(newNote.id);
+    }
   };
 
-  const removeNote = (e: React.MouseEvent, id: string) => {
+  const handleRemoveNote = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (notes.length === 1) return;
+    if (notes.length === 1 && !user) return; // Prevent deleting last local note if simple logic
     
-    const newNotes = notes.filter(n => n.id !== id);
-    setNotes(newNotes);
-    
-    if (activeNoteId === id) {
-        setActiveNoteId(newNotes[0].id);
+    if (user) {
+        if (confirm('Удалить эту заметку? Это действие нельзя отменить.')) {
+            deleteNote(id);
+        }
+    } else {
+        const newNotes = localNotes.filter(n => n.id !== id);
+        setLocalNotes(newNotes);
+        if (activeNoteId === id) setActiveNoteId(newNotes[0]?.id || null);
     }
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setNotes(prev => prev.map(n => n.id === activeNoteId ? { ...n, title: e.target.value } : n));
+      const newTitle = e.target.value;
+      if (user && activeNote) {
+          if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+          updateTimeoutRef.current = setTimeout(() => {
+              updateNote(activeNote.id, { title: newTitle });
+          }, 1000);
+          // Optimistic title update not implemented easily without causing cursor jumps in input
+          // due to fetch. Let's rely on fast DB or implement local optimistic state later.
+      } else {
+          setLocalNotes(prev => prev.map(n => n.id === activeNoteId ? { ...n, title: newTitle } : n));
+      }
   }
 
+  // Sync editor content when active note changes
   useEffect(() => {
     if (editorRef.current && activeNote) {
+        // Only update if content is significantly different to avoid cursor jumps
+        // Simple check:
         if (editorRef.current.innerHTML !== activeNote.content) {
-            editorRef.current.innerHTML = activeNote.content;
+             // If we are typing, we don't want to overwrite unless it's a different note
+             // But here we switch notes.
+             editorRef.current.innerHTML = activeNote.content || '';
         }
     }
   }, [activeNoteId, activeNote]); 
 
-  if (!activeNote) return null;
+  // Don't render until client-side hydration (window check) or if no notes (though local should have default)
+  if (!activeNote && !loadingRemote) return null;
 
   return (
     <>
-        {/* Use a simple div first to mount immediately, then animate if needed, 
-            but for now we prioritize instant appearance to fix "micro-delay" */}
         <div
             className="fixed z-40 bg-stone-900 border border-stone-700 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-opacity-95"
             style={{ 
@@ -326,34 +357,47 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             onPointerDown={(e) => startInteraction(e, 'move')}
         >
             <div className="flex-1 flex overflow-x-auto scrollbar-hide gap-1 pr-2">
-                {notes.map(note => (
-                    <div 
-                        key={note.id}
-                        onClick={() => setActiveNoteId(note.id)}
-                        onPointerDown={e => e.stopPropagation()}
-                        className={`
-                            px-3 py-1.5 rounded-t-lg text-xs font-medium cursor-pointer flex items-center gap-2 min-w-[80px] max-w-[120px] transition-colors
-                            ${activeNoteId === note.id ? 'bg-stone-800 text-indigo-300' : 'bg-transparent text-stone-500 hover:bg-stone-800/50 hover:text-stone-300'}
-                        `}
-                    >
-                        <span className="truncate flex-1">{note.title || 'Untitled'}</span>
-                        {notes.length > 1 && (
-                            <button onClick={(e) => removeNote(e, note.id)} className="hover:text-rose-500 opacity-60 hover:opacity-100">
-                                <X size={10} />
-                            </button>
-                        )}
+                {loadingRemote ? (
+                    <div className="flex items-center gap-2 px-3 text-stone-500 text-xs">
+                        <Loader2 className="animate-spin" size={12} />
+                        Загрузка заметок...
                     </div>
-                ))}
-                <button 
-                    onClick={addNote} 
-                    onPointerDown={e => e.stopPropagation()}
-                    className="px-2 text-stone-600 hover:text-indigo-400 transition-colors"
-                >
-                    <Plus size={14} />
-                </button>
+                ) : (
+                    notes.map(note => (
+                        <div 
+                            key={note.id}
+                            onClick={() => setActiveNoteId(note.id)}
+                            onPointerDown={e => e.stopPropagation()}
+                            className={`
+                                px-3 py-1.5 rounded-t-lg text-xs font-medium cursor-pointer flex items-center gap-2 min-w-[80px] max-w-[140px] transition-colors group relative
+                                ${activeNoteId === note.id ? 'bg-stone-800 text-indigo-300' : 'bg-transparent text-stone-500 hover:bg-stone-800/50 hover:text-stone-300'}
+                            `}
+                            title={note.author_email ? `Автор: ${note.author_email}` : 'Локальная заметка'}
+                        >
+                            <span className="truncate flex-1">{note.title || 'Без названия'}</span>
+                            {/* Show author avatar/dot if shared? */}
+                            
+                            {(notes.length > 1 || user) && (
+                                <button onClick={(e) => handleRemoveNote(e, note.id)} className="hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <X size={10} />
+                                </button>
+                            )}
+                        </div>
+                    ))
+                )}
+                
+                {!loadingRemote && (
+                    <button 
+                        onClick={handleAddNote} 
+                        onPointerDown={e => e.stopPropagation()}
+                        className="px-2 text-stone-600 hover:text-indigo-400 transition-colors"
+                        title="Создать заметку"
+                    >
+                        <Plus size={14} />
+                    </button>
+                )}
             </div>
             
-            {/* Reset Size Button */}
             <button 
                 onClick={() => {
                     setWindowState({ 
@@ -364,7 +408,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                     });
                 }} 
                 onPointerDown={e => e.stopPropagation()}
-                title="Сбросить размер и позицию"
+                title="Сбросить размер"
                 className="p-2 text-stone-600 hover:text-stone-300 transition-colors mr-1"
             >
                 <RotateCcw size={14} />
@@ -380,28 +424,33 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
         </div>
 
         {/* Title Input */}
-        <div className="p-3 border-b border-stone-800 bg-stone-900/50">
+        <div className="p-3 border-b border-stone-800 bg-stone-900/50 flex items-center gap-2">
             <input 
-                value={activeNote.title}
+                value={activeNote?.title || ''}
                 onChange={handleTitleChange}
-                className="w-full bg-transparent text-stone-200 font-bold text-lg outline-none placeholder-stone-600"
+                disabled={loadingRemote}
+                className="flex-1 bg-transparent text-stone-200 font-bold text-lg outline-none placeholder-stone-600 disabled:opacity-50"
                 placeholder="Заголовок..."
             />
+            {activeNote?.author_email && (
+                <span className="text-[9px] bg-stone-800 text-stone-400 px-1.5 py-0.5 rounded border border-stone-700" title={activeNote.author_email}>
+                    by {activeNote.author_email.split('@')[0]}
+                </span>
+            )}
         </div>
 
         {/* Editor */}
         <div 
             ref={editorRef}
-            contentEditable
+            contentEditable={!loadingRemote}
             onInput={updateContent}
             onBlur={updateContent}
-            className="flex-1 p-4 outline-none text-stone-300 text-sm overflow-y-auto [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&>a]:text-indigo-400 [&>a]:underline selection:bg-indigo-500/30 selection:text-indigo-200"
+            className="flex-1 p-4 outline-none text-stone-300 text-sm overflow-y-auto [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&>a]:text-indigo-400 [&>a]:underline selection:bg-indigo-500/30 selection:text-indigo-200 disabled:opacity-50"
             style={{ whiteSpace: 'pre-wrap' }}
         />
         
-        {/* Footer / Status + Resize Handles */}
+        {/* Footer */}
         <div className="p-1 bg-stone-950/50 border-t border-stone-800 text-[10px] text-stone-600 flex justify-between items-end px-3 relative">
-            {/* Bottom Left Resize */}
             <div 
                 onPointerDown={(e) => startInteraction(e, 'resize-sw')}
                 className="cursor-nesw-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 left-0 z-20"
@@ -409,13 +458,25 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                 <ArrowDownLeft size={16} />
             </div>
 
-            <span className="ml-4">Выделите текст для форматирования</span>
-            <div className="flex flex-col items-end gap-0.5 mr-4">
-                <span>Автосохранение</span>
-                <span className="text-[9px] text-stone-700">Локально (видно только вам)</span>
+            <div className="ml-4 flex items-center gap-2">
+                {user ? (
+                    <span className="text-emerald-500/70 flex items-center gap-1">
+                        <Cloud size={10} />
+                        Cloud Sync
+                    </span>
+                ) : (
+                    <span className="text-stone-600 flex items-center gap-1">
+                        <CloudOff size={10} />
+                        Local
+                    </span>
+                )}
             </div>
             
-            {/* Bottom Right Resize */}
+            <div className="flex flex-col items-end gap-0.5 mr-4">
+                <span>{user ? 'Все изменения сохранены' : 'Локальное сохранение'}</span>
+                {user && <span className="text-[9px] text-stone-700">Видно всем игрокам</span>}
+            </div>
+            
             <div 
                 onPointerDown={(e) => startInteraction(e, 'resize-se')}
                 className="cursor-nwse-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 right-0 z-20"
@@ -424,26 +485,14 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             </div>
         </div>
 
-        {/* Side Resize Handles (Invisible click areas) */}
-        {/* Right Side */}
-        <div 
-            className="absolute top-0 right-0 w-2 h-full cursor-ew-resize z-10 hover:bg-white/5 transition-colors"
-            onPointerDown={(e) => startInteraction(e, 'resize-e')}
-        />
-        {/* Left Side */}
-        <div 
-            className="absolute top-0 left-0 w-2 h-full cursor-ew-resize z-10 hover:bg-white/5 transition-colors"
-            onPointerDown={(e) => startInteraction(e, 'resize-w')}
-        />
-        {/* Bottom Side (Centered) - Added for bottom resize */}
-        <div 
-            className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize z-10 hover:bg-white/5 transition-colors"
-            onPointerDown={(e) => startInteraction(e, 'resize-s')}
-        />
+        {/* Resize Handles */}
+        <div className="absolute top-0 right-0 w-2 h-full cursor-ew-resize z-10 hover:bg-white/5" onPointerDown={(e) => startInteraction(e, 'resize-e')} />
+        <div className="absolute top-0 left-0 w-2 h-full cursor-ew-resize z-10 hover:bg-white/5" onPointerDown={(e) => startInteraction(e, 'resize-w')} />
+        <div className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize z-10 hover:bg-white/5" onPointerDown={(e) => startInteraction(e, 'resize-s')} />
 
         </div>
 
-        {/* Floating Toolbar */}
+        {/* Toolbar */}
         <AnimatePresence>
             {toolbarPosition && (
                 <motion.div

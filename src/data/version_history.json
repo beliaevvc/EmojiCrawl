@@ -1,7 +1,17 @@
 {
-  "version": "0.0.94",
-  "buildDate": "12/16/2025, 10:32:29 AM",
+  "version": "0.0.96",
+  "buildDate": "12/16/2025, 6:58:27 PM",
   "commits": [
+    {
+      "hash": "ed2d39d",
+      "date": "16.12.2025 18:43",
+      "message": "Refactor AuthModal and useAuthStore components to streamline authentication logic. Remove unnecessary data destructuring in signUp and signIn methods, and add placeholder for signInWithEmail implementation to suppress linter errors."
+    },
+    {
+      "hash": "1697b4d",
+      "date": "16.12.2025 18:40",
+      "message": "Update dependencies in package.json and package-lock.json, adding @supabase/supabase-js and zustand. Enhance MainMenu component with user authentication features, including login/logout functionality and user profile display. Update version history to reflect changes."
+    },
     {
       "hash": "bb80843",
       "date": "16.12.2025 10:32",
@@ -241,16 +251,6 @@
       "hash": "29c14e7",
       "date": "15.12.2025 04:25",
       "message": "Refactor gameReducer to ensure player state is preserved during ability applications. Update max HP restoration logic for 'exhaustion' ability to also restore current HP, enhancing gameplay feedback with clearer log messages."
-    },
-    {
-      "hash": "15290ab",
-      "date": "15.12.2025 04:15",
-      "message": "Implement corrosion effect handling in GameScreen and gameReducer. Add visual feedback for corrosion effects on card slots, updating state management to track last effects. Enhance gameplay dynamics by providing clear notifications for weakened cards, improving user experience."
-    },
-    {
-      "hash": "f766768",
-      "date": "15.12.2025 03:55",
-      "message": "Enhance GameScreen and gameReducer to support 'beacon' ability mechanics. Update peekType handling and visual feedback in GameScreen based on the new ability, ensuring players receive clear notifications about upcoming monsters. Modify monsterAbilities description for clarity on 'beacon' functionality, improving gameplay dynamics and user experience."
     }
   ]
 }
