@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Save, Play, Swords, RotateCcw, Share2, Download, Copy, Check, X } from 'lucide-react';
+import { ArrowLeft, Save, Play, Swords, RotateCcw, Share2, Download, Copy, Check, X, NotebookPen } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { NotesModal } from './NotesModal';
 import CharacterEditor from './CharacterEditor';
 import ShieldsEditor from './ShieldsEditor';
 import WeaponsEditor from './WeaponsEditor';
@@ -207,6 +208,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [showNotes, setShowNotes] = useState(false);
 
     // Checks
     const arraysEqual = (a: any[], b: any[]) => {
@@ -295,6 +297,14 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                 </button>
                 
                 <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setShowNotes(true)}
+                        className="flex items-center gap-2 text-stone-500 hover:text-indigo-300 transition-colors group mr-2"
+                        title="Заметки"
+                    >
+                        <NotebookPen size={20} className="group-hover:scale-110 transition-transform" />
+                    </button>
+
                     <button 
                         onClick={() => setShowImportModal(true)}
                         className="flex items-center gap-2 text-stone-500 hover:text-amber-400 transition-colors group"
@@ -535,6 +545,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         onClose={() => setShowImportModal(false)}
                     />
                 )}
+                {showNotes && <NotesModal onClose={() => setShowNotes(false)} />}
             </AnimatePresence>
         </motion.div>
     );
