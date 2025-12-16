@@ -1,0 +1,256 @@
+{
+  "version": "0.0.88",
+  "buildDate": "12/16/2025, 10:00:12 AM",
+  "commits": [
+    {
+      "hash": "b31dfc5",
+      "date": "16.12.2025 09:30",
+      "message": "Enhance NotesModal component by adding a new resize handle for the bottom side, allowing users to resize the modal vertically. Update interaction handling to support the new 'resize-s' type, improving overall user experience with modal resizing functionality."
+    },
+    {
+      "hash": "78fa9cf",
+      "date": "16.12.2025 08:49",
+      "message": "Refactor NotesModal to consolidate window state management, enabling persistent resizing and repositioning. Introduce new resize handles for improved user interaction and update local storage handling for window dimensions."
+    },
+    {
+      "hash": "ad7aa88",
+      "date": "16.12.2025 08:45",
+      "message": "Refactor NotesModal component to enhance interaction handling for resizing and moving. Introduce new state management for position and size, improving user experience with draggable and resizable modal functionality."
+    },
+    {
+      "hash": "0cdfdef",
+      "date": "16.12.2025 05:18",
+      "message": "Add Notes feature to DeckbuilderScreen with modal integration"
+    },
+    {
+      "hash": "6cedb54",
+      "date": "16.12.2025 04:45",
+      "message": "Add visual effects for Junk and Bones abilities in GameScreen"
+    },
+    {
+      "hash": "ab189e7",
+      "date": "16.12.2025 04:43",
+      "message": "Enhance GameScreen and gameReducer to prevent selling 'skull' items from the backpack. Update visual feedback for 'skull' sales and adjust hand clearing logic to include 'skull' type, improving game state management and user experience."
+    },
+    {
+      "hash": "43af456",
+      "date": "16.12.2025 04:08",
+      "message": "Remove 'graveyard' ability and associated logic from monster abilities and game reducer. Update relevant types to reflect this change, streamlining the codebase and improving maintainability."
+    },
+    {
+      "hash": "a09435f",
+      "date": "16.12.2025 04:02",
+      "message": "Remove 'Барьер' spell and related logic from GameScreen and gameReducer. Update spell types and adjust GameScreen's non-damage removal checks accordingly to reflect the changes in spell availability."
+    },
+    {
+      "hash": "a68387e",
+      "date": "16.12.2025 03:59",
+      "message": "Enhance GameScreen logic to handle monster fleeing scenarios. Introduce specific checks for 'БЕГСТВО' log to accurately reflect damage taken during escape. Update monster ability description for clarity on fleeing conditions. Improve logging for monster attacks to include HP details upon fleeing."
+    },
+    {
+      "hash": "a5e4697",
+      "date": "16.12.2025 03:46",
+      "message": "Implement sequential HP visualization in GameScreen. Introduce HpUpdate interface and update gameReducer to manage HP changes with timestamps. Refactor HP display logic to use visualHp state for smoother animations during gameplay."
+    },
+    {
+      "hash": "8a7665c",
+      "date": "16.12.2025 03:33",
+      "message": "Update 'whisper' ability description and logic to reflect card peeking mechanics. Adjust logging messages for clarity when no cards are available in the deck."
+    },
+    {
+      "hash": "52eb99a",
+      "date": "16.12.2025 03:28",
+      "message": "Fix GameScreen backpack reference to correctly access card ID. Remove unused gamePlusReducer file to streamline codebase and improve maintainability."
+    },
+    {
+      "hash": "c60c72e",
+      "date": "16.12.2025 03:26",
+      "message": "Refactor GameScreen and gameReducer to improve reset logic. Introduce canReset condition based on player HP and cards on the table, enhancing game state management. Update reset button styling to reflect new reset conditions, ensuring better user experience during gameplay."
+    },
+    {
+      "hash": "ec0439b",
+      "date": "16.12.2025 03:10",
+      "message": "Enhance game state management by introducing a location prop for Card and Slot components, allowing for better tracking of card positions (hand, backpack, field). Update GameScreen and gameReducer to accommodate the new structure, ensuring proper handling of card interactions and state updates. Refactor related components to improve code clarity and maintainability."
+    },
+    {
+      "hash": "652b583",
+      "date": "15.12.2025 23:06",
+      "message": "Enhance CardComponent and Slot components with drag state management. Add onDragChange prop to CardComponent for notifying parent about drag status. Update Slot component to handle child dragging state and adjust visual feedback accordingly, improving user interaction during drag-and-drop operations."
+    },
+    {
+      "hash": "d5dee77",
+      "date": "15.12.2025 16:23",
+      "message": "Refactor GamePlusScreen component by removing unused imports and interface definitions, and re-enable saveRun functionality. Update index.css to remove duplicate font import. Clean up gameReducer by removing deadCoin case, streamlining the code for better maintainability."
+    },
+    {
+      "hash": "49942af",
+      "date": "15.12.2025 16:16",
+      "message": "!!!2"
+    },
+    {
+      "hash": "28cd500",
+      "date": "15.12.2025 16:00",
+      "message": "!!!"
+    },
+    {
+      "hash": "16f70fd",
+      "date": "15.12.2025 12:23",
+      "message": "Remove 'public' from .gitignore to streamline ignored files, ensuring only relevant directories are excluded from version control."
+    },
+    {
+      "hash": "636e844",
+      "date": "15.12.2025 12:17",
+      "message": "Fix image path in MainMenu component by correcting the filename format for the extra image. This update ensures proper loading of the image asset and maintains consistency in the image naming convention."
+    },
+    {
+      "hash": "e663eb0",
+      "date": "15.12.2025 12:14",
+      "message": "Add sticker functionality to MainMenu component. Implement random sticker images with dynamic positioning and interactive features, enhancing visual engagement and user experience. Include a fullscreen overlay for enlarged sticker viewing with captions."
+    },
+    {
+      "hash": "e629429",
+      "date": "15.12.2025 10:30",
+      "message": "Update quotes in MainMenu component to reflect new humorous messages about Serega and Kirill. This change enhances the thematic engagement of the interface by adding fresh, playful content that resonates with the game's spirit."
+    },
+    {
+      "hash": "26c1299",
+      "date": "15.12.2025 10:28",
+      "message": "Add dynamic footer quotes to MainMenu component. Implement a rotating quote feature that updates every 5 seconds, enhancing user engagement with humorous and thematic messages related to the game. This update enriches the overall user experience and adds a playful element to the interface."
+    },
+    {
+      "hash": "0b3db49",
+      "date": "15.12.2025 10:11",
+      "message": "Refactor drag event handling in GameScreen components to improve code consistency. Update onDragEnd callbacks in CardsViewer, OverheadStatsWindow, and GameLogWindow to remove unused event parameter, enhancing readability and maintainability."
+    },
+    {
+      "hash": "fedfada",
+      "date": "15.12.2025 10:09",
+      "message": "Implement draggable window positions for CardsViewer, OverheadStatsWindow, and GameLogWindow in GameScreen. Add reset layout functionality and enhance UI interactions with hover effects for better user experience. This update improves layout management and user control over window positioning."
+    },
+    {
+      "hash": "cd54a3c",
+      "date": "15.12.2025 09:36",
+      "message": "!!! Stable Version"
+    },
+    {
+      "hash": "15bc074",
+      "date": "15.12.2025 08:46",
+      "message": "Enhance GameLogWindow in GameScreen with drag functionality and improved expansion behavior. Integrate drag controls for better user interaction, allowing users to move the log window while maintaining a clean UI. Update expansion logic to improve visual feedback and usability."
+    },
+    {
+      "hash": "2db25ea",
+      "date": "15.12.2025 08:19",
+      "message": "Refactor conditional rendering in CardsViewer to improve clarity. Remove commented-out logic for cleaner code and maintain consistent UI behavior when no cards are displayed."
+    },
+    {
+      "hash": "e9f4e9b",
+      "date": "15.12.2025 08:01",
+      "message": "Refactor DeckViewer to CardsViewer for improved clarity and functionality. Update card display logic, navigation handling, and conditional rendering based on the label. Enhance UI responsiveness and maintainability in GameScreen by integrating CardsViewer for both deck and discard pile."
+    },
+    {
+      "hash": "fe5adc6",
+      "date": "15.12.2025 07:56",
+      "message": "Add DeckViewer and MiniCard components to GameScreen for enhanced card display and navigation. Implement left/right navigation buttons and hover effects for better user interaction with the deck. This update improves the visual representation of cards and overall gameplay experience."
+    },
+    {
+      "hash": "c91f7a6",
+      "date": "15.12.2025 07:38",
+      "message": "Remove unused import of RefreshCw icon from GameScreen to streamline code and improve component clarity."
+    },
+    {
+      "hash": "d849560",
+      "date": "15.12.2025 07:25",
+      "message": "Add God Mode functionality to GameScreen and gameReducer. Introduce toggle for God Mode visibility, update game state to manage invulnerability during gameplay, and enhance UI with corresponding visual feedback. This improves user experience by allowing players to test strategies without penalties."
+    },
+    {
+      "hash": "6e996ed",
+      "date": "15.12.2025 06:49",
+      "message": "Enhance OverheadStatsWindow in GameScreen with drag functionality and improved cursor styles for better user interaction. This update allows users to move the stats window while maintaining a clean UI."
+    },
+    {
+      "hash": "475ec91",
+      "date": "15.12.2025 06:46",
+      "message": "Remove unused 2x button from GameScreen to streamline the UI and improve overall component clarity."
+    },
+    {
+      "hash": "7bca6ce",
+      "date": "15.12.2025 05:30",
+      "message": "Add ErrorBoundary component to App for improved error handling. Refactor App layout to include ErrorBoundary, ensuring better user experience during runtime errors. Remove unused layout prop from StatsScreen for cleaner code."
+    },
+    {
+      "hash": "4ccff3f",
+      "date": "15.12.2025 05:19",
+      "message": "Remove unused useRef import from DeckbuilderScreen, streamlining component code for better readability and performance."
+    },
+    {
+      "hash": "8c236fa",
+      "date": "15.12.2025 05:11",
+      "message": "Refactor DeckbuilderScreen layout for improved UI. Adjust header spacing and visibility of the back button text on smaller screens. Enhance content area with a more prominent title and description, improving overall user experience and clarity."
+    },
+    {
+      "hash": "7fa4d55",
+      "date": "15.12.2025 05:09",
+      "message": "Add export and import modals to DeckbuilderScreen for sharing and loading deck configurations. Implement clipboard functionality for sharing and error handling for imports, enhancing user experience and deck management."
+    },
+    {
+      "hash": "28fa57c",
+      "date": "15.12.2025 04:48",
+      "message": "Enhance GameScreen and gameReducer to support new 'corpseeater' effect. Update visual feedback for HP restoration on enemy slots and improve last effect handling in GameScreen, ensuring clearer gameplay dynamics and user notifications."
+    },
+    {
+      "hash": "0420291",
+      "date": "15.12.2025 04:41",
+      "message": "Refactor GameScreen and gameReducer to enhance debuff handling. Update visual representation of coins and active effects in GameScreen, and adjust damage calculations in gameReducer to account for 'miss' effects, improving gameplay clarity and user feedback."
+    },
+    {
+      "hash": "7259c64",
+      "date": "15.12.2025 04:28",
+      "message": "Update gameReducer to replace junk coin with junk skull card, enhancing gameplay by adding new mechanics for backpack management. Implement log messages for adding skulls and handling full or blocked backpacks, improving player feedback and experience."
+    },
+    {
+      "hash": "29c14e7",
+      "date": "15.12.2025 04:25",
+      "message": "Refactor gameReducer to ensure player state is preserved during ability applications. Update max HP restoration logic for 'exhaustion' ability to also restore current HP, enhancing gameplay feedback with clearer log messages."
+    },
+    {
+      "hash": "15290ab",
+      "date": "15.12.2025 04:15",
+      "message": "Implement corrosion effect handling in GameScreen and gameReducer. Add visual feedback for corrosion effects on card slots, updating state management to track last effects. Enhance gameplay dynamics by providing clear notifications for weakened cards, improving user experience."
+    },
+    {
+      "hash": "f766768",
+      "date": "15.12.2025 03:55",
+      "message": "Enhance GameScreen and gameReducer to support 'beacon' ability mechanics. Update peekType handling and visual feedback in GameScreen based on the new ability, ensuring players receive clear notifications about upcoming monsters. Modify monsterAbilities description for clarity on 'beacon' functionality, improving gameplay dynamics and user experience."
+    },
+    {
+      "hash": "76754f5",
+      "date": "15.12.2025 03:52",
+      "message": "Add skull card type and related mechanics in CardComponent, GameScreen, and gameReducer. Update deck stats to include skull cards, implement random insertion of skull cards into the deck, and adjust log messages for skull interactions, enhancing gameplay dynamics and user experience."
+    },
+    {
+      "hash": "84a1552",
+      "date": "15.12.2025 03:20",
+      "message": "Add web ability handling in GameScreen to block card interactions. Introduce visual feedback for web status in the backpack slot, enhancing gameplay dynamics and user experience."
+    },
+    {
+      "hash": "afdc682",
+      "date": "15.12.2025 03:17",
+      "message": "Enhance CardComponent, GameScreen, and Slot to support new penalty mechanics. Introduce penalty prop for visual effects in CardComponent and update GameScreen to apply penalties based on monster abilities. Ensure consistent handling of penalties across components, improving gameplay dynamics and visual feedback."
+    },
+    {
+      "hash": "48553c6",
+      "date": "15.12.2025 03:07",
+      "message": "Refactor 'offering' ability in gameReducer to enhance healing mechanics for monsters. Update log messages for clarity on healing actions and conditions, ensuring better player feedback during gameplay."
+    },
+    {
+      "hash": "183fd27",
+      "date": "15.12.2025 02:52",
+      "message": "Implement sell block functionality in GameScreen to prevent selling monsters with the 'scream' ability. Update sell button appearance and behavior based on sell block state, enhancing user feedback and gameplay mechanics."
+    },
+    {
+      "hash": "b5eb2e6",
+      "date": "15.12.2025 02:40",
+      "message": "Enhance GameScreen and gameReducer to support graveyard revival mechanics. Implement visual feedback for revived monsters in GameScreen, including floating text notifications. Update gameReducer to manage monster revival logic, ensuring proper handling of empty slots and discard pile interactions."
+    }
+  ]
+}

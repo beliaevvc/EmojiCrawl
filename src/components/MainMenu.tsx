@@ -1,8 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, PlusSquare, FileUp, BarChart3 } from 'lucide-react';
+import { Play, PlusSquare, FileUp, BarChart3, Info } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { DeckTemplate } from '../types/game';
 import LoadTemplateModal from './LoadTemplateModal';
+import { VersionModal } from './VersionModal';
+import versionData from '../data/version_history.json';
 
 const QUOTES = [
     "Серега конечно красавчик, такой прототип запилил",
@@ -97,6 +99,7 @@ interface MainMenuProps {
 
 const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: MainMenuProps) => {
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
 
   // Stickers Configuration
@@ -153,10 +156,21 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="mb-12 text-center z-10"
+        className="mb-12 text-center z-10 relative"
       >
-        <h1 className="text-6xl md:text-8xl font-display font-bold text-stone-200 tracking-tighter uppercase drop-shadow-xl">
+        <h1 className="text-6xl md:text-8xl font-display font-bold text-stone-200 tracking-tighter uppercase drop-shadow-xl relative inline-flex items-center">
           Skazmor
+          
+          {/* Version Badge */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowVersionHistory(true)}
+            className="absolute -top-6 -right-16 md:-right-20 bg-stone-800/80 border border-stone-700 hover:border-emerald-500/50 backdrop-blur-sm px-2 py-1 rounded text-[10px] md:text-xs font-mono tracking-widest text-stone-400 hover:text-emerald-400 flex items-center gap-1 transition-all shadow-lg cursor-pointer z-50"
+          >
+            <Info size={10} />
+            v{versionData.version}
+          </motion.button>
         </h1>
         <p className="text-stone-500 text-sm tracking-[0.5em] mt-2 uppercase">Roguelike Deckbuilder</p>
       </motion.div>
@@ -295,6 +309,9 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
                    }}
                    onClose={() => setShowLoadTemplate(false)}
                />
+           )}
+           {showVersionHistory && (
+               <VersionModal onClose={() => setShowVersionHistory(false)} />
            )}
        </AnimatePresence>
 
