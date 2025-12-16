@@ -1,7 +1,12 @@
 {
-  "version": "0.0.92",
-  "buildDate": "12/16/2025, 10:23:26 AM",
+  "version": "0.0.93",
+  "buildDate": "12/16/2025, 10:30:23 AM",
   "commits": [
+    {
+      "hash": "457589f",
+      "date": "16.12.2025 10:30",
+      "message": "Refactor Chalkboard component to use global event listeners for pointer events, improving drawing responsiveness and simplifying event handling. Remove unnecessary local references and optimize stroke updates."
+    },
     {
       "hash": "e0aae57",
       "date": "16.12.2025 10:23",
@@ -246,11 +251,6 @@
       "hash": "76754f5",
       "date": "15.12.2025 03:52",
       "message": "Add skull card type and related mechanics in CardComponent, GameScreen, and gameReducer. Update deck stats to include skull cards, implement random insertion of skull cards into the deck, and adjust log messages for skull interactions, enhancing gameplay dynamics and user experience."
-    },
-    {
-      "hash": "84a1552",
-      "date": "15.12.2025 03:20",
-      "message": "Add web ability handling in GameScreen to block card interactions. Introduce visual feedback for web status in the backpack slot, enhancing gameplay dynamics and user experience."
     }
   ]
 }
