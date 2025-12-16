@@ -363,27 +363,25 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   // Ref to track previous ID to detect switch
   const prevNoteIdRef = useRef<string | null>(null);
 
-  // Sync editor content when active note changes
+  // Sync editor content when active note changes OR view mode changes to editor
   useEffect(() => {
-    if (editorRef.current && activeNote) {
+    if (editorRef.current && activeNote && viewMode === 'editor') {
         const isNoteSwitch = prevNoteIdRef.current !== activeNoteId;
         
-        if (isNoteSwitch) {
-            // Always update on switch
+        // Always update content if we just switched notes OR just opened the editor view
+        if (isNoteSwitch || viewMode === 'editor') {
             editorRef.current.innerHTML = activeNote.content || '';
             prevNoteIdRef.current = activeNoteId;
-        } else {
-            // Same note, content changed from outside (or optimistic update loop back)
-            // Only update if content is actually different
-            if (editorRef.current.innerHTML !== activeNote.content) {
-                // AND only if we are NOT focused (to avoid cursor jumps)
-                if (document.activeElement !== editorRef.current) {
-                    editorRef.current.innerHTML = activeNote.content || '';
-                }
-            }
+        } 
+        
+        // Handle realtime updates while in editor
+        if (!isNoteSwitch && editorRef.current.innerHTML !== activeNote.content) {
+             if (document.activeElement !== editorRef.current) {
+                 editorRef.current.innerHTML = activeNote.content || '';
+             }
         }
     }
-  }, [activeNoteId, activeNote?.content]); 
+  }, [activeNoteId, activeNote?.content, viewMode]); // Added viewMode dependency 
 
   // Don't render until client-side hydration (window check) 
   // If loading, show loader. If no notes and loaded, show empty state.
