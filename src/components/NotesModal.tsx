@@ -144,11 +144,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
     if (activeNote) {
         // Only update if ID changed OR if it's the first load (localTitle empty)
         // We avoid updating if ID is same to prevent overwriting user typing
-        setLocalTitle(prev => {
-            // Simple heuristic: if we just switched notes, update.
-            // But we don't have "previous ID" here easily without ref.
-            return activeNote.title || '';
-        });
+        setLocalTitle(activeNote.title || '');
     }
   }, [activeNoteId]); // REMOVED activeNote dependency to stop overwriting!
 

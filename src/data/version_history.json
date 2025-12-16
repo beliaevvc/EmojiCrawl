@@ -1,7 +1,37 @@
 {
-  "version": "0.0.96",
-  "buildDate": "12/16/2025, 6:58:27 PM",
+  "version": "0.0.102",
+  "buildDate": "12/16/2025, 7:55:47 PM",
   "commits": [
+    {
+      "hash": "0b5fdcd",
+      "date": "16.12.2025 19:52",
+      "message": "Add confirmation modal for note deletion in NotesModal component"
+    },
+    {
+      "hash": "c2383ca",
+      "date": "16.12.2025 19:44",
+      "message": "Implement local state for note title in NotesModal to prevent cursor jumps during editing. Sync local title with active note changes and adjust debounce timing for title updates, enhancing user experience and responsiveness."
+    },
+    {
+      "hash": "12e52f2",
+      "date": "16.12.2025 19:37",
+      "message": "Refactor NotesModal component to improve handling of empty states and loading indicators. Introduce conditional rendering for loading and empty note scenarios, enhancing user experience by providing clear feedback during data fetching and when no notes are available."
+    },
+    {
+      "hash": "27dc08d",
+      "date": "16.12.2025 19:31",
+      "message": "Update NotesModal and useNotesStore components to handle author email more robustly, providing a fallback to 'Unknown' or 'Anonymous' when email is not available. This enhances user experience by ensuring consistent display of author information."
+    },
+    {
+      "hash": "d631c71",
+      "date": "16.12.2025 19:15",
+      "message": "Refactor NotesModal and useNotesStore components to remove unnecessary error handling in remote notes fetching and simplify subscription logic for note updates. This improves code clarity and maintains functionality."
+    },
+    {
+      "hash": "035ea2a",
+      "date": "16.12.2025 19:13",
+      "message": "Enhance NotesModal component to support user authentication, integrating remote note management with local storage fallback. Implement debounced updates for note content and title, ensuring smooth synchronization. Update UI to reflect loading states and author information, improving user experience for both local and cloud notes."
+    },
     {
       "hash": "ed2d39d",
       "date": "16.12.2025 18:43",
@@ -221,36 +251,6 @@
       "hash": "4ccff3f",
       "date": "15.12.2025 05:19",
       "message": "Remove unused useRef import from DeckbuilderScreen, streamlining component code for better readability and performance."
-    },
-    {
-      "hash": "8c236fa",
-      "date": "15.12.2025 05:11",
-      "message": "Refactor DeckbuilderScreen layout for improved UI. Adjust header spacing and visibility of the back button text on smaller screens. Enhance content area with a more prominent title and description, improving overall user experience and clarity."
-    },
-    {
-      "hash": "7fa4d55",
-      "date": "15.12.2025 05:09",
-      "message": "Add export and import modals to DeckbuilderScreen for sharing and loading deck configurations. Implement clipboard functionality for sharing and error handling for imports, enhancing user experience and deck management."
-    },
-    {
-      "hash": "28fa57c",
-      "date": "15.12.2025 04:48",
-      "message": "Enhance GameScreen and gameReducer to support new 'corpseeater' effect. Update visual feedback for HP restoration on enemy slots and improve last effect handling in GameScreen, ensuring clearer gameplay dynamics and user notifications."
-    },
-    {
-      "hash": "0420291",
-      "date": "15.12.2025 04:41",
-      "message": "Refactor GameScreen and gameReducer to enhance debuff handling. Update visual representation of coins and active effects in GameScreen, and adjust damage calculations in gameReducer to account for 'miss' effects, improving gameplay clarity and user feedback."
-    },
-    {
-      "hash": "7259c64",
-      "date": "15.12.2025 04:28",
-      "message": "Update gameReducer to replace junk coin with junk skull card, enhancing gameplay by adding new mechanics for backpack management. Implement log messages for adding skulls and handling full or blocked backpacks, improving player feedback and experience."
-    },
-    {
-      "hash": "29c14e7",
-      "date": "15.12.2025 04:25",
-      "message": "Refactor gameReducer to ensure player state is preserved during ability applications. Update max HP restoration logic for 'exhaustion' ability to also restore current HP, enhancing gameplay feedback with clearer log messages."
     }
   ]
 }
