@@ -126,7 +126,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
 
   // Interaction State
   const interactionRef = useRef<{
-    type: 'move' | 'resize-se' | 'resize-sw' | 'resize-e' | 'resize-w' | null;
+    type: 'move' | 'resize-se' | 'resize-sw' | 'resize-e' | 'resize-w' | 'resize-s' | null;
     startX: number;
     startY: number;
     startLeft: number;
@@ -193,7 +193,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   }, []);
 
   // Interaction Handlers
-  const startInteraction = (e: React.PointerEvent, type: 'move' | 'resize-se' | 'resize-sw' | 'resize-e' | 'resize-w') => {
+  const startInteraction = (e: React.PointerEvent, type: 'move' | 'resize-se' | 'resize-sw' | 'resize-e' | 'resize-w' | 'resize-s') => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -256,6 +256,11 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             ...prev,
             width: newWidth,
             x: startLeft + effectiveDeltaX
+        }));
+    } else if (type === 'resize-s') {
+        setWindowState(prev => ({
+            ...prev,
+            height: Math.max(300, startHeight + deltaY)
         }));
     }
   };
@@ -429,6 +434,11 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
         <div 
             className="absolute top-0 left-0 w-2 h-full cursor-ew-resize z-10 hover:bg-white/5 transition-colors"
             onPointerDown={(e) => startInteraction(e, 'resize-w')}
+        />
+        {/* Bottom Side (Centered) - Added for bottom resize */}
+        <div 
+            className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize z-10 hover:bg-white/5 transition-colors"
+            onPointerDown={(e) => startInteraction(e, 'resize-s')}
         />
 
         </div>
