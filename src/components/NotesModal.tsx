@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { X, Plus, Bold, Italic, Underline, Link as LinkIcon, List, RotateCcw, ArrowDownRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Plus, Bold, Italic, Underline, Link as LinkIcon, List, RotateCcw, ArrowDownRight, ArrowDownLeft } from 'lucide-react';
 
 interface Note {
   id: string;
@@ -99,10 +99,31 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
   
-  // Resize State
+  // Window State
   const [size, setSize] = useState({ width: 400, height: 500 });
-  const isResizing = useRef(false);
-  const dragControls = useDragControls();
+  const [position, setPosition] = useState(() => ({
+    x: typeof window !== 'undefined' ? window.innerWidth - 450 : 100,
+    y: 96 // top-24 approx
+  }));
+
+  // Interaction State
+  const interactionRef = useRef<{
+    type: 'move' | 'resize-se' | 'resize-sw' | null;
+    startX: number;
+    startY: number;
+    startLeft: number;
+    startTop: number;
+    startWidth: number;
+    startHeight: number;
+  }>({
+    type: null,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+    startWidth: 0,
+    startHeight: 0
+  });
 
   useEffect(() => {
     localStorage.setItem('skazmor_notes', JSON.stringify(notes));
@@ -149,27 +170,65 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
       return () => document.removeEventListener('selectionchange', checkSelection);
   }, []);
 
-  // Resize Handlers
-  const startResize = (e: React.PointerEvent) => {
+  // Interaction Handlers
+  const startInteraction = (e: React.PointerEvent, type: 'move' | 'resize-se' | 'resize-sw') => {
     e.preventDefault();
     e.stopPropagation();
-    isResizing.current = true;
-    window.addEventListener('pointermove', handleResize);
-    window.addEventListener('pointerup', stopResize);
+    
+    // Clear selection to avoid interfering with drag
+    window.getSelection()?.removeAllRanges();
+
+    interactionRef.current = {
+        type,
+        startX: e.clientX,
+        startY: e.clientY,
+        startLeft: position.x,
+        startTop: position.y,
+        startWidth: size.width,
+        startHeight: size.height
+    };
+
+    window.addEventListener('pointermove', handleInteraction);
+    window.addEventListener('pointerup', stopInteraction);
   };
 
-  const handleResize = (e: PointerEvent) => {
-    if (!isResizing.current) return;
-    setSize(prev => ({
-        width: Math.max(300, prev.width + e.movementX),
-        height: Math.max(300, prev.height + e.movementY)
-    }));
+  const handleInteraction = (e: PointerEvent) => {
+    const { type, startX, startY, startLeft, startTop, startWidth, startHeight } = interactionRef.current;
+    if (!type) return;
+
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+
+    if (type === 'move') {
+        setPosition({
+            x: startLeft + deltaX,
+            y: startTop + deltaY
+        });
+    } else if (type === 'resize-se') {
+        setSize({
+            width: Math.max(300, startWidth + deltaX),
+            height: Math.max(300, startHeight + deltaY)
+        });
+    } else if (type === 'resize-sw') {
+        const newWidth = Math.max(300, startWidth - deltaX);
+        // Only update left position if width actually changed (respected min-width)
+        const effectiveDeltaX = startWidth - newWidth; 
+        
+        setSize({
+            width: newWidth,
+            height: Math.max(300, startHeight + deltaY)
+        });
+        setPosition(prev => ({
+            ...prev,
+            x: startLeft + effectiveDeltaX
+        }));
+    }
   };
 
-  const stopResize = () => {
-    isResizing.current = false;
-    window.removeEventListener('pointermove', handleResize);
-    window.removeEventListener('pointerup', stopResize);
+  const stopInteraction = () => {
+    interactionRef.current.type = null;
+    window.removeEventListener('pointermove', handleInteraction);
+    window.removeEventListener('pointerup', stopInteraction);
   };
 
   const addNote = () => {
@@ -204,27 +263,28 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             editorRef.current.innerHTML = activeNote.content;
         }
     }
-  }, [activeNoteId]); 
+  }, [activeNoteId, activeNote]); 
 
   if (!activeNote) return null;
 
   return (
     <>
         <motion.div
-        drag
-        dragListener={false}
-        dragControls={dragControls}
-        dragMomentum={false}
-        initial={{ opacity: 0, scale: 0.9, y: 50 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="fixed z-40 top-24 right-10 bg-stone-900 border border-stone-700 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-opacity-95"
-        style={{ width: size.width, height: size.height }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed z-40 bg-stone-900 border border-stone-700 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-opacity-95"
+            style={{ 
+                width: size.width, 
+                height: size.height,
+                left: position.x,
+                top: position.y
+            }}
         >
         {/* Header / Tabs */}
         <div 
             className="flex items-center bg-stone-950/80 p-1 border-b border-stone-800 cursor-move select-none"
-            onPointerDown={(e) => dragControls.start(e)}
+            onPointerDown={(e) => startInteraction(e, 'move')}
         >
             <div className="flex-1 flex overflow-x-auto scrollbar-hide gap-1 pr-2">
                 {notes.map(note => (
@@ -256,9 +316,12 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             
             {/* Reset Size Button */}
             <button 
-                onClick={() => setSize({ width: 400, height: 500 })} 
+                onClick={() => {
+                    setSize({ width: 400, height: 500 });
+                    setPosition({ x: window.innerWidth - 450, y: 96 });
+                }} 
                 onPointerDown={e => e.stopPropagation()}
-                title="Сбросить размер"
+                title="Сбросить размер и позицию"
                 className="p-2 text-stone-600 hover:text-stone-300 transition-colors mr-1"
             >
                 <RotateCcw size={14} />
@@ -293,17 +356,26 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             style={{ whiteSpace: 'pre-wrap' }}
         />
         
-        {/* Footer / Status + Resize Handle */}
+        {/* Footer / Status + Resize Handles */}
         <div className="p-1 bg-stone-950/50 border-t border-stone-800 text-[10px] text-stone-600 flex justify-between items-end px-3 relative">
-            <span>Выделите текст для форматирования</span>
+            {/* Bottom Left Resize */}
+            <div 
+                onPointerDown={(e) => startInteraction(e, 'resize-sw')}
+                className="cursor-nesw-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 left-0 z-10"
+            >
+                <ArrowDownLeft size={16} />
+            </div>
+
+            <span className="ml-4">Выделите текст для форматирования</span>
             <div className="flex flex-col items-end gap-0.5 mr-4">
                 <span>Автосохранение</span>
                 <span className="text-[9px] text-stone-700">Локально (видно только вам)</span>
             </div>
-            {/* Resize Handle */}
+            
+            {/* Bottom Right Resize */}
             <div 
-                onPointerDown={startResize}
-                className="cursor-nwse-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 right-0"
+                onPointerDown={(e) => startInteraction(e, 'resize-se')}
+                className="cursor-nwse-resize text-stone-600 hover:text-stone-300 transition-colors p-1 absolute bottom-0 right-0 z-10"
             >
                 <ArrowDownRight size={16} />
             </div>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { EditorLayout } from '../layout/EditorLayout';
 import { motion } from 'framer-motion';
 import type { Category } from '../../types';
@@ -16,7 +17,7 @@ export function CategorySelect({ onBack, onSelectCategory, onPlay }: CategorySel
 
     if (!template) return <div>Template not found</div>;
 
-    const totalCards = Object.values(template.deck).reduce((acc, arr) => acc + arr.length, 0);
+    const totalCards = Object.values(template.deck).reduce((acc, arr: any) => acc + arr.length, 0);
 
     return (
         <EditorLayout 
@@ -42,7 +43,7 @@ export function CategorySelect({ onBack, onSelectCategory, onPlay }: CategorySel
                         </div>
                     </div>
                     <div className="text-right">
-                        <span className="text-4xl font-black text-slate-700">{totalCards}</span>
+                        <span className="text-4xl font-black text-slate-700">{totalCards as number}</span>
                         <p className="text-xs text-slate-500 uppercase tracking-widest">Total Cards</p>
                     </div>
                 </div>

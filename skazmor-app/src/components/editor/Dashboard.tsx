@@ -1,3 +1,4 @@
+import React from 'react';
 import { useEditorStore } from '../../stores/useEditorStore';
 import { EditorLayout } from '../layout/EditorLayout';
 import { motion } from 'framer-motion';
@@ -46,7 +47,7 @@ export function Dashboard({ onSelectTemplate, onCreateTemplate }: DashboardProps
                         <h3 className="text-2xl font-bold mb-2">{template.name}</h3>
                         <div className="space-y-1 text-sm text-slate-400">
                             <p>HP: <span className="text-rose-400">{template.hero.maxHp}</span></p>
-                            <p>Cards: {Object.values(template.deck).reduce((acc, arr) => acc + arr.length, 0)}</p>
+                            <p>Cards: {Object.values(template.deck).reduce((acc, arr: any) => acc + arr.length, 0) as number}</p>
                         </div>
                         
                         <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -60,5 +61,7 @@ export function Dashboard({ onSelectTemplate, onCreateTemplate }: DashboardProps
         </EditorLayout>
     );
 }
+
+
 
 

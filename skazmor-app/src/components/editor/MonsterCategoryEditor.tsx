@@ -179,3 +179,5 @@ export function MonsterCategoryEditor({ onBack }: MonsterCategoryEditorProps) {
 }
 
 
+
+
