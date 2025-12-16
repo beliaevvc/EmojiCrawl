@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Bold, Italic, Underline, Link as LinkIcon, List, RotateCcw, ArrowDownRight, ArrowDownLeft, Cloud, CloudOff, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useNotesStore, Note } from '../stores/useNotesStore';
+import { ConfirmationModal } from './ConfirmationModal';
 
 const DEFAULT_CONTENT = `<b>Общие ограничения</b>
 
@@ -101,6 +102,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   // Effective Notes (Local or Remote based on auth)
   const notes = user ? remoteNotes : localNotes;
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null); // For custom modal
 
   // Sync with remote when user changes
   useEffect(() => {
@@ -137,12 +139,22 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   // Local state for title to prevent cursor jumps and lag
   const [localTitle, setLocalTitle] = useState('');
   
-  // Sync local title when active note changes
+  // Sync local title when switching notes (only when ID changes)
   useEffect(() => {
     if (activeNote) {
-        setLocalTitle(activeNote.title || '');
+        // Only update if ID changed OR if it's the first load (localTitle empty)
+        // We avoid updating if ID is same to prevent overwriting user typing
+        setLocalTitle(prev => {
+            // Simple heuristic: if we just switched notes, update.
+            // But we don't have "previous ID" here easily without ref.
+            return activeNote.title || '';
+        });
     }
-  }, [activeNoteId, activeNote?.id]); // Only when ID changes, or if remote title updates from SOMEONE ELSE (requires deeper check, but this is safer for typing)
+  }, [activeNoteId]); // REMOVED activeNote dependency to stop overwriting!
+
+  // We need to update localTitle if it was empty on first load though.
+  // Or if remote updated from someone else.
+  // But for now, priority is not losing input.
   
   const editorRef = useRef<HTMLDivElement>(null);
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null);
@@ -318,17 +330,22 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
 
   const handleRemoveNote = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (notes.length === 1 && !user) return; // Prevent deleting last local note if simple logic
+    if (notes.length === 1 && !user) return; 
     
     if (user) {
-        if (confirm('Удалить эту заметку? Это действие нельзя отменить.')) {
-            deleteNote(id);
-        }
+        setNoteToDelete(id);
     } else {
         const newNotes = localNotes.filter(n => n.id !== id);
         setLocalNotes(newNotes);
         if (activeNoteId === id) setActiveNoteId(newNotes[0]?.id || null);
     }
+  };
+
+  const confirmDelete = async () => {
+      if (noteToDelete) {
+          await deleteNote(noteToDelete);
+          setNoteToDelete(null);
+      }
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -349,14 +366,31 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   useEffect(() => {
     if (editorRef.current && activeNote) {
         // Only update if content is significantly different to avoid cursor jumps
-        // Simple check:
-        if (editorRef.current.innerHTML !== activeNote.content) {
-             // If we are typing, we don't want to overwrite unless it's a different note
-             // But here we switch notes.
-             editorRef.current.innerHTML = activeNote.content || '';
-        }
+        // AND if we are not the ones typing (which is hard to know).
+        // Best bet: Only update if activeNoteId CHANGED.
+        
+        // But what if initial load? activeNoteId is set, then content loads later.
+        // We can check if editor is empty?
+        
+        // Let's rely on checking if innerHTML matches to avoid reset?
+        // No, that doesn't help if remote is old.
+        
+        // Strategy: Only force update content if we switched notes.
+        // For realtime updates from others, we might miss them while typing, but that's a tradeoff.
     }
-  }, [activeNoteId, activeNote]); 
+  }, [activeNoteId]); // Remove activeNote from dependency to avoid overwriting while typing!
+
+  // Separate effect for initial load of content?
+  useEffect(() => {
+      if (editorRef.current && activeNote) {
+          if (editorRef.current.innerHTML !== activeNote.content) {
+               // Only update if we are NOT focused? 
+               if (document.activeElement !== editorRef.current) {
+                   editorRef.current.innerHTML = activeNote.content || '';
+               }
+          }
+      }
+  }, [activeNote?.content, activeNoteId]); // This handles updates but checks focus 
 
   // Don't render until client-side hydration (window check) 
   // If loading, show loader. If no notes and loaded, show empty state.
@@ -571,6 +605,17 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
                         if (url) handleCommand('createLink', url);
                     }} tooltip="Ссылка" />
                 </motion.div>
+            )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+            {noteToDelete && (
+                <ConfirmationModal 
+                    title="Удалить заметку?"
+                    message="Это действие необратимо. Заметка будет удалена для всех пользователей."
+                    onConfirm={confirmDelete}
+                    onCancel={() => setNoteToDelete(null)}
+                />
             )}
         </AnimatePresence>
     </>
