@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, PlusSquare, FileUp, BarChart3, Info, User as UserIcon, LogOut } from 'lucide-react';
+import { Play, PlusSquare, FileUp, BarChart3, Info, User as UserIcon, LogOut, Pencil, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { DeckTemplate } from '../types/game';
 import LoadTemplateModal from './LoadTemplateModal';
@@ -106,6 +106,30 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
   
+  // Easter Egg State
+  const [skullClickCount, setSkullClickCount] = useState(0);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [chalkColor, setChalkColor] = useState('#e7e5e4'); // Default Stone-200 (White-ish)
+
+  const CHALK_COLORS = [
+      { color: '#e7e5e4', name: 'White' },   // stone-200
+      { color: '#fca5a5', name: 'Red' },     // red-300
+      { color: '#fde047', name: 'Yellow' },  // yellow-300
+      { color: '#93c5fd', name: 'Blue' },    // blue-300
+      { color: '#86efac', name: 'Green' },   // green-300
+      { color: '#d8b4fe', name: 'Purple' },  // purple-300
+      { color: '#fdba74', name: 'Orange' },  // orange-300
+  ];
+
+  const handleSkullClick = () => {
+      const newCount = skullClickCount + 1;
+      setSkullClickCount(newCount);
+      if (newCount >= 5) {
+          setShowColorPicker(true);
+          setSkullClickCount(0);
+      }
+  };
+
   const { user, initializeAuth, signOut } = useAuthStore();
 
   useEffect(() => {
@@ -159,7 +183,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       className="relative w-full h-screen bg-stone-950 flex flex-col items-center justify-center p-4 overflow-hidden"
     >
       {/* Chalkboard Background */}
-      <Chalkboard />
+      <Chalkboard color={chalkColor} />
 
       {/* Фоновый шум/текстура */}
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none z-0"></div>
@@ -266,7 +290,57 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       
        {/* Эмодзи декор */}
        <div className="absolute top-1/4 left-10 text-8xl opacity-5 rotate-12 select-none pointer-events-none">🗡️</div>
-       <div className="absolute bottom-1/4 right-10 text-8xl opacity-5 -rotate-12 select-none pointer-events-none">💀</div>
+       <div 
+            className="absolute bottom-1/4 right-10 text-8xl opacity-5 -rotate-12 select-none cursor-pointer hover:opacity-10 transition-opacity z-20"
+            onClick={handleSkullClick}
+       >
+        💀
+       </div>
+
+       {/* Color Picker Easter Egg */}
+       <AnimatePresence>
+            {showColorPicker && (
+                <motion.div
+                    drag
+                    dragMomentum={false}
+                    initial={{ opacity: 0, scale: 0.9, x: '-50%', y: 20 }}
+                    animate={{ opacity: 1, scale: 1, x: '-50%', y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    style={{ position: 'absolute', top: '75%', left: '50%' }} // Initial position lower
+                    onPointerDown={(e) => e.stopPropagation()} // Stop drawing when interacting with panel
+                    className="z-50 flex items-center gap-2 bg-stone-900/90 backdrop-blur border border-stone-800 p-2 rounded-xl shadow-2xl cursor-move"
+                >
+                    {CHALK_COLORS.map((c) => (
+                        <button
+                            key={c.color}
+                            onClick={() => setChalkColor(c.color)}
+                            // No need for stopPropagation here if parent handles it, but safer to keep or remove if parent works.
+                            // Parent onPointerDown handles the drag start blocking drawing.
+                            className={`p-2 rounded-lg transition-transform hover:scale-110 ${chalkColor === c.color ? 'bg-stone-800 ring-1 ring-stone-600' : ''}`}
+                            title={c.name}
+                        >
+                            <Pencil 
+                                size={20} 
+                                color={c.color} 
+                                fill={c.color} 
+                                className="drop-shadow-sm"
+                            />
+                        </button>
+                    ))}
+                    <div className="w-px h-6 bg-stone-700 mx-1" />
+                    <button
+                        onClick={() => {
+                            setShowColorPicker(false);
+                            setChalkColor('#e7e5e4'); // Reset to white
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        className="p-2 text-stone-500 hover:text-rose-400 hover:bg-stone-800 rounded-lg transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
+                </motion.div>
+            )}
+       </AnimatePresence>
 
        {/* Random Sticker Images */}
        {stickers.map((sticker, i) => (

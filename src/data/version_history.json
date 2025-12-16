@@ -1,7 +1,47 @@
 {
-  "version": "0.0.102",
-  "buildDate": "12/16/2025, 7:55:47 PM",
+  "version": "0.0.110",
+  "buildDate": "12/16/2025, 8:36:00 PM",
   "commits": [
+    {
+      "hash": "3699174",
+      "date": "16.12.2025 20:35",
+      "message": "Remove content preview from NotesModal to streamline note display and improve layout consistency."
+    },
+    {
+      "hash": "3b06650",
+      "date": "16.12.2025 20:32",
+      "message": "Enhance NotesModal to sync editor content based on view mode changes"
+    },
+    {
+      "hash": "17f776b",
+      "date": "16.12.2025 20:30",
+      "message": "Add view mode toggle to NotesModal for enhanced note management"
+    },
+    {
+      "hash": "56fd217",
+      "date": "16.12.2025 20:25",
+      "message": "Refactor note creation logic in NotesModal and useNotesStore for improved ID handling"
+    },
+    {
+      "hash": "bed3b56",
+      "date": "16.12.2025 20:17",
+      "message": "Add paste handling functionality in NotesModal component"
+    },
+    {
+      "hash": "9448abb",
+      "date": "16.12.2025 20:13",
+      "message": "Refactor NotesModal and useNotesStore for improved note synchronization and optimistic updates"
+    },
+    {
+      "hash": "62f3f80",
+      "date": "16.12.2025 20:09",
+      "message": "Enhance NotesModal and useNotesStore to improve error handling for note editing"
+    },
+    {
+      "hash": "fa71de5",
+      "date": "16.12.2025 19:56",
+      "message": "Update version history and make minor adjustments across multiple files"
+    },
     {
       "hash": "0b5fdcd",
       "date": "16.12.2025 19:52",
@@ -211,46 +251,6 @@
       "hash": "2db25ea",
       "date": "15.12.2025 08:19",
       "message": "Refactor conditional rendering in CardsViewer to improve clarity. Remove commented-out logic for cleaner code and maintain consistent UI behavior when no cards are displayed."
-    },
-    {
-      "hash": "e9f4e9b",
-      "date": "15.12.2025 08:01",
-      "message": "Refactor DeckViewer to CardsViewer for improved clarity and functionality. Update card display logic, navigation handling, and conditional rendering based on the label. Enhance UI responsiveness and maintainability in GameScreen by integrating CardsViewer for both deck and discard pile."
-    },
-    {
-      "hash": "fe5adc6",
-      "date": "15.12.2025 07:56",
-      "message": "Add DeckViewer and MiniCard components to GameScreen for enhanced card display and navigation. Implement left/right navigation buttons and hover effects for better user interaction with the deck. This update improves the visual representation of cards and overall gameplay experience."
-    },
-    {
-      "hash": "c91f7a6",
-      "date": "15.12.2025 07:38",
-      "message": "Remove unused import of RefreshCw icon from GameScreen to streamline code and improve component clarity."
-    },
-    {
-      "hash": "d849560",
-      "date": "15.12.2025 07:25",
-      "message": "Add God Mode functionality to GameScreen and gameReducer. Introduce toggle for God Mode visibility, update game state to manage invulnerability during gameplay, and enhance UI with corresponding visual feedback. This improves user experience by allowing players to test strategies without penalties."
-    },
-    {
-      "hash": "6e996ed",
-      "date": "15.12.2025 06:49",
-      "message": "Enhance OverheadStatsWindow in GameScreen with drag functionality and improved cursor styles for better user interaction. This update allows users to move the stats window while maintaining a clean UI."
-    },
-    {
-      "hash": "475ec91",
-      "date": "15.12.2025 06:46",
-      "message": "Remove unused 2x button from GameScreen to streamline the UI and improve overall component clarity."
-    },
-    {
-      "hash": "7bca6ce",
-      "date": "15.12.2025 05:30",
-      "message": "Add ErrorBoundary component to App for improved error handling. Refactor App layout to include ErrorBoundary, ensuring better user experience during runtime errors. Remove unused layout prop from StatsScreen for cleaner code."
-    },
-    {
-      "hash": "4ccff3f",
-      "date": "15.12.2025 05:19",
-      "message": "Remove unused useRef import from DeckbuilderScreen, streamlining component code for better readability and performance."
     }
   ]
 }

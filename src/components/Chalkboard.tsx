@@ -9,12 +9,19 @@ interface Stroke {
     points: Point[];
     timestamp: number;
     opacity: number;
+    color: string;
 }
 
-export const Chalkboard = () => {
+export const Chalkboard = ({ color = '#e7e5e4' }: { color?: string }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [isDrawing, setIsDrawing] = useState(false);
+    
+    // Store current color in ref so event listeners access latest value without re-binding
+    const colorRef = useRef(color);
+    useEffect(() => {
+        colorRef.current = color;
+    }, [color]);
 
     // Fade out effect
     useEffect(() => {
@@ -81,9 +88,14 @@ export const Chalkboard = () => {
                 ctx.lineWidth = 3;
                 
                 // Chalk style
-                ctx.strokeStyle = `rgba(255, 255, 255, ${stroke.opacity * 0.6})`;
+                // Convert hex to rgb for opacity handling (simple approximation or assume hex)
+                // Actually easier to keep color and opacity separate in stroke data? 
+                // Or just use hex and assume full opacity, then apply globalAlpha?
+                
+                ctx.globalAlpha = stroke.opacity;
+                ctx.strokeStyle = stroke.color;
                 ctx.shadowBlur = 2;
-                ctx.shadowColor = `rgba(255, 255, 255, ${stroke.opacity * 0.4})`;
+                ctx.shadowColor = stroke.color;
 
                 ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
                 for (let i = 1; i < stroke.points.length; i++) {
@@ -95,10 +107,12 @@ export const Chalkboard = () => {
                 if (Math.random() > 0.5) {
                     ctx.save();
                     ctx.lineWidth = 1;
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${stroke.opacity * 0.2})`;
+                    ctx.strokeStyle = stroke.color;
+                    ctx.globalAlpha = stroke.opacity * 0.5;
                     ctx.stroke();
                     ctx.restore();
                 }
+                ctx.globalAlpha = 1.0;
             });
         };
 
@@ -123,7 +137,7 @@ export const Chalkboard = () => {
             
             setIsDrawing(true);
             const point = { x: e.clientX, y: e.clientY };
-            setStrokes(prev => [...prev, { points: [point], timestamp: Date.now(), opacity: 1 }]);
+            setStrokes(prev => [...prev, { points: [point], timestamp: Date.now(), opacity: 1, color: colorRef.current }]);
         };
 
         const handlePointerMove = (e: PointerEvent) => {
