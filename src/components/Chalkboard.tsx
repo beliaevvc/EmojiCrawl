@@ -28,8 +28,8 @@ export const Chalkboard = () => {
             setStrokes(prevStrokes => {
                 const updatedStrokes = prevStrokes.map(stroke => {
                     const age = now - stroke.timestamp;
-                    if (age > 5000) { // Start fading after 5 seconds
-                        const fadeProgress = (age - 5000) / 1000; // Fade over 1 second
+                    if (age > 10000) { // Start fading after 10 seconds
+                        const fadeProgress = (age - 10000) / 1000; // Fade over 1 second
                         const newOpacity = Math.max(0, 1 - fadeProgress);
                         if (newOpacity !== stroke.opacity) {
                             needsUpdate = true;

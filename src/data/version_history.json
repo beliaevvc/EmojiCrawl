@@ -1,7 +1,12 @@
 {
-  "version": "0.0.90",
-  "buildDate": "12/16/2025, 10:06:43 AM",
+  "version": "0.0.91",
+  "buildDate": "12/16/2025, 10:20:15 AM",
   "commits": [
+    {
+      "hash": "efd998b",
+      "date": "16.12.2025 10:19",
+      "message": "Add Chalkboard component to MainMenu"
+    },
     {
       "hash": "e507de4",
       "date": "16.12.2025 10:06",
@@ -246,11 +251,6 @@
       "hash": "afdc682",
       "date": "15.12.2025 03:17",
       "message": "Enhance CardComponent, GameScreen, and Slot to support new penalty mechanics. Introduce penalty prop for visual effects in CardComponent and update GameScreen to apply penalties based on monster abilities. Ensure consistent handling of penalties across components, improving gameplay dynamics and visual feedback."
-    },
-    {
-      "hash": "48553c6",
-      "date": "15.12.2025 03:07",
-      "message": "Refactor 'offering' ability in gameReducer to enhance healing mechanics for monsters. Update log messages for clarity on healing actions and conditions, ensuring better player feedback during gameplay."
     }
   ]
 }
