@@ -434,7 +434,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             />
             {activeNote?.author_email && (
                 <span className="text-[9px] bg-stone-800 text-stone-400 px-1.5 py-0.5 rounded border border-stone-700" title={activeNote.author_email}>
-                    by {activeNote.author_email.split('@')[0]}
+                    by {activeNote.author_email.split('@')[0] || 'Unknown'}
                 </span>
             )}
         </div>

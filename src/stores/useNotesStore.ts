@@ -57,16 +57,13 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         title,
         content,
         user_id: user.id,
-        author_email: user.email,
-        // position is not in DB yet, so we don't send it
+        // Make sure email exists, fallback to empty string if undefined
+        author_email: user.email || 'Anonymous', 
       };
 
       const { error } = await supabase.from('notes').insert([newNote]);
       if (error) throw error;
       
-      // We don't need to manually update state if we use subscription, 
-      // but for instant feedback let's re-fetch or optimistic update?
-      // Subscription is better.
       await get().fetchNotes(); 
 
     } catch (err: any) {
