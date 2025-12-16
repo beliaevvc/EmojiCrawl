@@ -309,9 +309,10 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
     window.removeEventListener('pointerup', stopInteraction);
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (user) {
-        createNote('Новая заметка', '');
+        const newId = await createNote('Новая заметка', '');
+        if (newId) setActiveNoteId(newId);
     } else {
         const newNote = {
             id: Date.now().toString(),

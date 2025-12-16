@@ -18,7 +18,7 @@ interface NotesState {
   error: string | null;
   
   fetchNotes: () => Promise<void>;
-  createNote: (title: string, content: string) => Promise<void>;
+  createNote: (title: string, content: string) => Promise<string | null>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   subscribeToNotes: () => void;
@@ -36,7 +36,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       const { data, error } = await supabase
         .from('notes')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true }); // Oldest first (left), Newest last (right)
 
       if (error) throw error;
       set({ notes: data as Note[] });
@@ -50,7 +50,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   createNote: async (title: string, content: string) => {
     const user = useAuthStore.getState().user;
-    if (!user) return; // Only auth users can create
+    if (!user) return null; // Only auth users can create
 
     try {
       const newNote = {
@@ -61,14 +61,21 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         author_email: user.email || 'Anonymous', 
       };
 
-      const { error } = await supabase.from('notes').insert([newNote]);
+      const { data, error } = await supabase
+        .from('notes')
+        .insert([newNote])
+        .select()
+        .single();
+        
       if (error) throw error;
       
       await get().fetchNotes(); 
+      return data.id; // Return the new note ID
 
     } catch (err: any) {
       console.error('Error creating note:', err);
       set({ error: err.message });
+      return null;
     }
   },
 
