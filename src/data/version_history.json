@@ -1,7 +1,12 @@
 {
-  "version": "0.0.110",
-  "buildDate": "12/16/2025, 8:36:00 PM",
+  "version": "0.0.111",
+  "buildDate": "12/17/2025, 2:45:47 AM",
   "commits": [
+    {
+      "hash": "e317f8b",
+      "date": "17.12.2025 02:45",
+      "message": "Enhance Chalkboard and MainMenu components to support dynamic chalk color selection"
+    },
     {
       "hash": "3699174",
       "date": "16.12.2025 20:35",
@@ -246,11 +251,6 @@
       "hash": "15bc074",
       "date": "15.12.2025 08:46",
       "message": "Enhance GameLogWindow in GameScreen with drag functionality and improved expansion behavior. Integrate drag controls for better user interaction, allowing users to move the log window while maintaining a clean UI. Update expansion logic to improve visual feedback and usability."
-    },
-    {
-      "hash": "2db25ea",
-      "date": "15.12.2025 08:19",
-      "message": "Refactor conditional rendering in CardsViewer to improve clarity. Remove commented-out logic for cleaner code and maintain consistent UI behavior when no cards are displayed."
     }
   ]
 }

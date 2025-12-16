@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, PlusSquare, FileUp, BarChart3, Info, User as UserIcon, LogOut, Pencil, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DeckTemplate } from '../types/game';
 import LoadTemplateModal from './LoadTemplateModal';
 import { VersionModal } from './VersionModal';
@@ -110,6 +110,52 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const [skullClickCount, setSkullClickCount] = useState(0);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [chalkColor, setChalkColor] = useState('#e7e5e4'); // Default Stone-200 (White-ish)
+  
+  // Chaos Mode State
+  const [chaosMode, setChaosMode] = useState(false);
+  const [warningMode, setWarningMode] = useState(false);
+  const globalClickCount = useRef(0);
+  const clickTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Global click listener for Chaos Mode
+  useEffect(() => {
+    const handleGlobalClick = () => {
+        globalClickCount.current += 1;
+        
+        if (clickTimeout.current) clearTimeout(clickTimeout.current);
+        
+        // Reset count if no click for 1 second
+        clickTimeout.current = setTimeout(() => {
+            globalClickCount.current = 0;
+        }, 1000);
+
+        if (globalClickCount.current >= 15 && !chaosMode && !warningMode) {
+            triggerChaos();
+            globalClickCount.current = 0;
+        }
+    };
+
+    window.addEventListener('pointerdown', handleGlobalClick);
+    return () => {
+        window.removeEventListener('pointerdown', handleGlobalClick);
+        if (clickTimeout.current) clearTimeout(clickTimeout.current);
+    };
+  }, [chaosMode, warningMode]);
+
+  const triggerChaos = () => {
+      setChaosMode(true);
+      
+      // Stop chaos after 5 seconds
+      setTimeout(() => {
+          setChaosMode(false);
+          setWarningMode(true);
+          
+          // Hide warning after 5 seconds (was 3)
+          setTimeout(() => {
+              setWarningMode(false);
+          }, 5000);
+      }, 5000);
+  };
 
   const CHALK_COLORS = [
       { color: '#e7e5e4', name: 'White' },   // stone-200
@@ -182,8 +228,116 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       transition={{ duration: 0.5 }}
       className="relative w-full h-screen bg-stone-950 flex flex-col items-center justify-center p-4 overflow-hidden"
     >
+      {/* Warning Overlay (Fullscreen) */}
+      <AnimatePresence>
+        {warningMode && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden"
+            >
+                {/* Comic Background Rays - REMOVED per request */}
+                {/* <div className="absolute inset-0 opacity-20 pointer-events-none">...</div> */}
+
+                <motion.div
+                    key="warning"
+                    initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, scale: 1.5, rotate: 10 }}
+                    className="relative flex flex-col items-center justify-center z-50 pointer-events-none select-none"
+                >
+                    {/* Dizzy Emoji with Stars Halo */}
+                    <div className="relative mb-6">
+                        <motion.div 
+                            animate={{ rotate: [0, 10, -10, 0] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="text-8xl filter drop-shadow-2xl"
+                        >
+                            😵‍💫
+                        </motion.div>
+                        
+                        {/* 3D Halo of Stars */}
+                        <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                            className="absolute -top-10 left-1/2 -translate-x-1/2 w-40 h-10"
+                            style={{ transformStyle: 'preserve-3d', perspective: '100px' }}
+                        >
+                             {[...Array(5)].map((_, i) => (
+                                <div 
+                                    key={i} 
+                                    className="absolute text-yellow-400 text-4xl drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]"
+                                    style={{ 
+                                        left: '50%',
+                                        top: '50%',
+                                        transform: `rotateY(${i * 72}deg) translateZ(60px)`,
+                                    }}
+                                >
+                                    ⭐
+                                </div>
+                            ))}
+                        </motion.div>
+                    </div>
+
+                    {/* 3D Comic Text - Poster Layout */}
+                    <div className="flex flex-col items-center relative z-10">
+                        <motion.span 
+                            animate={{ scale: [1, 1.1, 1], rotate: [-15, -20, -15] }}
+                            transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
+                            className="text-6xl md:text-7xl font-black text-white italic tracking-tighter absolute -top-16 -left-24 z-20"
+                            style={{ 
+                                textShadow: '4px 4px 0px #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000',
+                                fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif'
+                            }}
+                        >
+                            УФФ...
+                        </motion.span>
+                        
+                        <div className="relative">
+                            <motion.span 
+                                className="block text-5xl md:text-6xl font-extrabold text-yellow-400 tracking-wider uppercase transform -rotate-6 z-30 relative"
+                                style={{ 
+                                    textShadow: '3px 3px 0px #ea580c, 6px 6px 0px #000',
+                                    fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif'
+                                }}
+                            >
+                                НЕ ДЕЛАЙ ТАК
+                            </motion.span>
+                            
+                            <motion.span 
+                                initial={{ scale: 0.8 }}
+                                animate={{ scale: [1, 1.05, 1] }}
+                                transition={{ duration: 0.3, repeat: Infinity }}
+                                className="block text-8xl md:text-[10rem] font-black text-rose-600 tracking-tighter uppercase leading-[0.7] transform rotate-3 mt-[-20px] relative z-20"
+                                style={{ 
+                                    textShadow: '6px 6px 0px #500724, 12px 12px 0px #000, 0 0 30px rgba(225,29,72,0.6)',
+                                    WebkitTextStroke: '4px white',
+                                    fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif'
+                                }}
+                            >
+                                БОЛЬШЕ!
+                            </motion.span>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chaos Glitch Overlay */}
+      {chaosMode && (
+          <>
+            <div className="absolute inset-0 z-50 pointer-events-none mix-blend-color-dodge bg-red-500/10 animate-pulse"></div>
+            <div className="absolute inset-0 z-50 pointer-events-none mix-blend-exclusion bg-blue-500/10 animate-bounce" style={{ animationDuration: '0.1s' }}></div>
+          </>
+      )}
+
       {/* Chalkboard Background */}
-      <Chalkboard color={chalkColor} />
+      <div className={`transition-all duration-100 ${chaosMode ? 'blur-sm scale-110 contrast-150 saturate-200' : ''}`}>
+        <Chalkboard color={chalkColor} />
+      </div>
 
       {/* Фоновый шум/текстура */}
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none z-0"></div>
@@ -191,11 +345,17 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       {/* Логотип */}
       <motion.div
         initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        animate={chaosMode ? { 
+            x: [0, -20, 20, -10, 10, 0], 
+            y: [0, 10, -10, 5, -5, 0],
+            rotate: [0, -5, 5, -3, 3, 0],
+            filter: ["hue-rotate(0deg)", "hue-rotate(90deg)", "hue-rotate(180deg)", "hue-rotate(0deg)"],
+            scale: [1, 1.1, 0.9, 1.2, 1]
+        } : { y: 0, opacity: 1, x: 0, rotate: 0, scale: 1, filter: "none" }}
+        transition={chaosMode ? { duration: 0.2, repeat: Infinity } : { duration: 0.8, ease: "easeOut" }}
         className="mb-12 text-center z-10 relative"
       >
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 flex items-center gap-4">
+        <div className={`absolute -top-16 left-1/2 -translate-x-1/2 flex items-center gap-4 transition-opacity duration-300 ${chaosMode || warningMode ? 'opacity-0' : 'opacity-100'}`}>
              {/* Auth Button / User Profile */}
              <AnimatePresence mode="wait">
                 {user ? (
@@ -243,9 +403,17 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         </div>
 
         <h1 className="text-6xl md:text-8xl font-display font-bold text-stone-200 tracking-tighter uppercase drop-shadow-xl relative inline-flex items-center">
-          Skazmor
+          <motion.span
+              key="logo"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+          >
+              Skazmor
+          </motion.span>
           
           {/* Version Badge */}
+          {!chaosMode && !warningMode && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -255,8 +423,9 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
             <Info size={10} />
             v{versionData.version}
           </motion.button>
+          )}
         </h1>
-        <p className="text-stone-500 text-sm tracking-[0.5em] mt-2 uppercase">Roguelike Deckbuilder</p>
+        <p className={`text-stone-500 text-sm tracking-[0.5em] mt-2 uppercase transition-opacity duration-300 ${chaosMode || warningMode ? 'opacity-0' : 'opacity-100'}`}>Roguelike Deckbuilder</p>
       </motion.div>
 
       {/* Основные кнопки */}
@@ -267,24 +436,28 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
           delay={0.2} 
           primary 
           onClick={onStartGame}
+          chaos={chaosMode} // Pass chaos prop
         />
         <MenuButton 
             icon={<PlusSquare size={20} />} 
             label="Создать игру" 
             delay={0.3} 
             onClick={onCreateGame}
+            chaos={chaosMode}
         />
         <MenuButton 
             icon={<FileUp size={20} />} 
             label="Загрузить шаблон" 
             delay={0.4} 
             onClick={() => setShowLoadTemplate(true)}
+            chaos={chaosMode}
         />
         <MenuButton 
             icon={<BarChart3 size={20} />} 
             label="Статистика забегов" 
             delay={0.5} 
             onClick={onShowStats}
+            chaos={chaosMode}
         />
       </div>
       
@@ -347,8 +520,26 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
            <motion.div
                 key={sticker.id}
                 initial={{ opacity: 0, scale: 1, rotate: sticker.rotate }}
-                animate={{ opacity: 1, scale: 1, rotate: sticker.rotate }}
-                transition={{ duration: 0.4, ease: "backOut" }}
+                animate={chaosMode ? {
+                    x: [0, (Math.random() - 0.5) * 500, (Math.random() - 0.5) * 500],
+                    y: [0, (Math.random() - 0.5) * 500, (Math.random() - 0.5) * 500],
+                    rotate: [sticker.rotate, sticker.rotate + 180, sticker.rotate - 180],
+                    scale: [1, 1.5, 0.5],
+                    filter: ["none", "invert(100%)", "hue-rotate(180deg)", "none"]
+                } : { 
+                    opacity: 1, 
+                    scale: 1, 
+                    rotate: sticker.rotate,
+                    x: 0,
+                    y: 0,
+                    filter: "none"
+                }}
+                transition={chaosMode ? { 
+                    duration: 0.1, 
+                    repeat: Infinity, 
+                    repeatType: "mirror", 
+                    ease: "linear" 
+                } : { duration: 0.4, ease: "backOut" }}
                 className="absolute z-0 hidden md:block"
                 style={{ 
                     top: sticker.top, 
@@ -471,16 +662,51 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   );
 };
 
+// Helper for random glitch transform
+const getRandomGlitch = () => {
+    const rX = (Math.random() - 0.5) * 20;
+    const rY = (Math.random() - 0.5) * 20;
+    return `translate(${rX}px, ${rY}px)`;
+};
+
 // Компонент одной кнопки меню
-const MenuButton = ({ icon, label, delay, primary = false, small = false, onClick }: { icon: React.ReactNode, label: string, delay: number, primary?: boolean, small?: boolean, onClick?: () => void }) => {
+const MenuButton = ({ icon, label, delay, primary = false, small = false, chaos = false, onClick }: { icon: React.ReactNode, label: string, delay: number, primary?: boolean, small?: boolean, chaos?: boolean, onClick?: () => void }) => {
+  // Generate consistent random values for chaos effect trajectory
+  const randomX = (Math.random() - 0.5) * 800; 
+  const randomY = (Math.random() - 0.5) * 600; 
+  const randomRotate = (Math.random() - 0.5) * 180;
+
   return (
     <motion.button
       onClick={onClick}
       initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ delay: delay, type: "spring", stiffness: 300, damping: 20 }}
+      animate={chaos ? { 
+          x: [0, randomX, randomX + 50, randomX - 50, randomX], 
+          y: [0, randomY, randomY + 50, randomY - 50, randomY],
+          rotate: [0, randomRotate, randomRotate + 10, randomRotate - 10, randomRotate],
+          scale: [1, 0.8, 1.1, 0.9, 0.8],
+          opacity: [1, 0.8, 1, 0.5, 0.8],
+          filter: [
+              "none", 
+              "hue-rotate(90deg) contrast(200%)", 
+              "hue-rotate(180deg) invert(100%)", 
+              "blur(2px) hue-rotate(45deg)", 
+              "none"
+          ]
+      } : { x: 0, y: 0, rotate: 0, scale: 1, opacity: 1, filter: "none" }}
+      whileHover={!chaos ? { scale: 1.02 } : {}}
+      whileTap={!chaos ? { scale: 0.98 } : {}}
+      transition={chaos ? { 
+          duration: 0.1, // Fast updates
+          repeat: Infinity, 
+          repeatType: "mirror",
+          ease: "linear" // Use standard easing, the jaggedness comes from keyframes and speed
+      } : { 
+          // Instant return if coming back from chaos, else normal spring
+          duration: 0.1, // Snap back instantly
+          type: "tween",
+          ease: "circOut"
+      }}
       className={`
         relative group flex items-center justify-center gap-3 w-full 
         ${small ? 'py-3 text-sm' : 'py-4 text-lg'}
@@ -488,6 +714,7 @@ const MenuButton = ({ icon, label, delay, primary = false, small = false, onClic
         ${primary 
           ? 'bg-stone-100 text-stone-950 border-stone-100 shadow-lg shadow-stone-900/50' 
           : 'bg-stone-900/50 text-stone-300 border-stone-800 hover:bg-stone-800 hover:border-stone-600 hover:text-white'}
+        ${chaos ? 'shadow-[5px_0_0_rgba(255,0,0,0.5),-5px_0_0_rgba(0,255,255,0.5)]' : ''}
       `}
     >
       {icon}
