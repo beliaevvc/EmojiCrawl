@@ -64,7 +64,7 @@ interface WindowState {
 export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   // Global State
   const { user } = useAuthStore();
-  const { notes: remoteNotes, loading: loadingRemote, fetchNotes, createNote, updateNote, deleteNote, subscribeToNotes, unsubscribeFromNotes } = useNotesStore();
+  const { notes: remoteNotes, loading: loadingRemote, error: notesError, fetchNotes, createNote, updateNote, deleteNote, subscribeToNotes, unsubscribeFromNotes } = useNotesStore();
 
   // Local State
   const [localNotes, setLocalNotes] = useState<Note[]>(() => {
@@ -556,7 +556,11 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             </div>
             
             <div className="flex flex-col items-end gap-0.5 mr-4">
-                <span>{user ? 'Все изменения сохранены' : 'Локальное сохранение'}</span>
+                {notesError ? (
+                    <span className="text-rose-500 font-bold animate-pulse">{notesError}</span>
+                ) : (
+                    <span>{user ? 'Все изменения сохранены' : 'Локальное сохранение'}</span>
+                )}
                 {user && <span className="text-[9px] text-stone-700">Видно всем игрокам</span>}
             </div>
             

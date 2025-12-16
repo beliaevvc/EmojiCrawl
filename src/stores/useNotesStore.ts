@@ -81,13 +81,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const note = get().notes.find(n => n.id === id);
     
     if (!user || !note || note.user_id !== user.id) {
-       // Allow local updates for everyone? No, read-only for others.
-       // But wait, user wants "everyone sees notes".
-       // If I edit someone else's note, what happens? 
-       // RLS says UPDATE only for owner. So it will fail in DB.
+       console.warn('Permission denied: User does not own this note.');
+       set({ error: 'Вы не можете редактировать чужую заметку' });
        return; 
     }
 
+    set({ error: null }); // Clear previous errors
     try {
       const { error } = await supabase
         .from('notes')
@@ -98,9 +97,11 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         .eq('id', id);
 
       if (error) throw error;
-      await get().fetchNotes();
+      // Note: Subscription will trigger fetchNotes, but we can also do it manually to be safe/fast
+      // await get().fetchNotes(); 
     } catch (err: any) {
       console.error('Error updating note:', err);
+      set({ error: 'Ошибка сохранения: ' + err.message });
     }
   },
 
