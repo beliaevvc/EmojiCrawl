@@ -117,10 +117,20 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
 
   // Set active note when notes load
   useEffect(() => {
-    if (notes.length > 0 && (!activeNoteId || !notes.find(n => n.id === activeNoteId))) {
-        setActiveNoteId(notes[0].id);
+    if (notes.length > 0) {
+        if (!activeNoteId || !notes.find(n => n.id === activeNoteId)) {
+            setActiveNoteId(notes[0].id);
+        }
+    } else if (!loadingRemote && user) {
+        // If we loaded and have NO notes in DB, create one locally in UI or auto-create in DB?
+        // Let's create one immediately to avoid empty state issues.
+        // Actually, better to just show "Create Note" UI if empty, but for now
+        // let's auto-trigger createNote if the list is truly empty after load.
+        // BUT we need to be careful not to loop.
+        // Safer: just handle activeNote being null in render.
+        setActiveNoteId(null);
     }
-  }, [notes, activeNoteId]);
+  }, [notes, activeNoteId, loadingRemote, user]);
 
   const activeNote = notes.find(n => n.id === activeNoteId) || notes[0];
   const editorRef = useRef<HTMLDivElement>(null);
@@ -337,8 +347,27 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
     }
   }, [activeNoteId, activeNote]); 
 
-  // Don't render until client-side hydration (window check) or if no notes (though local should have default)
-  if (!activeNote && !loadingRemote) return null;
+  // Don't render until client-side hydration (window check) 
+  // If loading, show loader. If no notes and loaded, show empty state.
+  if (loadingRemote && !activeNote) {
+      return (
+        <div
+            className="fixed z-40 bg-stone-900 border border-stone-700 rounded-xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-md bg-opacity-95 items-center justify-center text-stone-400 gap-2"
+            style={{ 
+                width: windowState.width, 
+                height: windowState.height,
+                left: windowState.x,
+                top: windowState.y
+            }}
+        >
+            <Loader2 className="animate-spin" />
+            <span className="text-xs">Загрузка...</span>
+        </div>
+      );
+  }
+  
+  // Render minimal UI if no notes exist yet
+  const isEmptyState = !activeNote && !loadingRemote;
 
   return (
     <>
@@ -357,11 +386,8 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             onPointerDown={(e) => startInteraction(e, 'move')}
         >
             <div className="flex-1 flex overflow-x-auto scrollbar-hide gap-1 pr-2">
-                {loadingRemote ? (
-                    <div className="flex items-center gap-2 px-3 text-stone-500 text-xs">
-                        <Loader2 className="animate-spin" size={12} />
-                        Загрузка заметок...
-                    </div>
+                {isEmptyState ? (
+                    <span className="px-3 py-1.5 text-xs text-stone-500 italic">Нет заметок</span>
                 ) : (
                     notes.map(note => (
                         <div 
@@ -423,31 +449,47 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
             </button>
         </div>
 
-        {/* Title Input */}
-        <div className="p-3 border-b border-stone-800 bg-stone-900/50 flex items-center gap-2">
-            <input 
-                value={activeNote?.title || ''}
-                onChange={handleTitleChange}
-                disabled={loadingRemote}
-                className="flex-1 bg-transparent text-stone-200 font-bold text-lg outline-none placeholder-stone-600 disabled:opacity-50"
-                placeholder="Заголовок..."
-            />
-            {activeNote?.author_email && (
-                <span className="text-[9px] bg-stone-800 text-stone-400 px-1.5 py-0.5 rounded border border-stone-700" title={activeNote.author_email}>
-                    by {activeNote.author_email.split('@')[0] || 'Unknown'}
-                </span>
-            )}
-        </div>
+        {/* Empty State Body */}
+        {isEmptyState ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-stone-500 gap-4">
+                <p>Список заметок пуст</p>
+                <button 
+                    onClick={handleAddNote}
+                    className="flex items-center gap-2 bg-stone-800 hover:bg-stone-700 text-stone-300 px-4 py-2 rounded-lg transition-colors"
+                >
+                    <Plus size={16} />
+                    Создать первую заметку
+                </button>
+            </div>
+        ) : (
+            <>
+                {/* Title Input */}
+                <div className="p-3 border-b border-stone-800 bg-stone-900/50 flex items-center gap-2">
+                    <input 
+                        value={activeNote?.title || ''}
+                        onChange={handleTitleChange}
+                        disabled={loadingRemote}
+                        className="flex-1 bg-transparent text-stone-200 font-bold text-lg outline-none placeholder-stone-600 disabled:opacity-50"
+                        placeholder="Заголовок..."
+                    />
+                    {activeNote?.author_email && (
+                        <span className="text-[9px] bg-stone-800 text-stone-400 px-1.5 py-0.5 rounded border border-stone-700" title={activeNote.author_email}>
+                            by {activeNote.author_email.split('@')[0] || 'Unknown'}
+                        </span>
+                    )}
+                </div>
 
-        {/* Editor */}
-        <div 
-            ref={editorRef}
-            contentEditable={!loadingRemote}
-            onInput={updateContent}
-            onBlur={updateContent}
-            className="flex-1 p-4 outline-none text-stone-300 text-sm overflow-y-auto [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&>a]:text-indigo-400 [&>a]:underline selection:bg-indigo-500/30 selection:text-indigo-200 disabled:opacity-50"
-            style={{ whiteSpace: 'pre-wrap' }}
-        />
+                {/* Editor */}
+                <div 
+                    ref={editorRef}
+                    contentEditable={!loadingRemote}
+                    onInput={updateContent}
+                    onBlur={updateContent}
+                    className="flex-1 p-4 outline-none text-stone-300 text-sm overflow-y-auto [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&>a]:text-indigo-400 [&>a]:underline selection:bg-indigo-500/30 selection:text-indigo-200 disabled:opacity-50"
+                    style={{ whiteSpace: 'pre-wrap' }}
+                />
+            </>
+        )}
         
         {/* Footer */}
         <div className="p-1 bg-stone-950/50 border-t border-stone-800 text-[10px] text-stone-600 flex justify-between items-end px-3 relative">
