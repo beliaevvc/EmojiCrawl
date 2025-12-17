@@ -1007,21 +1007,10 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
            <div 
                className="fixed inset-0 z-[500] pointer-events-none bg-black transition-opacity duration-500"
                style={{
-                   // Mask logic: Show content only inside the radial gradient circle at mouse pos
-                   maskImage: `radial-gradient(circle 200px at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
-                   WebkitMaskImage: `radial-gradient(circle 200px at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
-                   // Invert mask: We want the overlay to be BLACK everywhere EXCEPT the circle.
-                   // Actually, simpler approach: The overlay is transparent, but we darken everything?
-                   // No, user wants "Screen becomes black, cursor is a flashlight revealing interface".
-                   // So we need a full black overlay that has a "hole" in it.
-                   // Radial gradient transparent at center -> black at edges works if applied as BACKGROUND IMAGE on a div?
-                   // Or mask on a black div?
-                   
                    // Method A: Black div with mask. 
                    // Mask creates transparency. So `transparent` in mask = transparent div (shows content). `black` in mask = opaque div (black).
                    // We want div to be visible (black) everywhere except mouse.
                    // So mask should be transparent at mouse, black elsewhere.
-                   // radial-gradient(circle 150px at X Y, transparent 0%, black 100%)
                    
                    maskImage: `radial-gradient(circle 150px at ${mousePos.x}px ${mousePos.y}px, transparent 10%, black 100%)`,
                    WebkitMaskImage: `radial-gradient(circle 150px at ${mousePos.x}px ${mousePos.y}px, transparent 10%, black 100%)`
