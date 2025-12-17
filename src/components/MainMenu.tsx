@@ -162,6 +162,119 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const keySequenceRef = useRef('');
 
+  // Cracks Easter Egg State
+  const [cracks, setCracks] = useState<{id: number, x: number, y: number, rotation: number, scale: number, variant: number}[]>([]);
+
+  // Crack Click Listener
+  useEffect(() => {
+      const handleCrackClick = (e: MouseEvent) => {
+          if (e.altKey) {
+              e.preventDefault(); 
+              e.stopPropagation(); // Stop click from reaching buttons
+              setCracks(prev => [...prev, {
+                  id: Date.now() + Math.random(),
+                  x: e.clientX,
+                  y: e.clientY,
+                  rotation: Math.random() * 360,
+                  scale: 0.8 + Math.random() * 0.7,
+                  variant: Math.floor(Math.random() * 3) // 0, 1, 2
+              }]);
+          }
+          if (e.metaKey || e.ctrlKey) {
+              e.preventDefault();
+              e.stopPropagation();
+              setCracks([]);
+          }
+      };
+
+      // Use capture phase to intercept clicks before they hit buttons if needed,
+      // but a covering div is better for blocking interaction.
+      // However, we need this listener on window to spawn cracks anywhere.
+      window.addEventListener('click', handleCrackClick, { capture: true });
+      return () => window.removeEventListener('click', handleCrackClick, { capture: true });
+  }, []);
+
+  // Crack SVG Variants
+  const CrackSVG = ({ variant }: { variant: number }) => {
+      switch (variant) {
+          case 0: // Spiderweb
+              return (
+                  <svg width="300" height="300" viewBox="0 0 200 200" className="opacity-90 drop-shadow-2xl">
+                      <defs>
+                        <filter id="glass-glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="0.5" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      <g stroke="rgba(255,255,255,0.7)" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                          {/* Core Impact */}
+                          <circle cx="100" cy="100" r="1.5" fill="white" />
+                          <path d="M100,100 L110,60" strokeWidth="1.5" />
+                          <path d="M100,100 L70,50" strokeWidth="2" />
+                          <path d="M100,100 L40,90" strokeWidth="1" />
+                          <path d="M100,100 L60,140" strokeWidth="1.5" />
+                          <path d="M100,100 L130,120" strokeWidth="2" />
+                          <path d="M100,100 L150,90" strokeWidth="1" />
+                          
+                          {/* Connections */}
+                          <path d="M70,50 L110,60" strokeWidth="0.5" strokeOpacity="0.5" />
+                          <path d="M40,90 L70,50" strokeWidth="0.5" strokeOpacity="0.5" />
+                          <path d="M60,140 L40,90" strokeWidth="0.5" strokeOpacity="0.5" />
+                          <path d="M130,120 L60,140" strokeWidth="0.5" strokeOpacity="0.5" />
+                          <path d="M150,90 L130,120" strokeWidth="0.5" strokeOpacity="0.5" />
+                          
+                          {/* Outer Shards */}
+                          <path d="M110,60 L125,20" strokeWidth="0.5" />
+                          <path d="M70,50 L50,20" strokeWidth="0.5" />
+                          <path d="M40,90 L10,80" strokeWidth="0.5" />
+                          <path d="M60,140 L50,180" strokeWidth="0.5" />
+                          <path d="M130,120 L160,150" strokeWidth="0.5" />
+                      </g>
+                  </svg>
+              );
+          case 1: // Long jagged crack
+              return (
+                  <svg width="400" height="400" viewBox="0 0 200 200" className="opacity-90 drop-shadow-2xl">
+                      <g stroke="rgba(255,255,255,0.8)" strokeLinecap="square" fill="none">
+                          <path d="M100,20 L100,100 L100,180" strokeWidth="0" /> {/* Guide */}
+                          <path d="M100,100 L95,60 L105,30 L90,10" strokeWidth="2" />
+                          <path d="M100,100 L108,130 L98,160 L110,190" strokeWidth="1.5" />
+                          
+                          {/* Side splits */}
+                          <path d="M95,60 L70,50" strokeWidth="0.5" />
+                          <path d="M108,130 L130,135" strokeWidth="0.5" />
+                          <path d="M100,100 L120,90" strokeWidth="1" />
+                          
+                          <circle cx="100" cy="100" r="1" fill="white" />
+                      </g>
+                  </svg>
+              );
+          case 2: // Shatter star
+              return (
+                   <svg width="300" height="300" viewBox="0 0 200 200" className="opacity-90 drop-shadow-2xl">
+                      <g stroke="rgba(255,255,255,0.6)" strokeWidth="1" fill="none">
+                          <path d="M100,100 L100,50" strokeWidth="2" />
+                          <path d="M100,100 L140,70" strokeWidth="1.5" />
+                          <path d="M100,100 L150,120" strokeWidth="1" />
+                          <path d="M100,100 L110,160" strokeWidth="1.5" />
+                          <path d="M100,100 L60,150" strokeWidth="1" />
+                          <path d="M100,100 L40,100" strokeWidth="2" />
+                          <path d="M100,100 L60,60" strokeWidth="1.5" />
+                          
+                          <path d="M60,60 L100,50" strokeWidth="0.5" strokeOpacity="0.4" />
+                          <path d="M140,70 L150,120" strokeWidth="0.5" strokeOpacity="0.4" />
+                          <path d="M60,150 L40,100" strokeWidth="0.5" strokeOpacity="0.4" />
+                      </g>
+                      {/* Random tiny shards */}
+                      <path d="M110,80 L115,85 L112,90 Z" fill="rgba(255,255,255,0.3)" stroke="none" />
+                      <path d="M80,120 L85,125 L80,130 Z" fill="rgba(255,255,255,0.3)" stroke="none" />
+                  </svg>
+              );
+          default:
+              return null;
+      }
+  };
+
   // Track mouse for flashlight
   useEffect(() => {
       const handleMouseMove = (e: MouseEvent) => {
@@ -1020,6 +1133,31 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
                 <div className="absolute inset-0 bg-black"></div>
            </div>
        )}
+
+       {/* BROKEN GLASS OVERLAY */}
+       <div className="fixed inset-0 z-[600] pointer-events-none overflow-hidden">
+           {/* Blocker: if cracks exist, block interactions with UI underneath, but allow Alt/Ctrl clicks to pass to window listener */}
+           {cracks.length > 0 && (
+               <div 
+                   className="absolute inset-0 z-[601] bg-transparent cursor-default pointer-events-auto"
+                   // Clicks on this overlay will be captured by window listener due to capture: true
+               ></div>
+           )}
+
+           {cracks.map((crack) => (
+               <div
+                   key={crack.id}
+                   className="absolute pointer-events-none drop-shadow-md z-[602]"
+                   style={{
+                       top: crack.y,
+                       left: crack.x,
+                       transform: `translate(-50%, -50%) rotate(${crack.rotation}deg) scale(${crack.scale})`,
+                   }}
+               >
+                   <CrackSVG variant={crack.variant} />
+               </div>
+           ))}
+       </div>
 
        {/* SCREENSAVER OVERLAY */}
        <AnimatePresence>
