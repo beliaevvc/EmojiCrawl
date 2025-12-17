@@ -130,46 +130,130 @@ const CategoryCard = ({
     label, 
     count, 
     onClick,
-    colorClass = "border-stone-500 bg-stone-800",
+    accentColor = "stone",
     isModified = false
 }: { 
     icon: string; 
     label: string; 
     count?: number; 
     onClick?: () => void;
-    colorClass?: string;
+    accentColor?: "stone" | "rose" | "emerald" | "amber" | "indigo" | "sky";
     isModified?: boolean;
-}) => (
-    <motion.div 
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onClick}
-        className="flex flex-col items-center gap-3 cursor-pointer group relative"
-    >
-        <div className={`
-            w-20 h-20 md:w-24 md:h-24 rounded-full border-4 
-            ${colorClass}
-            flex items-center justify-center text-4xl md:text-5xl 
-            shadow-lg group-hover:shadow-xl group-hover:border-stone-300 transition-all
-            relative
-        `}>
-            {icon}
-            {count !== undefined && (
-                <div className="absolute -top-1 -right-1 w-8 h-8 bg-stone-900 border-2 border-stone-600 rounded-full flex items-center justify-center text-xs font-bold text-stone-300 shadow-md">
-                    {count}
-                </div>
-            )}
-            {isModified && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-rose-400 z-20 whitespace-nowrap">
-                    NEW
-                </div>
-            )}
-        </div>
-        <span className="text-stone-400 font-bold uppercase tracking-widest text-xs group-hover:text-stone-200 transition-colors">
-            {label}
-        </span>
-    </motion.div>
-);
+}) => {
+    const styles = {
+        stone: { 
+            border: "border-stone-400", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-stone-900/50",
+            ring: "ring-stone-600/30",
+            text: "text-stone-400",
+            glow: "group-hover:bg-stone-500/5"
+        },
+        rose: { 
+            border: "border-rose-800", 
+            bg: "bg-rose-950/40", 
+            shadow: "shadow-rose-900/50",
+            ring: "ring-rose-600/30",
+            text: "text-rose-400",
+            glow: "group-hover:bg-rose-500/5"
+        },
+        emerald: { 
+            border: "border-emerald-700", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-emerald-900/50",
+            ring: "ring-emerald-600/30",
+            text: "text-emerald-400",
+            glow: "group-hover:bg-emerald-500/5"
+        },
+        amber: { 
+            border: "border-amber-500", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-amber-900/50",
+            ring: "ring-amber-600/30",
+            text: "text-amber-400",
+            glow: "group-hover:bg-amber-500/5"
+        },
+        indigo: { 
+            border: "border-indigo-500", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-indigo-900/50",
+            ring: "ring-indigo-600/30",
+            text: "text-indigo-400",
+            glow: "group-hover:bg-indigo-500/5"
+        },
+        sky: { 
+            border: "border-sky-500", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-sky-900/50",
+            ring: "ring-sky-600/30",
+            text: "text-sky-400",
+            glow: "group-hover:bg-sky-500/5"
+        },
+    }[accentColor];
+
+    return (
+        <motion.div 
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClick}
+            className={`
+                relative group cursor-pointer overflow-hidden
+                flex flex-col items-center justify-center gap-4
+                h-48 w-full rounded-2xl 
+                bg-stone-900/40 backdrop-blur-sm border border-stone-800
+                transition-all duration-300
+                hover:border-stone-600 hover:shadow-2xl
+            `}
+        >
+            <div className={`absolute inset-0 transition-colors duration-500 ${styles.glow}`}></div>
+            
+            {/* Background Pattern/Icon Faded */}
+            <div className="absolute -right-4 -bottom-4 text-8xl opacity-[0.03] select-none pointer-events-none filter grayscale contrast-200">
+                {icon}
+            </div>
+
+            {/* Game Token Style Circle */}
+            <div className={`
+                relative z-10 
+                w-20 h-20 rounded-full flex items-center justify-center text-4xl
+                border-2 ${styles.border} ${styles.bg}
+                shadow-[0_0_15px_rgba(0,0,0,0.3)]
+                ring-4 ${styles.ring}
+                group-hover:scale-110 transition-transform duration-300
+            `}>
+                {icon}
+            </div>
+
+            <div className="flex flex-col items-center z-10">
+                <span className={`font-bold uppercase tracking-widest text-xs transition-colors duration-300 ${styles.text} group-hover:text-stone-200`}>
+                    {label}
+                </span>
+                {count !== undefined && (
+                    <span className="text-[10px] text-stone-500 font-mono mt-1 group-hover:text-stone-400 transition-colors">
+                        {count} items
+                    </span>
+                )}
+            </div>
+
+            {/* Badges */}
+            <div className="absolute top-3 left-3">
+                 {isModified && (
+                    <div className="bg-rose-500/20 border border-rose-500/50 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse flex items-center">
+                        EDITED
+                    </div>
+                )}
+            </div>
+
+            <div className="absolute top-3 right-3 flex gap-2">
+                {count !== undefined && (
+                    <div className="w-6 h-6 bg-stone-950/80 border border-stone-800 text-stone-400 text-[10px] font-mono font-bold flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm">
+                        {count}
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+};
 
 const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemplate }: DeckbuilderScreenProps) => {
     
@@ -338,23 +422,32 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
             {/* Content Area */}
             <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl mx-auto z-10 relative">
                 
-                <div className="text-center mb-8 md:mb-12">
-                    <h2 className="text-4xl md:text-5xl font-display font-bold text-stone-200 uppercase tracking-tighter drop-shadow-2xl">
+                <div className="text-center mb-12">
+                    <h2 className="text-5xl md:text-7xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-b from-stone-200 to-stone-500 uppercase tracking-tighter drop-shadow-2xl relative inline-block">
                         Deckbuilder
+                        <div className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-stone-500 to-transparent opacity-50"></div>
                     </h2>
-                    <p className="text-stone-500 text-xs font-bold tracking-[0.3em] uppercase mt-2">
-                        {initialTemplate ? `Шаблон: ${initialTemplate.name}` : 'Конструктор колоды'}
+                    <p className="text-stone-500 text-xs font-bold tracking-[0.5em] uppercase mt-4">
+                        {initialTemplate ? `Template: ${initialTemplate.name}` : 'Конструктор колоды'}
                     </p>
                 </div>
 
-                <h3 className="text-stone-500 font-bold uppercase tracking-widest text-sm mb-8">Выберите категорию</h3>
+                <div className="flex items-center gap-6 w-full max-w-5xl mb-8 opacity-80">
+                    <div className="h-px bg-gradient-to-r from-transparent to-stone-800 flex-1"></div>
+                    <h3 className="text-stone-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-stone-600"></span>
+                        Выберите категорию
+                        <span className="w-1.5 h-1.5 rounded-full bg-stone-600"></span>
+                    </h3>
+                    <div className="h-px bg-gradient-to-l from-transparent to-stone-800 flex-1"></div>
+                </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12 mb-12">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 w-full max-w-5xl mb-12 px-2">
                      {/* Character */}
                     <CategoryCard 
                         icon="🧙‍♂️" 
                         label="Персонаж" 
-                        colorClass="border-stone-400 bg-stone-800"
+                        accentColor="sky"
                         onClick={() => setShowCharacterEditor(true)}
                         isModified={isCharacterModified}
                     />
@@ -363,7 +456,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         icon="🐺" 
                         label="Монстры" 
                         count={monsterCount} 
-                        colorClass="border-rose-500/50 bg-rose-900/20"
+                        accentColor="rose"
                         onClick={() => setShowMonstersEditor(true)}
                         isModified={isMonstersModified}
                     />
@@ -373,7 +466,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         icon="⚔️" 
                         label="Оружие" 
                         count={customWeapons.length} 
-                        colorClass="border-stone-400 bg-stone-800"
+                        accentColor="stone"
                         onClick={() => setShowWeaponsEditor(true)}
                         isModified={isWeaponsModified}
                     />
@@ -383,7 +476,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         icon="🛡️" 
                         label="Щиты" 
                         count={customShields.length} 
-                        colorClass="border-stone-400 bg-stone-800"
+                        accentColor="stone"
                         onClick={() => setShowShieldsEditor(true)}
                         isModified={isShieldsModified}
                     />
@@ -393,7 +486,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         icon="🧪" 
                         label="Зелья" 
                         count={customPotions.length} 
-                        colorClass="border-emerald-500/50 bg-emerald-900/20"
+                        accentColor="emerald"
                         onClick={() => setShowPotionsEditor(true)}
                         isModified={isPotionsModified}
                     />
@@ -403,7 +496,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         icon="💎" 
                         label="Кристаллы" 
                         count={customCoins.length} 
-                        colorClass="border-amber-500/50 bg-amber-900/20"
+                        accentColor="amber"
                         onClick={() => setShowCoinsEditor(true)}
                         isModified={isCoinsModified}
                     />
@@ -413,10 +506,21 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         icon="📜" 
                         label="Заклинания" 
                         count={customSpells.length} 
-                        colorClass="border-indigo-500/50 bg-indigo-900/20"
+                        accentColor="indigo"
                         onClick={() => setShowSpellsEditor(true)}
                         isModified={isSpellsModified}
                     />
+
+                    {/* Empty Slot for symmetry if needed, or maybe a random "Lucky" slot? For now, we leave 7 items, so one space is empty in 4-col grid. 
+                        Let's add a placeholder or info card? Or just leave it. 
+                        Maybe a "Total" card?
+                    */}
+                    <motion.div
+                        className="relative group flex flex-col items-center justify-center h-48 w-full rounded-2xl border-2 border-dashed border-stone-800/50 hover:border-stone-700/50 transition-colors"
+                    >
+                        <div className="text-stone-800 text-4xl mb-2 opacity-50">?</div>
+                        <span className="text-stone-800 text-[10px] font-bold uppercase tracking-widest">Coming Soon</span>
+                    </motion.div>
                 </div>
             </div>
 

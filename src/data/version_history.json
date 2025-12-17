@@ -1,7 +1,27 @@
 {
-  "version": "0.0.127",
-  "buildDate": "12/18/2025, 2:17:26 AM",
+  "version": "0.0.131",
+  "buildDate": "12/18/2025, 3:23:30 AM",
   "commits": [
+    {
+      "hash": "d579581",
+      "date": "18.12.2025 03:16",
+      "message": "Enhance GameScreen and HUD with discard stats and UI improvements"
+    },
+    {
+      "hash": "23be597",
+      "date": "18.12.2025 02:55",
+      "message": "Refactor imports in GameScreen and HUDSettingsModal components"
+    },
+    {
+      "hash": "8f73cb3",
+      "date": "18.12.2025 02:53",
+      "message": "Enhance GameScreen with HUD visibility settings and UI state management"
+    },
+    {
+      "hash": "cc3a236",
+      "date": "18.12.2025 02:43",
+      "message": "Add monster label functionality and UI enhancements"
+    },
     {
       "hash": "b053188",
       "date": "17.12.2025 19:14",
@@ -231,26 +251,6 @@
       "hash": "43af456",
       "date": "16.12.2025 04:08",
       "message": "Remove 'graveyard' ability and associated logic from monster abilities and game reducer. Update relevant types to reflect this change, streamlining the codebase and improving maintainability."
-    },
-    {
-      "hash": "a09435f",
-      "date": "16.12.2025 04:02",
-      "message": "Remove 'Барьер' spell and related logic from GameScreen and gameReducer. Update spell types and adjust GameScreen's non-damage removal checks accordingly to reflect the changes in spell availability."
-    },
-    {
-      "hash": "a68387e",
-      "date": "16.12.2025 03:59",
-      "message": "Enhance GameScreen logic to handle monster fleeing scenarios. Introduce specific checks for 'БЕГСТВО' log to accurately reflect damage taken during escape. Update monster ability description for clarity on fleeing conditions. Improve logging for monster attacks to include HP details upon fleeing."
-    },
-    {
-      "hash": "a5e4697",
-      "date": "16.12.2025 03:46",
-      "message": "Implement sequential HP visualization in GameScreen. Introduce HpUpdate interface and update gameReducer to manage HP changes with timestamps. Refactor HP display logic to use visualHp state for smoother animations during gameplay."
-    },
-    {
-      "hash": "8a7665c",
-      "date": "16.12.2025 03:33",
-      "message": "Update 'whisper' ability description and logic to reflect card peeking mechanics. Adjust logging messages for clarity when no cards are available in the deck."
     }
   ]
 }
