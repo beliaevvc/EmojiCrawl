@@ -1,7 +1,17 @@
 {
-  "version": "0.0.125",
-  "buildDate": "12/17/2025, 10:15:37 AM",
+  "version": "0.0.127",
+  "buildDate": "12/18/2025, 2:17:26 AM",
   "commits": [
+    {
+      "hash": "b053188",
+      "date": "17.12.2025 19:14",
+      "message": "Refactor DevQuestStore and component imports for improved clarity"
+    },
+    {
+      "hash": "bd75403",
+      "date": "17.12.2025 19:12",
+      "message": "Add event listeners and features for enhanced interactivity"
+    },
     {
       "hash": "fe4dcc8",
       "date": "17.12.2025 09:21",
@@ -241,16 +251,6 @@
       "hash": "8a7665c",
       "date": "16.12.2025 03:33",
       "message": "Update 'whisper' ability description and logic to reflect card peeking mechanics. Adjust logging messages for clarity when no cards are available in the deck."
-    },
-    {
-      "hash": "52eb99a",
-      "date": "16.12.2025 03:28",
-      "message": "Fix GameScreen backpack reference to correctly access card ID. Remove unused gamePlusReducer file to streamline codebase and improve maintainability."
-    },
-    {
-      "hash": "c60c72e",
-      "date": "16.12.2025 03:26",
-      "message": "Refactor GameScreen and gameReducer to improve reset logic. Introduce canReset condition based on player HP and cards on the table, enhancing game state management. Update reset button styling to reflect new reset conditions, ensuring better user experience during gameplay."
     }
   ]
 }

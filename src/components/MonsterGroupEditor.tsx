@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Plus, Minus, Zap } from 'lucide-react';
-import { MonsterGroupConfig, MonsterAbilityType } from '../types/game';
+import { MonsterGroupConfig, MonsterAbilityType, MonsterLabelType } from '../types/game';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import AbilityPicker from './AbilityPicker';
 
@@ -20,13 +20,22 @@ interface MonsterGroupEditorProps {
 const MonsterGroupEditor = ({ group, onSave, onClose, onDeleteGroup }: MonsterGroupEditorProps) => {
     const [count, setCount] = useState(group.count);
     const [ability, setAbility] = useState<MonsterAbilityType | undefined>(group.ability);
+    const [label, setLabel] = useState<MonsterLabelType | undefined>(group.label);
     const [showAbilityPicker, setShowAbilityPicker] = useState(false);
 
     const activeAbility = ability ? MONSTER_ABILITIES.find(a => a.id === ability) : null;
 
     const handleSave = () => {
-        onSave({ ...group, count, ability });
+        onSave({ ...group, count, ability, label });
     };
+
+    const LABELS: { id: MonsterLabelType, color: string, name: string }[] = [
+        { id: 'ordinary', color: '#10b981', name: 'Обычный' }, // emerald-500
+        { id: 'tank', color: '#eab308', name: 'Танк' },      // yellow-500
+        { id: 'medium', color: '#f97316', name: 'Средний' },  // orange-500
+        { id: 'mini-boss', color: '#a855f7', name: 'Мини босс' }, // purple-500
+        { id: 'boss', color: '#e11d48', name: 'Босс' },       // rose-600
+    ];
 
     return (
         <motion.div 
@@ -70,7 +79,16 @@ const MonsterGroupEditor = ({ group, onSave, onClose, onDeleteGroup }: MonsterGr
                                 <Minus size={20} />
                             </button>
                             <span className="text-2xl font-mono font-bold text-stone-200 w-8 text-center">{count}</span>
-                            <button 
+                            <div className="relative">
+                                {/* Label Preview on Card Icon */}
+                                {label && (
+                                     <div 
+                                        className="absolute -top-3 -left-3 w-4 h-4 rounded-full border border-stone-900 shadow-sm z-10"
+                                        style={{ backgroundColor: LABELS.find(l => l.id === label)?.color }}
+                                     />
+                                )}
+                            </div>
+                            <button  
                                 onClick={() => setCount(count + 1)}
                                 className="w-10 h-10 rounded-lg bg-stone-800 flex items-center justify-center text-stone-400 hover:text-emerald-400 hover:bg-stone-700 transition-colors"
                             >
@@ -108,6 +126,42 @@ const MonsterGroupEditor = ({ group, onSave, onClose, onDeleteGroup }: MonsterGr
                                 <span className="font-bold uppercase tracking-widest text-xs">Усилить категорию</span>
                             </button>
                         )}
+                    </div>
+
+                    {/* Label Control */}
+                    <div className="flex flex-col gap-3">
+                        <span className="text-stone-400 font-bold uppercase tracking-widest text-sm">Назначить метку</span>
+                        <div className="flex items-center gap-3 bg-stone-900/50 p-4 rounded-xl border border-stone-800">
+                             {LABELS.map((l) => (
+                                 <button
+                                    key={l.id}
+                                    onClick={() => setLabel(label === l.id ? undefined : l.id)}
+                                    className={`
+                                        w-8 h-8 rounded-full border-2 transition-all relative group
+                                        ${label === l.id ? 'scale-110 shadow-lg shadow-black ring-2 ring-white/50 border-transparent' : 'border-stone-700 hover:scale-105 hover:border-stone-500'}
+                                    `}
+                                    style={{ backgroundColor: l.color }}
+                                    title={l.name}
+                                 >
+                                     {label === l.id && (
+                                         <motion.div 
+                                            initial={{ scale: 0 }} 
+                                            animate={{ scale: 1 }}
+                                            className="absolute inset-0 flex items-center justify-center text-white drop-shadow-md"
+                                         >
+                                             <Check size={14} strokeWidth={4} />
+                                         </motion.div>
+                                     )}
+                                 </button>
+                             ))}
+                             
+                             {/* Label Preview */}
+                             {label && (
+                                 <div className="ml-auto text-xs font-bold uppercase tracking-widest" style={{ color: LABELS.find(l => l.id === label)?.color }}>
+                                     {LABELS.find(l => l.id === label)?.name}
+                                 </div>
+                             )}
+                        </div>
                     </div>
 
                 </div>

@@ -824,6 +824,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                           maxHealth: group.value,
                           icon: '🐺', // Always use Wolf, ability icon is badge
                           ability: group.ability,
+                          label: group.label,
                           name: abilityDef ? abilityDef.name : `Монстр ${group.value}`,
                           description: abilityDef ? abilityDef.description : undefined
                       });

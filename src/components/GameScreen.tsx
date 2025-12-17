@@ -16,6 +16,8 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { RulesModal } from './RulesModal';
 import { SPELLS } from '../data/spells';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
+import { MonsterLabelsWindow } from './MonsterLabelsWindow';
+import { MonsterLabelType } from '../types/game';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
 
@@ -151,16 +153,45 @@ const MiniCard = ({ card }: { card: Card }) => {
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-8 border-transparent border-b-stone-600"></div>
 
                         <div className="flex flex-col items-center text-center">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-2 bg-black/30 border border-white/10 shadow-inner`}>
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-2 bg-black/30 border border-white/10 shadow-inner relative`}>
                                 {card.icon}
+                                {card.label && card.type === 'monster' && (
+                                    <div 
+                                        className="absolute -top-1 -left-1 w-3 h-3 rounded-full border border-stone-900 shadow-sm"
+                                        style={{
+                                            backgroundColor: 
+                                                card.label === 'ordinary' ? '#10b981' :
+                                                card.label === 'tank' ? '#eab308' :
+                                                card.label === 'medium' ? '#f97316' :
+                                                card.label === 'mini-boss' ? '#a855f7' :
+                                                card.label === 'boss' ? '#e11d48' : 'transparent'
+                                        }}
+                                    />
+                                )}
                             </div>
-                            <div className="font-bold text-stone-200 text-xs uppercase tracking-wider mb-1">{card.name || card.type}</div>
+                            <div className="font-bold text-stone-200 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                {card.name || card.type}
+                            </div>
                             {card.value > 0 && <div className="font-mono text-xl font-bold text-stone-100 mb-1">{card.value}</div>}
                             {card.description && <div className="text-[10px] text-stone-400 leading-tight border-t border-white/10 pt-2 w-full">{card.description}</div>}
                         </div>
                     </motion.div>
                  )}
              </AnimatePresence>
+             {/* Mini Card Label Indicator */}
+             {card.label && card.type === 'monster' && (
+                <div 
+                    className="absolute -top-0.5 left-0 w-2.5 h-2.5 rounded-full border border-stone-900 shadow-sm z-20"
+                    style={{
+                        backgroundColor: 
+                            card.label === 'ordinary' ? '#10b981' :
+                            card.label === 'tank' ? '#eab308' :
+                            card.label === 'medium' ? '#f97316' :
+                            card.label === 'mini-boss' ? '#a855f7' :
+                            card.label === 'boss' ? '#e11d48' : 'transparent'
+                    }}
+                />
+             )}
         </motion.div>
     );
 };
@@ -465,6 +496,22 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   } as Record<string, number>);
 
   const activeBuffs = state.activeEffects.filter(e => BUFF_SPELLS.includes(e));
+
+  // Calculate active monster labels
+  const allCards = [
+      ...state.deck,
+      ...state.discardPile,
+      ...state.enemySlots.filter(Boolean),
+      state.leftHand.card,
+      state.rightHand.card,
+      state.backpack.card
+  ].filter((c): c is Card => !!c && c.type === 'monster');
+
+  const activeLabels = Array.from(new Set(
+      allCards
+          .map(c => c.label)
+          .filter((l): l is MonsterLabelType => l !== undefined)
+  ));
 
   // Epiphany Effect Timer
   useEffect(() => {
@@ -1268,6 +1315,11 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                     logs={state.logs} 
                     position={windowPositions['log']}
                     onPositionChange={(pos) => updateWindowPosition('log', pos)}
+                 />
+                 <MonsterLabelsWindow
+                    activeLabels={activeLabels}
+                    position={windowPositions['labels']}
+                    onPositionChange={(pos) => updateWindowPosition('labels', pos)}
                  />
               </>
           )}

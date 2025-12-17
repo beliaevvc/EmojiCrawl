@@ -142,6 +142,22 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
           </div>
       )}
 
+      {/* Monster Label (Moved to Top Left) */}
+      {card.type === 'monster' && card.label && !isBlocked && (
+          <div 
+            className="absolute -top-1 left-2 w-3 h-3 rounded-full border border-stone-900 shadow-lg z-20"
+            title={card.label}
+            style={{
+                backgroundColor: 
+                    card.label === 'ordinary' ? '#10b981' :
+                    card.label === 'tank' ? '#eab308' :
+                    card.label === 'medium' ? '#f97316' :
+                    card.label === 'mini-boss' ? '#a855f7' :
+                    card.label === 'boss' ? '#e11d48' : 'transparent'
+            }}
+          />
+      )}
+
       {/* Price Multiplier Badge */}
       {card.priceMultiplier && card.priceMultiplier > 1 && (
           <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-yellow-500 text-black font-bold text-[10px] flex items-center justify-center border border-yellow-300 shadow-md z-20">

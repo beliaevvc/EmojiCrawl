@@ -12,6 +12,8 @@ export type MonsterAbilityType =
     | 'flee' | 'offering' | 'ambush' | 'theft' | 'rot' | 'web' | 'bones'
     | 'beacon' | 'parasite' | 'corrosion' | 'exhaustion' | 'junk' | 'miss' | 'corpseeater';
 
+export type MonsterLabelType = 'ordinary' | 'tank' | 'medium' | 'mini-boss' | 'boss';
+
 export interface Card {
   id: string;
   type: CardType;
@@ -19,6 +21,7 @@ export interface Card {
   maxHealth?: number; // For monsters (to track current HP vs Max)
   spellType?: SpellType;
   ability?: MonsterAbilityType;
+  label?: MonsterLabelType;
   icon: string;
   name?: string;
   description?: string;
@@ -77,6 +80,7 @@ export interface MonsterGroupConfig {
     value: number;
     count: number;
     ability?: MonsterAbilityType;
+    label?: MonsterLabelType;
 }
 
 export interface DeckConfig {

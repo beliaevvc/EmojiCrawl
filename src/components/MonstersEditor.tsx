@@ -149,6 +149,22 @@ const MonstersEditor = ({ initialGroups, onSave, onClose }: MonstersEditorProps)
                                         </div>
                                     )}
 
+                                    {/* Label Indicator (Top Left in Editor List) */}
+                                    {group.label && (
+                                        <div 
+                                            className="absolute top-1 left-1 w-4 h-4 rounded-full border border-stone-900 shadow-sm z-10"
+                                            title={group.label}
+                                            style={{
+                                                backgroundColor: 
+                                                    group.label === 'ordinary' ? '#10b981' :
+                                                    group.label === 'tank' ? '#eab308' :
+                                                    group.label === 'medium' ? '#f97316' :
+                                                    group.label === 'mini-boss' ? '#a855f7' :
+                                                    group.label === 'boss' ? '#e11d48' : 'transparent'
+                                            }}
+                                        />
+                                    )}
+
                                     {/* New Badge if custom? - Top Center (Above Ability) */}
                                     {isGroupModified(group) && (
                                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-rose-400 z-30 pointer-events-none whitespace-nowrap">
