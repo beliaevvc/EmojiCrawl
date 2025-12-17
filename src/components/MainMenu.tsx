@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, PlusSquare, FileUp, BarChart3, Info, User as UserIcon, LogOut, Pencil, X } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { Play, PlusSquare, FileUp, BarChart3, Info, User as UserIcon, LogOut, Pencil, X, Sparkles, Box } from 'lucide-react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 import { DeckTemplate } from '../types/game';
 import LoadTemplateModal from './LoadTemplateModal';
 import { VersionModal } from './VersionModal';
@@ -144,6 +144,16 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const logoVel = useRef({ x: 2, y: 2 });
   const [logoColor, setLogoColor] = useState('#ef4444'); // Default red
   
+  // Mimic Easter Egg State
+  const [showMimic, setShowMimic] = useState(false);
+  const [mimicPos, setMimicPos] = useState({ top: '50%', left: '50%' }); // Will be calculated relative to button
+  const [mimicBite, setMimicBite] = useState(false);
+  const [isBtnShaking, setIsBtnShaking] = useState(false);
+  const isBittenRef = useRef(false); // Ref to track bite status instantly inside timeouts
+  const mimicTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const createGameBtnRef = useRef<HTMLButtonElement>(null); // Ref for button position
+
   const globalClickCount = useRef(0);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -327,6 +337,63 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       if (newCount >= 5) {
           setShowColorPicker(true);
           setSkullClickCount(0);
+      }
+  };
+
+  const handleMimicHover = () => {
+      if (mimicBite || isBittenRef.current) return;
+      
+      // Small delay to give a chance to click (200ms)
+      setTimeout(() => {
+          if (!showMimic || isBittenRef.current) return; // Check ref to abort if bitten
+          // Teleport away!
+          const randomTop = 20 + Math.random() * 60; // 20-80%
+          const randomLeft = 10 + Math.random() * 80; // 10-90%
+          setMimicPos({ top: `${randomTop}%`, left: `${randomLeft}%` });
+      }, 200);
+  };
+
+  const handleMimicClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      isBittenRef.current = true; // Mark as bitten immediately
+      setMimicBite(true);
+      
+      setTimeout(() => {
+          setShowMimic(false);
+          setMimicBite(false);
+          isBittenRef.current = false;
+      }, 1500); // Show "Bite" for 1.5s
+  };
+
+  const handleCreateGameHover = (isHovering: boolean) => {
+      if (isHovering) {
+          // 1. Wait 5 seconds -> Start Shaking
+          shakeTimeoutRef.current = setTimeout(() => {
+              setIsBtnShaking(true);
+              
+              // 2. Wait 2 more seconds -> Show Mimic
+              mimicTimeoutRef.current = setTimeout(() => {
+                  setIsBtnShaking(false); // Stop shaking
+                  if (!showMimic && createGameBtnRef.current) {
+                    const rect = createGameBtnRef.current.getBoundingClientRect();
+                    // Position exactly to the right of the button
+                    // We will use fixed pixels relative to viewport for the first spawn to match alignment perfectly
+                    // Using fixed allows us to match the button's vertical center
+                    const topPx = rect.top + (rect.height / 2);
+                    const leftPx = rect.right + 20; // 20px gap
+                    
+                    setShowMimic(true);
+                    setMimicPos({ top: `${topPx}px`, left: `${leftPx}px` }); 
+                  }
+              }, 2000);
+          }, 5000); 
+      } else {
+          // Cancel everything if mouse leaves
+          setIsBtnShaking(false);
+          if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+          if (mimicTimeoutRef.current) clearTimeout(mimicTimeoutRef.current);
       }
   };
 
@@ -646,10 +713,13 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
           onClick={onStartGame}
         />
         <MenuButton 
+            ref={createGameBtnRef}
             icon={<PlusSquare size={20} />} 
             label="Создать игру" 
             delay={0.3} 
             onClick={onCreateGame}
+            onHoverChange={handleCreateGameHover}
+            isShaking={isBtnShaking}
         />
         <MenuButton 
             icon={<FileUp size={20} />} 
@@ -717,6 +787,59 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
                     </button>
                 </motion.div>
             )}
+       </AnimatePresence>
+
+       {/* MIMIC CHEST EASTER EGG */}
+       <AnimatePresence>
+           {showMimic && (
+             <>
+               {/* Invisible blocker overlay to prevent clicking other buttons while catching mimic */}
+               <div className="fixed inset-0 z-[55] bg-transparent cursor-crosshair" onClick={(e) => e.stopPropagation()}></div>
+               
+               <motion.div
+                   initial={{ scale: 0, opacity: 0 }}
+                   animate={{ scale: 1, opacity: 1, rotate: [0, -5, 5, 0] }}
+                   exit={{ scale: 0, opacity: 0 }}
+                   transition={{ type: "spring", bounce: 0.5 }}
+                   style={{ 
+                       position: 'absolute', 
+                       top: mimicPos.top, 
+                       left: mimicPos.left, 
+                       zIndex: 60,
+                       // Ensure mimic is centered on the coordinate
+                       transform: 'translate(-50%, -50%)'
+                   }}
+                   onPointerEnter={handleMimicHover} // Trigger teleport
+                   onClick={handleMimicClick}
+                   className="cursor-pointer group"
+               >
+                    <div className="relative">
+                        {mimicBite ? (
+                            <motion.div 
+                                initial={{ scale: 1.5 }}
+                                animate={{ scale: 1 }}
+                                className="text-rose-500 font-black text-2xl drop-shadow-md whitespace-nowrap"
+                            >
+                                КУСЬ! 🦷
+                            </motion.div>
+                        ) : (
+                            <>
+                                <div className="absolute -inset-4 bg-yellow-500/20 blur-xl rounded-full animate-pulse group-hover:bg-yellow-500/40"></div>
+                                <div className="bg-stone-900 border-2 border-yellow-600/50 p-3 rounded-xl shadow-[0_0_15px_rgba(234,179,8,0.3)] hover:shadow-[0_0_25px_rgba(234,179,8,0.5)] transition-shadow">
+                                    <Box size={32} className="text-yellow-500 fill-yellow-500/20" />
+                                    <div className="absolute -top-1 -right-1">
+                                        <Sparkles size={16} className="text-yellow-200 animate-spin-slow" />
+                                    </div>
+                                </div>
+                                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-yellow-500/80 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                    LEGENDARY LOOT
+                                </div>
+                            </>
+                        )}
+                    </div>
+               </motion.div>
+             </>
+           )}
        </AnimatePresence>
 
        {/* Random Sticker Images */}
@@ -874,15 +997,19 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
 };
 
 // Компонент одной кнопки меню
-const MenuButton = ({ icon, label, delay, primary = false, small = false, onClick }: { icon: React.ReactNode, label: string, delay: number, primary?: boolean, small?: boolean, onClick?: () => void }) => {
+const MenuButton = forwardRef<HTMLButtonElement, { icon: React.ReactNode, label: string, delay: number, primary?: boolean, small?: boolean, onClick?: () => void, onHoverChange?: (hover: boolean) => void, isShaking?: boolean }>(
+  ({ icon, label, delay, primary = false, small = false, onClick, onHoverChange, isShaking = false }, ref) => {
   return (
     <motion.button
+      ref={ref}
       onClick={onClick}
+      onMouseEnter={() => onHoverChange && onHoverChange(true)}
+      onMouseLeave={() => onHoverChange && onHoverChange(false)}
       initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
+      animate={isShaking ? { x: [-2, 2, -2, 2, 0] } : { x: 0, opacity: 1 }}
+      transition={isShaking ? { repeat: Infinity, duration: 0.1 } : { delay: delay, type: "spring", stiffness: 300, damping: 20 }}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ delay: delay, type: "spring", stiffness: 300, damping: 20 }}
       className={`
         relative group flex items-center justify-center gap-3 w-full 
         ${small ? 'py-3 text-sm' : 'py-4 text-lg'}
@@ -896,6 +1023,8 @@ const MenuButton = ({ icon, label, delay, primary = false, small = false, onClic
       {label}
     </motion.button>
   );
-};
+});
+
+MenuButton.displayName = 'MenuButton';
 
 export default MainMenu;
