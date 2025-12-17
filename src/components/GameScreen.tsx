@@ -1,9 +1,9 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Flag, Search, X, Shield, Swords, Zap, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw, BookOpen } from 'lucide-react';
+import { Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw, BookOpen, Settings, Flag, Search, Crown, Activity, Zap, Swords, Shield, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useDrop } from 'react-dnd';
-import { loadUIPositions, saveUIPositions, WindowPosition } from '../utils/uiStorage';
+import { loadUIPositions, saveUIPositions, WindowPosition, loadUIVisibility, saveUIVisibility, HUDVisibility } from '../utils/uiStorage';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
@@ -17,6 +17,7 @@ import { RulesModal } from './RulesModal';
 import { SPELLS } from '../data/spells';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import { MonsterLabelsWindow } from './MonsterLabelsWindow';
+import { HUDSettingsModal } from './HUDSettingsModal';
 import { MonsterLabelType } from '../types/game';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
@@ -372,7 +373,9 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showInfo, setShowInfo] = useState(false); // Deck Stats & Logs Toggle
   const [showGodModeToggle, setShowGodModeToggle] = useState(false); // Visibility of God Mode button
+  const [showHUDSettings, setShowHUDSettings] = useState(false);
   const [isResetHovered, setIsResetHovered] = useState(false);
+  const [hudVisibility, setHudVisibility] = useState<HUDVisibility>(loadUIVisibility());
 
   // Sequential HP Visualization
   const [visualHp, setVisualHp] = useState(state.player.hp);
@@ -977,7 +980,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
 
                 {/* Deck Stats Breakdown */}
                 <AnimatePresence>
-                    {showInfo && (
+                    {showInfo && hudVisibility.deckStats && (
                         <motion.div 
                             initial={{ opacity: 0, x: -10, width: 0 }}
                             animate={{ opacity: 1, x: 0, width: 'auto' }}
@@ -1001,20 +1004,24 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       <AnimatePresence>
           {showInfo && (
               <>
-                <CardsViewer 
-                    cards={state.deck} 
-                    label="Колода" 
-                    className="top-40" 
-                    position={windowPositions['deck']}
-                    onPositionChange={(pos) => updateWindowPosition('deck', pos)}
-                />
-                <CardsViewer 
-                    cards={state.discardPile} 
-                    label="Сброс" 
-                    className="bottom-40" 
-                    position={windowPositions['discard']}
-                    onPositionChange={(pos) => updateWindowPosition('discard', pos)}
-                />
+                {hudVisibility.deckViewer && (
+                    <CardsViewer 
+                        cards={state.deck} 
+                        label="Колода" 
+                        className="top-40" 
+                        position={windowPositions['deck']}
+                        onPositionChange={(pos) => updateWindowPosition('deck', pos)}
+                    />
+                )}
+                {hudVisibility.discardViewer && (
+                    <CardsViewer 
+                        cards={state.discardPile} 
+                        label="Сброс" 
+                        className="bottom-40" 
+                        position={windowPositions['discard']}
+                        onPositionChange={(pos) => updateWindowPosition('discard', pos)}
+                    />
+                )}
               </>
           )}
       </AnimatePresence>
@@ -1221,6 +1228,18 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
             {showInfo && (
                 <>
                     <motion.button
+                        key="hud-settings"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0 }}
+                        onClick={() => setShowHUDSettings(true)}
+                        className="flex items-center justify-center p-3 text-stone-600/40 hover:text-stone-300 transition-all ml-1"
+                        title="Настройки интерфейса"
+                    >
+                        <Settings size={18} />
+                    </motion.button>
+
+                    <motion.button
                         key="reset-layout"
                         initial={{ opacity: 0, scale: 0 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -1306,22 +1325,38 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       <AnimatePresence>
           {showInfo && (
               <>
-                 <OverheadStatsWindow 
-                    overheads={state.overheads} 
-                    position={windowPositions['stats']}
-                    onPositionChange={(pos) => updateWindowPosition('stats', pos)}
-                 />
-                 <GameLogWindow 
-                    logs={state.logs} 
-                    position={windowPositions['log']}
-                    onPositionChange={(pos) => updateWindowPosition('log', pos)}
-                 />
-                 <MonsterLabelsWindow
-                    activeLabels={activeLabels}
-                    position={windowPositions['labels']}
-                    onPositionChange={(pos) => updateWindowPosition('labels', pos)}
-                 />
+                 {hudVisibility.statsWindow && (
+                     <OverheadStatsWindow 
+                        overheads={state.overheads} 
+                        position={windowPositions['stats']}
+                        onPositionChange={(pos) => updateWindowPosition('stats', pos)}
+                     />
+                 )}
+                 {hudVisibility.logWindow && (
+                     <GameLogWindow 
+                        logs={state.logs} 
+                        position={windowPositions['log']}
+                        onPositionChange={(pos) => updateWindowPosition('log', pos)}
+                     />
+                 )}
+                 {hudVisibility.labelsWindow && (
+                     <MonsterLabelsWindow
+                        activeLabels={activeLabels}
+                        position={windowPositions['labels']}
+                        onPositionChange={(pos) => updateWindowPosition('labels', pos)}
+                     />
+                 )}
               </>
+          )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+          {showHUDSettings && (
+              <HUDSettingsModal 
+                  visibility={hudVisibility}
+                  onUpdate={setHudVisibility}
+                  onClose={() => setShowHUDSettings(false)}
+              />
           )}
       </AnimatePresence>
 
