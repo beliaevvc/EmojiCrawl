@@ -157,6 +157,40 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const globalClickCount = useRef(0);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Flashlight Mode State
+  const [flashlightMode, setFlashlightMode] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const keySequenceRef = useRef('');
+
+  // Track mouse for flashlight
+  useEffect(() => {
+      const handleMouseMove = (e: MouseEvent) => {
+          setMousePos({ x: e.clientX, y: e.clientY });
+      };
+      if (flashlightMode) {
+          window.addEventListener('mousemove', handleMouseMove);
+      }
+      return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [flashlightMode]);
+
+  // Secret Codes Listener (Lumos/Nox)
+  useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+          keySequenceRef.current = (keySequenceRef.current + e.key).slice(-10).toUpperCase();
+          
+          if (keySequenceRef.current.includes('LUMOS') || keySequenceRef.current.includes('SVET')) {
+              setFlashlightMode(true);
+              keySequenceRef.current = ''; // Reset
+          }
+          if (keySequenceRef.current.includes('NOX')) {
+              setFlashlightMode(false);
+              keySequenceRef.current = '';
+          }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Inactivity Tracker
   useEffect(() => {
     const resetIdle = () => {
@@ -967,6 +1001,36 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
                </motion.p>
            </AnimatePresence>
        </div>
+
+       {/* FLASHLIGHT MODE OVERLAY */}
+       {flashlightMode && (
+           <div 
+               className="fixed inset-0 z-[500] pointer-events-none bg-black transition-opacity duration-500"
+               style={{
+                   // Mask logic: Show content only inside the radial gradient circle at mouse pos
+                   maskImage: `radial-gradient(circle 200px at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
+                   WebkitMaskImage: `radial-gradient(circle 200px at ${mousePos.x}px ${mousePos.y}px, black 0%, transparent 100%)`,
+                   // Invert mask: We want the overlay to be BLACK everywhere EXCEPT the circle.
+                   // Actually, simpler approach: The overlay is transparent, but we darken everything?
+                   // No, user wants "Screen becomes black, cursor is a flashlight revealing interface".
+                   // So we need a full black overlay that has a "hole" in it.
+                   // Radial gradient transparent at center -> black at edges works if applied as BACKGROUND IMAGE on a div?
+                   // Or mask on a black div?
+                   
+                   // Method A: Black div with mask. 
+                   // Mask creates transparency. So `transparent` in mask = transparent div (shows content). `black` in mask = opaque div (black).
+                   // We want div to be visible (black) everywhere except mouse.
+                   // So mask should be transparent at mouse, black elsewhere.
+                   // radial-gradient(circle 150px at X Y, transparent 0%, black 100%)
+                   
+                   maskImage: `radial-gradient(circle 150px at ${mousePos.x}px ${mousePos.y}px, transparent 10%, black 100%)`,
+                   WebkitMaskImage: `radial-gradient(circle 150px at ${mousePos.x}px ${mousePos.y}px, transparent 10%, black 100%)`
+               }}
+           >
+                {/* This div covers the screen with black. The mask cuts a hole in it. */}
+                <div className="absolute inset-0 bg-black"></div>
+           </div>
+       )}
 
        {/* SCREENSAVER OVERLAY */}
        <AnimatePresence>
