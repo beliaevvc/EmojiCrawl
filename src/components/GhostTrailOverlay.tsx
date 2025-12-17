@@ -38,19 +38,6 @@ export const GhostTrailOverlay = () => {
 
             // Limit spawn rate (~60fps cap is fine, but we want density)
             if (timeDelta > 16) { 
-                // Calculate speed
-                const dx = e.clientX - lastPos.current.x;
-                const dy = e.clientY - lastPos.current.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const speed = distance / timeDelta; // pixels per ms
-
-                // Dynamic size based on speed
-                // Low speed (0.1) -> size 15
-                // High speed (5.0) -> size 40+
-                const baseSize = 15;
-                const speedFactor = Math.min(speed * 15, 40); // Cap extra size
-                const size = baseSize + speedFactor + (Math.random() * 10);
-
                 lastPos.current = { x: e.clientX, y: e.clientY };
                 lastTime.current = now;
                 
@@ -64,7 +51,7 @@ export const GhostTrailOverlay = () => {
                         x: e.clientX,
                         y: e.clientY,
                         char,
-                        size,
+                        size: 15 + Math.random() * 15, // Fixed small size random range
                         angle: Math.random() * 360
                     }
                 ].slice(-50)); // Keep max 50 particles
