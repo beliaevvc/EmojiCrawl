@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useDevQuestStore } from '../stores/useDevQuestStore';
 import { QUEST_ANOMALIES } from '../data/devQuest';
 import { useAuthStore } from '../stores/useAuthStore';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const DevConsole: React.FC = () => {
   const { 

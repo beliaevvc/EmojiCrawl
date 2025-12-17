@@ -35,7 +35,7 @@ function App() {
   const [initialTemplate, setInitialTemplate] = useState<DeckTemplate | null>(null);
   const [activeTemplateName, setActiveTemplateName] = useState<string | undefined>(undefined);
 
-  const { completeAnomaly, toggleConsole, isQuestActive, resetQuest, isConsoleOpen } = useDevQuestStore();
+  const { completeAnomaly, toggleConsole, resetQuest, isConsoleOpen } = useDevQuestStore();
   const { user } = useAuthStore();
   const { isScreensaverEnabled } = useSettingsStore();
   const [showSettings, setShowSettings] = useState(false);

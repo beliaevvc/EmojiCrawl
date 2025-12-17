@@ -127,7 +127,7 @@ export const useDevQuestStore = create<DevQuestState>()(
         state.addLog(`ANOMALY DETECTED: ${anomalyId}. SYSTEM STABILIZING...`, 'success');
       },
 
-      resetQuest: () => set((state) => ({
+      resetQuest: () => set(() => ({
         isConsoleOpen: false, // Ensure console closes
         isQuestActive: false,
         balance: INITIAL_BALANCE,
