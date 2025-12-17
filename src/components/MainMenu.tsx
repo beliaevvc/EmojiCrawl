@@ -93,6 +93,25 @@ const QUOTES = [
     "Кирилл и Серега — дримтим, каких поискать"
 ];
 
+// Funny recovery logs (Russian)
+const RECOVERY_LOGS = [
+    "Анализ когнитивных способностей пользователя... ОШИБКА: Логика не найдена.",
+    "Подкуп видеокарты виртуальными печеньками...",
+    "Удаление папки 'System32'... (Шутка, наверное)",
+    "Призыв духа машины...",
+    "Выравнивание пиксельных матриц...",
+    "Скачивание дополнительной оперативной памяти...",
+    "Попытка выключить и включить снова...",
+    "Обнаружен критический уровень сарказма.",
+    "Компиляция спагетти-кода...",
+    "Кормление хомяка внутри сервера...",
+    "Вычисление смысла жизни... 42.",
+    "Латание четвертой стены...",
+    "Запрос помощи у ИИ... ИИ смеется.",
+    "Восстановление резервной копии рассудка...",
+    "Оптимизация параметров веселья...",
+];
+
 interface MainMenuProps {
   onStartGame: () => void;
   onCreateGame: () => void;
@@ -111,15 +130,27 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [chalkColor, setChalkColor] = useState('#e7e5e4'); // Default Stone-200 (White-ish)
   
-  // Chaos Mode State
-  const [chaosMode, setChaosMode] = useState(false);
-  const [warningMode, setWarningMode] = useState(false);
+  // Chaos Mode State Machine
+  const [chaosStage, setChaosStage] = useState<'idle' | 'glitch' | 'crash' | 'console' | 'success'>('idle');
+  const [recoveryProgress, setRecoveryProgress] = useState(0);
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+  const consoleEndRef = useRef<HTMLDivElement>(null);
+  
   const globalClickCount = useRef(0);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-scroll console
+  useEffect(() => {
+      if (chaosStage === 'console' || chaosStage === 'success') {
+          consoleEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+  }, [consoleLogs, chaosStage]);
 
   // Global click listener for Chaos Mode
   useEffect(() => {
     const handleGlobalClick = () => {
+        if (chaosStage !== 'idle') return; // Ignore clicks if already in chaos
+
         globalClickCount.current += 1;
         
         if (clickTimeout.current) clearTimeout(clickTimeout.current);
@@ -129,8 +160,8 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
             globalClickCount.current = 0;
         }, 1000);
 
-        if (globalClickCount.current >= 15 && !chaosMode && !warningMode) {
-            triggerChaos();
+        if (globalClickCount.current >= 15) {
+            setChaosStage('glitch');
             globalClickCount.current = 0;
         }
     };
@@ -140,22 +171,54 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         window.removeEventListener('pointerdown', handleGlobalClick);
         if (clickTimeout.current) clearTimeout(clickTimeout.current);
     };
-  }, [chaosMode, warningMode]);
+  }, [chaosStage]);
 
-  const triggerChaos = () => {
-      setChaosMode(true);
-      
-      // Stop chaos after 5 seconds
-      setTimeout(() => {
-          setChaosMode(false);
-          setWarningMode(true);
+  // Chaos Sequence Logic
+  useEffect(() => {
+      if (chaosStage === 'glitch') {
+          // 1. Glitch Phase -> Auto transition to Crash after 3s
+          const timer = setTimeout(() => {
+              setChaosStage('crash');
+          }, 3000);
+          return () => clearTimeout(timer);
+      } 
+      else if (chaosStage === 'console') {
+          // 3. Console Phase -> Add logs and progress
+          setConsoleLogs([]);
+          setRecoveryProgress(0);
           
-          // Hide warning after 5 seconds (was 3)
-          setTimeout(() => {
-              setWarningMode(false);
-          }, 5000);
-      }, 5000);
-  };
+          let logIndex = 0;
+          const totalDuration = 20000; // Increased to 20 seconds (was 15s)
+          
+          // Log adder - slower
+          const logInterval = setInterval(() => {
+              if (logIndex < RECOVERY_LOGS.length) {
+                  setConsoleLogs(prev => [...prev, RECOVERY_LOGS[logIndex]]);
+                  logIndex++;
+              }
+          }, 1200); // Slower logs (was 800ms)
+
+          // Progress Bar (smoother and slower)
+          const startTime = Date.now();
+          const progressInterval = setInterval(() => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(100, (elapsed / totalDuration) * 100);
+              setRecoveryProgress(progress);
+              
+              if (progress >= 100) {
+                  clearInterval(progressInterval);
+                  clearInterval(logInterval);
+                  // Transition to success phase directly
+                  setChaosStage('success');
+              }
+          }, 50);
+
+          return () => {
+              clearInterval(logInterval);
+              clearInterval(progressInterval);
+          };
+      }
+  }, [chaosStage]);
 
   const CHALK_COLORS = [
       { color: '#e7e5e4', name: 'White' },   // stone-200
@@ -228,114 +291,174 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       transition={{ duration: 0.5 }}
       className="relative w-full h-screen bg-stone-950 flex flex-col items-center justify-center p-4 overflow-hidden"
     >
-      {/* Warning Overlay (Fullscreen) */}
+      {/* --- CHAOS OVERLAYS --- */}
       <AnimatePresence>
-        {warningMode && (
+        {/* 1. GLITCH PHASE OVERLAY - SCI-FI STYLE */}
+        {chaosStage === 'glitch' && (
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 z-[100] pointer-events-none overflow-hidden"
             >
-                {/* Comic Background Rays - REMOVED per request */}
-                {/* <div className="absolute inset-0 opacity-20 pointer-events-none">...</div> */}
+                {/* CRT Scanlines */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_2px,3px_100%] pointer-events-none"></div>
+                
+                {/* Moving Glitch Bars */}
+                <div className="absolute inset-0 bg-white/5 mix-blend-overlay animate-pulse"></div>
+                {[...Array(5)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute h-2 w-full bg-white/20 mix-blend-difference"
+                        animate={{ 
+                            top: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                            opacity: [0, 1, 0]
+                        }}
+                        transition={{ 
+                            duration: 0.1 + Math.random() * 0.2, 
+                            repeat: Infinity,
+                            repeatType: "mirror" 
+                        }}
+                    />
+                ))}
+                
+                {/* Color Split Effect */}
+                <div className="absolute inset-0 mix-blend-screen bg-red-500/10 animate-[ping_0.1s_linear_infinite] translate-x-1"></div>
+                <div className="absolute inset-0 mix-blend-screen bg-blue-500/10 animate-[ping_0.1s_linear_infinite_reverse] -translate-x-1"></div>
+            </motion.div>
+        )}
 
-                <motion.div
-                    key="warning"
-                    initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    exit={{ opacity: 0, scale: 1.5, rotate: 10 }}
-                    className="relative flex flex-col items-center justify-center z-50 pointer-events-none select-none"
-                >
-                    {/* Dizzy Emoji with Stars Halo */}
-                    <div className="relative mb-6">
-                        <motion.div 
-                            animate={{ rotate: [0, 10, -10, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="text-8xl filter drop-shadow-2xl"
-                        >
-                            😵‍💫
-                        </motion.div>
-                        
-                        {/* 3D Halo of Stars */}
-                        <motion.div 
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                            className="absolute -top-10 left-1/2 -translate-x-1/2 w-40 h-10"
-                            style={{ transformStyle: 'preserve-3d', perspective: '100px' }}
-                        >
-                             {[...Array(5)].map((_, i) => (
-                                <div 
-                                    key={i} 
-                                    className="absolute text-yellow-400 text-4xl drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]"
-                                    style={{ 
-                                        left: '50%',
-                                        top: '50%',
-                                        transform: `rotateY(${i * 72}deg) translateZ(60px)`,
-                                    }}
-                                >
-                                    ⭐
-                                </div>
-                            ))}
-                        </motion.div>
+        {/* 2. CRASH SCREEN (BSOD/Red Screen) - STYLIZED MODAL */}
+        {chaosStage === 'crash' && (
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4 select-none"
+            >
+                <div className="max-w-xl w-full bg-stone-950 border border-red-900/50 rounded-xl shadow-[0_0_50px_rgba(220,38,38,0.2)] p-8 relative overflow-hidden">
+                    {/* Decorative header line */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600 animate-pulse"></div>
+                    
+                    <div className="flex items-center gap-3 mb-6 text-red-500">
+                         <div className="p-2 bg-red-500/10 rounded-lg animate-pulse">
+                            <span className="text-2xl">⚠️</span>
+                         </div>
+                         <h1 className="text-2xl font-bold tracking-wider uppercase">Системный Сбой</h1>
                     </div>
 
-                    {/* 3D Comic Text - Poster Layout */}
-                    <div className="flex flex-col items-center relative z-10">
-                        <motion.span 
-                            animate={{ scale: [1, 1.1, 1], rotate: [-15, -20, -15] }}
-                            transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-                            className="text-6xl md:text-7xl font-black text-white italic tracking-tighter absolute -top-16 -left-24 z-20"
-                            style={{ 
-                                textShadow: '4px 4px 0px #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000',
-                                fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif'
-                            }}
-                        >
-                            УФФ...
-                        </motion.span>
-                        
-                        <div className="relative">
-                            <motion.span 
-                                className="block text-5xl md:text-6xl font-extrabold text-yellow-400 tracking-wider uppercase transform -rotate-6 z-30 relative"
-                                style={{ 
-                                    textShadow: '3px 3px 0px #ea580c, 6px 6px 0px #000',
-                                    fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif'
-                                }}
-                            >
-                                НЕ ДЕЛАЙ ТАК
-                            </motion.span>
+                    <div className="space-y-4 font-mono text-sm text-stone-400 mb-8 border-l-2 border-red-500/20 pl-4">
+                        <p className="text-red-400 font-bold">КРИТИЧЕСКАЯ ОШИБКА: 0xDEADBEEF</p>
+                        <p>Фатальное исключение по адресу 0028:C0011E36.</p>
+                        <p>Целостность данных нарушена.</p>
+                        <p className="opacity-70">Инициализация протокола аварийного восстановления...</p>
+                    </div>
+
+                    <button 
+                        onClick={() => setChaosStage('console')}
+                        className="w-full bg-red-900/20 hover:bg-red-900/30 text-red-200 hover:text-white border border-red-900/50 hover:border-red-500 transition-all py-4 rounded-lg font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 group"
+                    >
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        Запустить Восстановление
+                    </button>
+                </div>
+            </motion.div>
+        )}
+
+        {/* 3. RECOVERY CONSOLE (Combined Console & Success) */}
+        {(chaosStage === 'console' || chaosStage === 'success') && (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 bg-black/50 backdrop-blur-sm"
+            >
+                <div className="w-full max-w-4xl bg-stone-950/95 border border-stone-700 rounded-xl shadow-2xl overflow-hidden flex flex-col font-mono text-green-500 h-[80vh]">
+                    {/* Terminal Header */}
+                    <div className="bg-stone-900 border-b border-stone-800 p-3 flex items-center gap-4 select-none">
+                        <div className="flex gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                        </div>
+                        <div className="flex-1 text-center text-xs text-stone-500 font-bold tracking-widest uppercase">
+                            SKAZMOR SYSTEM RECOVERY TOOL v1.0
+                        </div>
+                        <div className="w-10"></div> {/* Spacer for center alignment */}
+                    </div>
+
+                    {/* Terminal Body */}
+                    <div className="flex-1 p-6 overflow-y-auto scrollbar-hide font-mono text-sm md:text-lg leading-relaxed relative">
+                        <div className="flex flex-col gap-2">
+                            {consoleLogs.map((log, i) => (
+                                <motion.div 
+                                    key={i}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="opacity-90"
+                                >
+                                    <span className="text-green-700 mr-3 select-none">{`>`}</span>
+                                    {log}
+                                </motion.div>
+                            ))}
+                            <div ref={consoleEndRef} />
                             
-                            <motion.span 
-                                initial={{ scale: 0.8 }}
-                                animate={{ scale: [1, 1.05, 1] }}
-                                transition={{ duration: 0.3, repeat: Infinity }}
-                                className="block text-8xl md:text-[10rem] font-black text-rose-600 tracking-tighter uppercase leading-[0.7] transform rotate-3 mt-[-20px] relative z-20"
-                                style={{ 
-                                    textShadow: '6px 6px 0px #500724, 12px 12px 0px #000, 0 0 30px rgba(225,29,72,0.6)',
-                                    WebkitTextStroke: '4px white',
-                                    fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif'
-                                }}
-                            >
-                                БОЛЬШЕ!
-                            </motion.span>
+                            {chaosStage === 'console' && (
+                                <motion.div 
+                                    animate={{ opacity: [0, 1] }} 
+                                    transition={{ repeat: Infinity, duration: 0.5 }}
+                                    className="text-green-500 font-bold mt-2"
+                                >_</motion.div>
+                            )}
+
+                            {/* Success Message inside Terminal */}
+                            {chaosStage === 'success' && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="mt-8 border-t border-green-900/50 pt-8"
+                                >
+                                    <div className="text-green-400 font-bold mb-4">
+                                        === SYSTEM RESTORED SUCCESSFULLY ===
+                                    </div>
+                                    <div className="text-yellow-500 mb-8">
+                                        <span className="text-red-500 font-bold mr-2">[WARNING]</span>
+                                        Обнаружена аномалия в поведении пользователя.
+                                        <br/>
+                                        НЕ ДЕЛАЙТЕ ТАК БОЛЬШЕ.
+                                        <br/>
+                                        В следующий раз восстановление может быть невозможным.
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => setChaosStage('idle')}
+                                        className="group flex items-center gap-2 text-stone-300 hover:text-green-400 transition-colors uppercase tracking-widest text-sm font-bold animate-pulse"
+                                    >
+                                        <span className="text-green-600 group-hover:text-green-400">{`>>`}</span>
+                                        [ ПЕРЕЗАГРУЗИТЬ СИСТЕМУ ]
+                                    </button>
+                                </motion.div>
+                            )}
                         </div>
                     </div>
-                </motion.div>
+                    
+                    {/* Progress Bar (Only during console phase) */}
+                    {chaosStage === 'console' && (
+                        <div className="p-4 bg-stone-900/50 border-t border-stone-800">
+                            <div className="text-xs text-stone-500 mb-1 flex justify-between">
+                                <span>STATUS: RECOVERING...</span>
+                                <span>{Math.round(recoveryProgress)}%</span>
+                            </div>
+                            <div className="h-2 bg-stone-800 rounded-full overflow-hidden">
+                                <motion.div 
+                                    className="h-full bg-green-600 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                                    style={{ width: `${recoveryProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Chaos Glitch Overlay */}
-      {chaosMode && (
-          <>
-            <div className="absolute inset-0 z-50 pointer-events-none mix-blend-color-dodge bg-red-500/10 animate-pulse"></div>
-            <div className="absolute inset-0 z-50 pointer-events-none mix-blend-exclusion bg-blue-500/10 animate-bounce" style={{ animationDuration: '0.1s' }}></div>
-          </>
-      )}
-
       {/* Chalkboard Background */}
-      <div className={`transition-all duration-100 ${chaosMode ? 'blur-sm scale-110 contrast-150 saturate-200' : ''}`}>
+      <div className={`transition-all duration-100 ${chaosStage === 'glitch' ? 'blur-sm scale-110 contrast-150 saturate-200' : ''}`}>
         <Chalkboard color={chalkColor} />
       </div>
 
@@ -345,17 +468,11 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       {/* Логотип */}
       <motion.div
         initial={{ y: -50, opacity: 0 }}
-        animate={chaosMode ? { 
-            x: [0, -20, 20, -10, 10, 0], 
-            y: [0, 10, -10, 5, -5, 0],
-            rotate: [0, -5, 5, -3, 3, 0],
-            filter: ["hue-rotate(0deg)", "hue-rotate(90deg)", "hue-rotate(180deg)", "hue-rotate(0deg)"],
-            scale: [1, 1.1, 0.9, 1.2, 1]
-        } : { y: 0, opacity: 1, x: 0, rotate: 0, scale: 1, filter: "none" }}
-        transition={chaosMode ? { duration: 0.2, repeat: Infinity } : { duration: 0.8, ease: "easeOut" }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
         className="mb-12 text-center z-10 relative"
       >
-        <div className={`absolute -top-16 left-1/2 -translate-x-1/2 flex items-center gap-4 transition-opacity duration-300 ${chaosMode || warningMode ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`absolute -top-16 left-1/2 -translate-x-1/2 flex items-center gap-4 transition-opacity duration-300 ${chaosStage !== 'idle' ? 'opacity-0' : 'opacity-100'}`}>
              {/* Auth Button / User Profile */}
              <AnimatePresence mode="wait">
                 {user ? (
@@ -413,7 +530,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
           </motion.span>
           
           {/* Version Badge */}
-          {!chaosMode && !warningMode && (
+          {chaosStage === 'idle' && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -425,7 +542,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
           </motion.button>
           )}
         </h1>
-        <p className={`text-stone-500 text-sm tracking-[0.5em] mt-2 uppercase transition-opacity duration-300 ${chaosMode || warningMode ? 'opacity-0' : 'opacity-100'}`}>Roguelike Deckbuilder</p>
+        <p className={`text-stone-500 text-sm tracking-[0.5em] mt-2 uppercase transition-opacity duration-300 ${chaosStage !== 'idle' ? 'opacity-0' : 'opacity-100'}`}>Roguelike Deckbuilder</p>
       </motion.div>
 
       {/* Основные кнопки */}
@@ -436,28 +553,24 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
           delay={0.2} 
           primary 
           onClick={onStartGame}
-          chaos={chaosMode} // Pass chaos prop
         />
         <MenuButton 
             icon={<PlusSquare size={20} />} 
             label="Создать игру" 
             delay={0.3} 
             onClick={onCreateGame}
-            chaos={chaosMode}
         />
         <MenuButton 
             icon={<FileUp size={20} />} 
             label="Загрузить шаблон" 
             delay={0.4} 
             onClick={() => setShowLoadTemplate(true)}
-            chaos={chaosMode}
         />
         <MenuButton 
             icon={<BarChart3 size={20} />} 
             label="Статистика забегов" 
             delay={0.5} 
             onClick={onShowStats}
-            chaos={chaosMode}
         />
       </div>
       
@@ -520,26 +633,8 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
            <motion.div
                 key={sticker.id}
                 initial={{ opacity: 0, scale: 1, rotate: sticker.rotate }}
-                animate={chaosMode ? {
-                    x: [0, (Math.random() - 0.5) * 500, (Math.random() - 0.5) * 500],
-                    y: [0, (Math.random() - 0.5) * 500, (Math.random() - 0.5) * 500],
-                    rotate: [sticker.rotate, sticker.rotate + 180, sticker.rotate - 180],
-                    scale: [1, 1.5, 0.5],
-                    filter: ["none", "invert(100%)", "hue-rotate(180deg)", "none"]
-                } : { 
-                    opacity: 1, 
-                    scale: 1, 
-                    rotate: sticker.rotate,
-                    x: 0,
-                    y: 0,
-                    filter: "none"
-                }}
-                transition={chaosMode ? { 
-                    duration: 0.1, 
-                    repeat: Infinity, 
-                    repeatType: "mirror", 
-                    ease: "linear" 
-                } : { duration: 0.4, ease: "backOut" }}
+                animate={{ opacity: 1, scale: 1, rotate: sticker.rotate }}
+                transition={{ duration: 0.4, ease: "backOut" }}
                 className="absolute z-0 hidden md:block"
                 style={{ 
                     top: sticker.top, 
@@ -663,44 +758,15 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
 };
 
 // Компонент одной кнопки меню
-const MenuButton = ({ icon, label, delay, primary = false, small = false, chaos = false, onClick }: { icon: React.ReactNode, label: string, delay: number, primary?: boolean, small?: boolean, chaos?: boolean, onClick?: () => void }) => {
-  // Generate consistent random values for chaos effect trajectory
-  const randomX = (Math.random() - 0.5) * 800; 
-  const randomY = (Math.random() - 0.5) * 600; 
-  const randomRotate = (Math.random() - 0.5) * 180;
-
+const MenuButton = ({ icon, label, delay, primary = false, small = false, onClick }: { icon: React.ReactNode, label: string, delay: number, primary?: boolean, small?: boolean, onClick?: () => void }) => {
   return (
     <motion.button
       onClick={onClick}
       initial={{ x: -20, opacity: 0 }}
-      animate={chaos ? { 
-          x: [0, randomX, randomX + 50, randomX - 50, randomX], 
-          y: [0, randomY, randomY + 50, randomY - 50, randomY],
-          rotate: [0, randomRotate, randomRotate + 10, randomRotate - 10, randomRotate],
-          scale: [1, 0.8, 1.1, 0.9, 0.8],
-          opacity: [1, 0.8, 1, 0.5, 0.8],
-          filter: [
-              "none", 
-              "hue-rotate(90deg) contrast(200%)", 
-              "hue-rotate(180deg) invert(100%)", 
-              "blur(2px) hue-rotate(45deg)", 
-              "none"
-          ]
-      } : { x: 0, y: 0, rotate: 0, scale: 1, opacity: 1, filter: "none" }}
-      whileHover={!chaos ? { scale: 1.02 } : {}}
-      whileTap={!chaos ? { scale: 0.98 } : {}}
-      transition={chaos ? { 
-          duration: 0.1, // Fast updates
-          repeat: Infinity, 
-          repeatType: "mirror",
-          ease: "linear" // Use standard easing, the jaggedness comes from keyframes and speed
-      } : { 
-          // Instant return if coming back from chaos, else normal spring
-          duration: 0.1, // Snap back instantly
-          type: "tween",
-          ease: "circOut",
-          delay: delay // Use delay here only when NOT in chaos mode
-      }}
+      animate={{ x: 0, opacity: 1 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ delay: delay, type: "spring", stiffness: 300, damping: 20 }}
       className={`
         relative group flex items-center justify-center gap-3 w-full 
         ${small ? 'py-3 text-sm' : 'py-4 text-lg'}
@@ -708,7 +774,6 @@ const MenuButton = ({ icon, label, delay, primary = false, small = false, chaos 
         ${primary 
           ? 'bg-stone-100 text-stone-950 border-stone-100 shadow-lg shadow-stone-900/50' 
           : 'bg-stone-900/50 text-stone-300 border-stone-800 hover:bg-stone-800 hover:border-stone-600 hover:text-white'}
-        ${chaos ? 'shadow-[5px_0_0_rgba(255,0,0,0.5),-5px_0_0_rgba(0,255,255,0.5)]' : ''}
       `}
     >
       {icon}
