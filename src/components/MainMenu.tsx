@@ -135,9 +135,100 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   const [recoveryProgress, setRecoveryProgress] = useState(0);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const consoleEndRef = useRef<HTMLDivElement>(null);
+
+  // Screensaver State
+  const [showScreensaver, setShowScreensaver] = useState(false);
+  const idleTimeRef = useRef(0);
+  const screensaverRef = useRef<HTMLDivElement>(null);
+  const logoPos = useRef({ x: 100, y: 100 });
+  const logoVel = useRef({ x: 2, y: 2 });
+  const [logoColor, setLogoColor] = useState('#ef4444'); // Default red
   
   const globalClickCount = useRef(0);
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Inactivity Tracker
+  useEffect(() => {
+    const resetIdle = () => {
+        idleTimeRef.current = 0;
+        if (showScreensaver) {
+            setShowScreensaver(false);
+        }
+    };
+
+    const events = ['pointermove', 'keydown', 'click', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetIdle));
+
+    const interval = setInterval(() => {
+        idleTimeRef.current += 1;
+        if (idleTimeRef.current >= 30 && !showScreensaver) {
+            setShowScreensaver(true);
+            // Random start pos
+            logoPos.current = { 
+                x: Math.random() * (window.innerWidth - 200), 
+                y: Math.random() * (window.innerHeight - 100) 
+            };
+        }
+    }, 1000);
+
+    return () => {
+        events.forEach(e => window.removeEventListener(e, resetIdle));
+        clearInterval(interval);
+    };
+  }, [showScreensaver]);
+
+  // Screensaver Animation Loop
+  useEffect(() => {
+      if (!showScreensaver) return;
+
+      let rafId: number;
+      const animate = () => {
+          if (!screensaverRef.current) return;
+          
+          const { x, y } = logoPos.current;
+          const { x: vx, y: vy } = logoVel.current;
+          const width = 200; // Approx logo width
+          const height = 80; // Approx logo height
+          const screenW = window.innerWidth;
+          const screenH = window.innerHeight;
+
+          let newX = x + vx;
+          let newY = y + vy;
+          let bounced = false;
+
+          // Bounce X
+          if (newX <= 0 || newX + width >= screenW) {
+              logoVel.current.x *= -1;
+              newX = Math.max(0, Math.min(newX, screenW - width));
+              bounced = true;
+          }
+
+          // Bounce Y
+          if (newY <= 0 || newY + height >= screenH) {
+              logoVel.current.y *= -1;
+              newY = Math.max(0, Math.min(newY, screenH - height));
+              bounced = true;
+          }
+
+          if (bounced) {
+              const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#f97316'];
+              setLogoColor(colors[Math.floor(Math.random() * colors.length)]);
+          }
+
+          logoPos.current = { x: newX, y: newY };
+          
+          // Direct DOM manipulation for performance
+          const logoEl = screensaverRef.current.querySelector('#dvd-logo') as HTMLElement;
+          if (logoEl) {
+              logoEl.style.transform = `translate(${newX}px, ${newY}px)`;
+          }
+
+          rafId = requestAnimationFrame(animate);
+      };
+
+      rafId = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(rafId);
+  }, [showScreensaver]);
 
   // Auto-scroll console
   useEffect(() => {
@@ -753,6 +844,31 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
                </motion.p>
            </AnimatePresence>
        </div>
+
+       {/* SCREENSAVER OVERLAY */}
+       <AnimatePresence>
+            {showScreensaver && (
+                <motion.div
+                    ref={screensaverRef}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1 }}
+                    className="fixed inset-0 z-[300] bg-black cursor-none overflow-hidden"
+                >
+                    <div 
+                        id="dvd-logo"
+                        className="absolute will-change-transform"
+                        style={{ width: '200px', height: '80px', color: logoColor }}
+                    >
+                         <h1 className="text-4xl font-display font-bold tracking-tighter uppercase drop-shadow-[0_0_15px_currentColor]">
+                             Skazmor
+                         </h1>
+                         <p className="text-xs tracking-[0.5em] opacity-80 uppercase">ROGUELIKE DECKBUILDER</p>
+                    </div>
+                </motion.div>
+            )}
+       </AnimatePresence>
     </motion.div>
   );
 };

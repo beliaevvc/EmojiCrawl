@@ -1,7 +1,12 @@
 {
-  "version": "0.0.113",
-  "buildDate": "12/17/2025, 3:21:57 AM",
+  "version": "0.0.114",
+  "buildDate": "12/17/2025, 6:08:33 AM",
   "commits": [
+    {
+      "hash": "5c351b3",
+      "date": "17.12.2025 06:06",
+      "message": "Enhance MainMenu component with new Chaos Mode features and recovery logs"
+    },
     {
       "hash": "2be7f3a",
       "date": "17.12.2025 03:19",
@@ -246,11 +251,6 @@
       "hash": "0b3db49",
       "date": "15.12.2025 10:11",
       "message": "Refactor drag event handling in GameScreen components to improve code consistency. Update onDragEnd callbacks in CardsViewer, OverheadStatsWindow, and GameLogWindow to remove unused event parameter, enhancing readability and maintainability."
-    },
-    {
-      "hash": "fedfada",
-      "date": "15.12.2025 10:09",
-      "message": "Implement draggable window positions for CardsViewer, OverheadStatsWindow, and GameLogWindow in GameScreen. Add reset layout functionality and enhance UI interactions with hover effects for better user experience. This update improves layout management and user control over window positioning."
     }
   ]
 }
