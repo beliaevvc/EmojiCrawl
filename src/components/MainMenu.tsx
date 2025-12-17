@@ -8,6 +8,8 @@ import { AuthModal } from './AuthModal';
 import { Chalkboard } from './Chalkboard';
 import versionData from '../data/version_history.json';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useDevQuestStore } from '../stores/useDevQuestStore';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 const QUOTES = [
     "Серега конечно красавчик, такой прототип запилил",
@@ -120,6 +122,8 @@ interface MainMenuProps {
 }
 
 const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: MainMenuProps) => {
+  const { completeAnomaly } = useDevQuestStore();
+  const { isScreensaverEnabled } = useSettingsStore();
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -169,6 +173,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   useEffect(() => {
       const handleCrackClick = (e: MouseEvent) => {
           if (e.altKey) {
+              completeAnomaly('MATRIX_BREAK');
               e.preventDefault(); 
               e.stopPropagation(); // Stop click from reaching buttons
               setCracks(prev => [...prev, {
@@ -295,6 +300,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
           keySequenceRef.current = (keySequenceRef.current + e.key).slice(-10).toUpperCase();
           
           if (keySequenceRef.current.includes('LUMOS') || keySequenceRef.current.includes('SVET')) {
+              completeAnomaly('MAGIC_WORD_1');
               setFlashlightMode(true);
               keySequenceRef.current = '';
           }
@@ -321,7 +327,8 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
 
     const interval = setInterval(() => {
         idleTimeRef.current += 1;
-        if (idleTimeRef.current >= 30 && !showScreensaver) {
+        if (idleTimeRef.current >= 60 && !showScreensaver && isScreensaverEnabled) {
+            completeAnomaly('IDLE_STATE');
             setShowScreensaver(true);
             // Random start pos
             logoPos.current = { 
@@ -335,7 +342,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         events.forEach(e => window.removeEventListener(e, resetIdle));
         clearInterval(interval);
     };
-  }, [showScreensaver]);
+  }, [showScreensaver, isScreensaverEnabled]);
 
   // Screensaver Animation Loop
   useEffect(() => {
@@ -412,6 +419,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         }, 1000);
 
         if (globalClickCount.current >= 15) {
+            completeAnomaly('ENTROPY_OVERLOAD');
             setChaosStage('glitch');
             globalClickCount.current = 0;
         }
@@ -485,6 +493,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       const newCount = skullClickCount + 1;
       setSkullClickCount(newCount);
       if (newCount >= 5) {
+          completeAnomaly('DEAD_PIXEL');
           setShowColorPicker(true);
           setSkullClickCount(0);
       }
@@ -536,6 +545,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
                     
                     setShowMimic(true);
                     setMimicPos({ top: `${topPx}px`, left: `${leftPx}px` }); 
+                    completeAnomaly('GREED_TRAP');
                   }
               }, 2000);
           }, 5000); 

@@ -7,6 +7,15 @@ export const SlimeOverlay = () => {
     const colsRef = useRef<number[]>([]);
     const keySequenceRef = useRef('');
 
+    // Custom Event Listener
+    useEffect(() => {
+        const handleToggle = (e: CustomEvent<boolean>) => {
+            setIsActive(e.detail);
+        };
+        window.addEventListener('toggle-slime', handleToggle as EventListener);
+        return () => window.removeEventListener('toggle-slime', handleToggle as EventListener);
+    }, []);
+
     // Secret Code Listener
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

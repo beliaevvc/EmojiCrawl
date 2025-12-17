@@ -1,7 +1,62 @@
 {
-  "version": "0.0.114",
-  "buildDate": "12/17/2025, 6:08:33 AM",
+  "version": "0.0.125",
+  "buildDate": "12/17/2025, 10:15:37 AM",
   "commits": [
+    {
+      "hash": "fe4dcc8",
+      "date": "17.12.2025 09:21",
+      "message": "Refactor imports in GameScreen and RulesModal components"
+    },
+    {
+      "hash": "125faa4",
+      "date": "17.12.2025 09:19",
+      "message": "Add RulesModal component and integrate into GameScreen"
+    },
+    {
+      "hash": "651f5a0",
+      "date": "17.12.2025 07:06",
+      "message": "Add SlimeOverlay component and update documentation"
+    },
+    {
+      "hash": "f7e2be1",
+      "date": "17.12.2025 07:01",
+      "message": "Refactor GhostTrailOverlay to simplify size calculation"
+    },
+    {
+      "hash": "0990e16",
+      "date": "17.12.2025 06:59",
+      "message": "Add GhostTrailOverlay and FlashlightOverlay components to App"
+    },
+    {
+      "hash": "17a0fd6",
+      "date": "17.12.2025 06:49",
+      "message": "Add interactive crack overlay feature in MainMenu"
+    },
+    {
+      "hash": "535e92c",
+      "date": "17.12.2025 06:45",
+      "message": "Refactor mask logic in MainMenu for flashlight mode overlay"
+    },
+    {
+      "hash": "179ab5c",
+      "date": "17.12.2025 06:42",
+      "message": "Add flashlight mode feature to MainMenu"
+    },
+    {
+      "hash": "7c8f330",
+      "date": "17.12.2025 06:35",
+      "message": "Add mimic chest Easter egg feature in MainMenu"
+    },
+    {
+      "hash": "af0087a",
+      "date": "17.12.2025 06:21",
+      "message": "Update screensaver exit transition in MainMenu for smoother animation"
+    },
+    {
+      "hash": "cc56ab6",
+      "date": "17.12.2025 06:19",
+      "message": "Implement screensaver feature in MainMenu with inactivity tracking and animation"
+    },
     {
       "hash": "5c351b3",
       "date": "17.12.2025 06:06",
@@ -196,61 +251,6 @@
       "hash": "c60c72e",
       "date": "16.12.2025 03:26",
       "message": "Refactor GameScreen and gameReducer to improve reset logic. Introduce canReset condition based on player HP and cards on the table, enhancing game state management. Update reset button styling to reflect new reset conditions, ensuring better user experience during gameplay."
-    },
-    {
-      "hash": "ec0439b",
-      "date": "16.12.2025 03:10",
-      "message": "Enhance game state management by introducing a location prop for Card and Slot components, allowing for better tracking of card positions (hand, backpack, field). Update GameScreen and gameReducer to accommodate the new structure, ensuring proper handling of card interactions and state updates. Refactor related components to improve code clarity and maintainability."
-    },
-    {
-      "hash": "652b583",
-      "date": "15.12.2025 23:06",
-      "message": "Enhance CardComponent and Slot components with drag state management. Add onDragChange prop to CardComponent for notifying parent about drag status. Update Slot component to handle child dragging state and adjust visual feedback accordingly, improving user interaction during drag-and-drop operations."
-    },
-    {
-      "hash": "d5dee77",
-      "date": "15.12.2025 16:23",
-      "message": "Refactor GamePlusScreen component by removing unused imports and interface definitions, and re-enable saveRun functionality. Update index.css to remove duplicate font import. Clean up gameReducer by removing deadCoin case, streamlining the code for better maintainability."
-    },
-    {
-      "hash": "49942af",
-      "date": "15.12.2025 16:16",
-      "message": "!!!2"
-    },
-    {
-      "hash": "28cd500",
-      "date": "15.12.2025 16:00",
-      "message": "!!!"
-    },
-    {
-      "hash": "16f70fd",
-      "date": "15.12.2025 12:23",
-      "message": "Remove 'public' from .gitignore to streamline ignored files, ensuring only relevant directories are excluded from version control."
-    },
-    {
-      "hash": "636e844",
-      "date": "15.12.2025 12:17",
-      "message": "Fix image path in MainMenu component by correcting the filename format for the extra image. This update ensures proper loading of the image asset and maintains consistency in the image naming convention."
-    },
-    {
-      "hash": "e663eb0",
-      "date": "15.12.2025 12:14",
-      "message": "Add sticker functionality to MainMenu component. Implement random sticker images with dynamic positioning and interactive features, enhancing visual engagement and user experience. Include a fullscreen overlay for enlarged sticker viewing with captions."
-    },
-    {
-      "hash": "e629429",
-      "date": "15.12.2025 10:30",
-      "message": "Update quotes in MainMenu component to reflect new humorous messages about Serega and Kirill. This change enhances the thematic engagement of the interface by adding fresh, playful content that resonates with the game's spirit."
-    },
-    {
-      "hash": "26c1299",
-      "date": "15.12.2025 10:28",
-      "message": "Add dynamic footer quotes to MainMenu component. Implement a rotating quote feature that updates every 5 seconds, enhancing user engagement with humorous and thematic messages related to the game. This update enriches the overall user experience and adds a playful element to the interface."
-    },
-    {
-      "hash": "0b3db49",
-      "date": "15.12.2025 10:11",
-      "message": "Refactor drag event handling in GameScreen components to improve code consistency. Update onDragEnd callbacks in CardsViewer, OverheadStatsWindow, and GameLogWindow to remove unused event parameter, enhancing readability and maintainability."
     }
   ]
 }

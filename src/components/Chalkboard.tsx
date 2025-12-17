@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { useDevQuestStore } from '../stores/useDevQuestStore';
 
 interface Point {
     x: number;
@@ -19,9 +20,13 @@ export const Chalkboard = ({ color = '#e7e5e4' }: { color?: string }) => {
     
     // Store current color in ref so event listeners access latest value without re-binding
     const colorRef = useRef(color);
+    const currentStrokeLength = useRef(0);
+
     useEffect(() => {
         colorRef.current = color;
     }, [color]);
+
+    const { completeAnomaly } = useDevQuestStore();
 
     // Fade out effect
     useEffect(() => {
@@ -136,6 +141,7 @@ export const Chalkboard = ({ color = '#e7e5e4' }: { color?: string }) => {
             if (e.button !== 0) return;
             
             setIsDrawing(true);
+            currentStrokeLength.current = 0;
             const point = { x: e.clientX, y: e.clientY };
             setStrokes(prev => [...prev, { points: [point], timestamp: Date.now(), opacity: 1, color: colorRef.current }]);
         };
@@ -152,6 +158,8 @@ export const Chalkboard = ({ color = '#e7e5e4' }: { color?: string }) => {
                 const dist = Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y);
                 if (dist < 5) return prev;
 
+                currentStrokeLength.current += dist;
+
                 return [
                     ...prev.slice(0, -1),
                     { ...last, points: [...last.points, point] }
@@ -161,6 +169,9 @@ export const Chalkboard = ({ color = '#e7e5e4' }: { color?: string }) => {
 
         const handlePointerUp = () => {
             setIsDrawing(false);
+            if (currentStrokeLength.current > 300) { // Arbitrary threshold for a "drawing"
+                completeAnomaly('CHALK_TRACE');
+            }
         };
 
         // We listen on window to catch everything

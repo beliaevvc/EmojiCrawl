@@ -5,6 +5,15 @@ export const FlashlightOverlay = () => {
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const keySequenceRef = useRef('');
 
+    // Custom Event Listener
+    useEffect(() => {
+        const handleToggle = (e: CustomEvent<boolean>) => {
+            setFlashlightMode(e.detail);
+        };
+        window.addEventListener('toggle-flashlight', handleToggle as EventListener);
+        return () => window.removeEventListener('toggle-flashlight', handleToggle as EventListener);
+    }, []);
+
     // Track mouse for flashlight
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
