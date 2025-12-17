@@ -7,6 +7,7 @@ export interface HUDVisibility {
     deckStats: boolean;
     deckViewer: boolean;
     discardViewer: boolean;
+    discardStats: boolean;
     statsWindow: boolean;
     logWindow: boolean;
     labelsWindow: boolean;
@@ -23,6 +24,7 @@ const DEFAULT_VISIBILITY: HUDVisibility = {
     deckStats: true,
     deckViewer: true,
     discardViewer: true,
+    discardStats: true,
     statsWindow: true,
     logWindow: true,
     labelsWindow: true,

@@ -197,7 +197,7 @@ const MiniCard = ({ card }: { card: Card }) => {
     );
 };
 
-const CardsViewer = ({ cards, label, className = "top-40", position, onPositionChange }: { cards: Card[], label: string, className?: string, position?: WindowPosition, onPositionChange?: (pos: WindowPosition) => void }) => {
+const CardsViewer = ({ cards, label, className = "top-40", position, onPositionChange, stats }: { cards: Card[], label: string, className?: string, position?: WindowPosition, onPositionChange?: (pos: WindowPosition) => void, stats?: Record<string, number> }) => {
     const [offset, setOffset] = useState(0);
     const visibleCount = 8;
     
@@ -232,32 +232,52 @@ const CardsViewer = ({ cards, label, className = "top-40", position, onPositionC
             initial={{ opacity: 0, y: label === "Сброс" ? y + 20 : y - 20, x }}
             animate={{ opacity: 1, y, x }}
             exit={{ opacity: 0, y: label === "Сброс" ? y + 20 : y - 20, x }}
-            className={`absolute left-0 right-0 mx-auto w-fit z-20 flex items-center justify-center gap-2 overflow-visible cursor-move active:cursor-grabbing ${className}`}
+            className={`absolute left-0 right-0 mx-auto w-fit z-20 flex flex-col items-center justify-center gap-2 overflow-visible cursor-move active:cursor-grabbing ${className}`}
         >
-             <button 
-                disabled={!canGoLeft} 
-                onClick={handleLeft}
-                className={`p-1 rounded-full transition-colors ${canGoLeft ? 'text-stone-400 hover:text-white hover:bg-white/10' : 'text-stone-800'}`}
-             >
-                 <ChevronLeft size={20} />
-             </button>
-             
-             <div className="flex gap-1 md:gap-2 px-2 py-2 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm shadow-inner min-h-[4.5rem] min-w-[3rem] justify-center">
-                 <AnimatePresence mode='popLayout'>
-                     {visibleCardsSlice.map((card, i) => (
-                         <MiniCard key={card.id || i} card={card} />
-                     ))}
-                 </AnimatePresence>
-                 {visibleCardsSlice.length === 0 && <span className="text-xs text-stone-600 self-center px-4">Пусто</span>}
+             <div className="flex items-center justify-center gap-2">
+                 <button 
+                    disabled={!canGoLeft} 
+                    onClick={handleLeft}
+                    className={`p-1 rounded-full transition-colors ${canGoLeft ? 'text-stone-400 hover:text-white hover:bg-white/10' : 'text-stone-800'}`}
+                 >
+                     <ChevronLeft size={20} />
+                 </button>
+                 
+                 <div className="flex gap-1 md:gap-2 px-2 py-2 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm shadow-inner min-h-[4.5rem] min-w-[3rem] justify-center">
+                     <AnimatePresence mode='popLayout'>
+                         {visibleCardsSlice.map((card, i) => (
+                             <MiniCard key={card.id || i} card={card} />
+                         ))}
+                     </AnimatePresence>
+                     {visibleCardsSlice.length === 0 && <span className="text-xs text-stone-600 self-center px-4">Пусто</span>}
+                 </div>
+                 
+                 <button 
+                    disabled={!canGoRight} 
+                    onClick={handleRight}
+                    className={`p-1 rounded-full transition-colors ${canGoRight ? 'text-stone-400 hover:text-white hover:bg-white/10' : 'text-stone-800'}`}
+                 >
+                     <ChevronRight size={20} />
+                 </button>
              </div>
              
-             <button 
-                disabled={!canGoRight} 
-                onClick={handleRight}
-                className={`p-1 rounded-full transition-colors ${canGoRight ? 'text-stone-400 hover:text-white hover:bg-white/10' : 'text-stone-800'}`}
-             >
-                 <ChevronRight size={20} />
-             </button>
+             {stats && (
+                 <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-900/90 border border-stone-700 rounded-lg shadow-lg backdrop-blur-sm mt-1">
+                     <div className="flex items-center gap-2 border-r border-stone-700 pr-3 mr-1">
+                         <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Всего</span>
+                         <span className="font-mono font-bold text-stone-200 text-sm">{cards.length}</span>
+                     </div>
+                     <div className="flex gap-1">
+                         <DeckStatItem icon="🐺" count={stats.monster} color="text-rose-400" />
+                         <DeckStatItem icon="💎" count={stats.coin} color="text-amber-400" />
+                         <DeckStatItem icon="🧪" count={stats.potion} color="text-emerald-400" />
+                         <DeckStatItem icon="🛡️" count={stats.shield} color="text-stone-300" />
+                         <DeckStatItem icon="⚔️" count={stats.weapon} color="text-stone-300" />
+                         <DeckStatItem icon="📜" count={stats.spell} color="text-indigo-400" />
+                         {stats.skull > 0 && <DeckStatItem icon="💀" count={stats.skull} color="text-stone-500" />}
+                     </div>
+                 </div>
+             )}
              
              <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-widest text-stone-600 bg-stone-950 px-2 rounded-full border border-stone-800 whitespace-nowrap">
                 {label} ({displayCards.length > 0 ? currentOffset + 1 : 0}-{Math.min(displayCards.length, currentOffset + visibleCount)})
@@ -442,36 +462,40 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   useEffect(() => {
       if (!state.lastEffect) return;
 
-      const { type, targetId, value } = state.lastEffect;
+      const effects = Array.isArray(state.lastEffect) ? state.lastEffect : [state.lastEffect];
 
-      if (type === 'corrosion') {
-          // Find target slot ref
-          let ref = null;
-          // Check IDs. Note: The card ID in state might be same, but we need to match it.
-          // Since state is updated, we check current slots.
-          if (state.leftHand.card?.id === targetId) ref = leftHandRef;
-          else if (state.rightHand.card?.id === targetId) ref = rightHandRef;
-          else if (state.backpack.card?.id === targetId) ref = backpackRef;
+      effects.forEach(effect => {
+          const { type, targetId, value } = effect;
 
-          if (ref && ref.current) {
-               const rect = ref.current.getBoundingClientRect();
-               const x = rect.left + rect.width / 2;
-               const y = rect.top + rect.height / 2;
-               addFloatingText(x, y, '☣️ -2', 'text-lime-400 font-bold text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] z-[100]', true);
+          if (type === 'corrosion') {
+              // Find target slot ref
+              let ref = null;
+              // Check IDs. Note: The card ID in state might be same, but we need to match it.
+              // Since state is updated, we check current slots.
+              if (state.leftHand.card?.id === targetId) ref = leftHandRef;
+              else if (state.rightHand.card?.id === targetId) ref = rightHandRef;
+              else if (state.backpack.card?.id === targetId) ref = backpackRef;
+
+              if (ref && ref.current) {
+                   const rect = ref.current.getBoundingClientRect();
+                   const x = rect.left + rect.width / 2;
+                   const y = rect.top + rect.height / 2;
+                   addFloatingText(x, y, '☣️ -2', 'text-lime-400 font-bold text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] z-[100]', true);
+              }
+          } else if (type === 'corpseeater') {
+              const slotIdx = state.enemySlots.findIndex(c => c?.id === targetId);
+              if (slotIdx !== -1) {
+                  setTimeout(() => {
+                      if (slotRefs.current[slotIdx]) {
+                          const rect = slotRefs.current[slotIdx]!.getBoundingClientRect();
+                          const x = rect.left + rect.width / 2;
+                          const y = rect.top;
+                          addFloatingText(x, y, `🧟 +${value} HP`, 'text-emerald-400 font-bold text-sm drop-shadow-black z-[100]', true);
+                      }
+                  }, 600);
+              }
           }
-      } else if (type === 'corpseeater') {
-          const slotIdx = state.enemySlots.findIndex(c => c?.id === targetId);
-          if (slotIdx !== -1) {
-              setTimeout(() => {
-                  if (slotRefs.current[slotIdx]) {
-                      const rect = slotRefs.current[slotIdx]!.getBoundingClientRect();
-                      const x = rect.left + rect.width / 2;
-                      const y = rect.top;
-                      addFloatingText(x, y, `🧟 +${value} HP`, 'text-emerald-400 font-bold text-sm drop-shadow-black z-[100]', true);
-                  }
-              }, 600);
-          }
-      }
+      });
   }, [state.lastEffect]);
 
   // Calculate Deck Stats
@@ -486,6 +510,19 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const cleanDeck = state.deck.filter(c => !cardsInPlayIds.has(c.id));
 
   const deckStats = cleanDeck.reduce((acc, card) => {
+      acc[card.type] = (acc[card.type] || 0) + 1;
+      return acc;
+  }, {
+      monster: 0,
+      coin: 0,
+      potion: 0,
+      shield: 0,
+      weapon: 0,
+      spell: 0,
+      skull: 0
+  } as Record<string, number>);
+
+  const discardStats = state.discardPile.reduce((acc, card) => {
       acc[card.type] = (acc[card.type] || 0) + 1;
       return acc;
   }, {
@@ -1020,6 +1057,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                         className="bottom-40" 
                         position={windowPositions['discard']}
                         onPositionChange={(pos) => updateWindowPosition('discard', pos)}
+                        stats={hudVisibility.discardStats ? discardStats : undefined}
                     />
                 )}
               </>

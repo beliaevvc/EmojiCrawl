@@ -12,6 +12,7 @@ const SETTINGS = [
     { id: 'deckStats', label: 'Статистика колоды', icon: BarChart3, desc: 'Показывает количество карт по типам' },
     { id: 'deckViewer', label: 'Просмотр колоды', icon: Layers, desc: 'Окно просмотра оставшихся карт' },
     { id: 'discardViewer', label: 'Просмотр сброса', icon: Trash2, desc: 'Окно просмотра сыгранных карт' },
+    { id: 'discardStats', label: 'Статистика сброса', icon: BarChart3, desc: 'Показывает количество карт по типам в сбросе' },
     { id: 'statsWindow', label: 'Аналитика', icon: Activity, desc: 'Overheal, Overkill, Overdef' },
     { id: 'logWindow', label: 'Журнал событий', icon: ScrollText, desc: 'История действий и эффектов' },
     { id: 'labelsWindow', label: 'Классы монстров', icon: Tag, desc: 'Справочник меток (Танк, Босс...)' },

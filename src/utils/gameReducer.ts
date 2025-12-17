@@ -176,21 +176,24 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
             newState = addLog(newState, `ЗАСАДА (${card.icon}): Герой получил 1 урон при появлении монстра.${newState.isGodMode ? ' (GOD)' : ''}`, 'combat');
             break;
         case 'corpseeater':
-            const deadMonsters = newState.discardPile.filter(c => c.type === 'monster').length;
-            if (deadMonsters > 0) {
+            const bonusHp = newState.discardPile.filter(c => c.type === 'coin').length;
+            if (bonusHp > 0) {
                 // Update card in slot (it's already placed before this call usually, but we need to find it)
                 // Actually, logic is cleaner if we modify card BEFORE placing.
                 // But deck refilling places card then we might trigger this.
                 // Let's assume we modify the card value in state.
                 const slotIdx = newState.enemySlots.findIndex(c => c?.id === card.id);
                 if (slotIdx !== -1) {
-                    const newCard = { ...card, value: card.value + deadMonsters, maxHealth: (card.maxHealth || card.value) + deadMonsters };
+                    const newCard = { ...card, value: card.value + bonusHp, maxHealth: (card.maxHealth || card.value) + bonusHp };
                     const newSlots = [...newState.enemySlots];
                     newSlots[slotIdx] = newCard;
                     newState.enemySlots = newSlots;
                     
-                    newState.lastEffect = { type: 'corpseeater', targetId: card.id, value: deadMonsters, timestamp: Date.now() };
-                    newState = addLog(newState, `ТРУПОЕД (${card.icon}): +${deadMonsters} HP за мертвых монстров.`, 'info');
+                    const newEffect = { type: 'corpseeater', targetId: card.id, value: bonusHp, timestamp: Date.now() };
+                    const prevEffects = Array.isArray(newState.lastEffect) ? newState.lastEffect : (newState.lastEffect ? [newState.lastEffect] : []);
+                    newState.lastEffect = [...prevEffects, newEffect];
+
+                    newState = addLog(newState, `ТРУПОЕД (${card.icon}): +${bonusHp} HP за кристаллы в сбросе.`, 'info');
                 }
             }
             break;

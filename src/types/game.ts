@@ -125,7 +125,7 @@ export interface GameState {
   peekCards: Card[] | null;
   peekType?: 'epiphany' | 'whisper' | 'beacon';
   scoutCards: Card[] | null;
-  lastEffect?: { type: string; targetId: string; value?: number; timestamp: number };
+  lastEffect?: { type: string; targetId: string; value?: number; timestamp: number } | { type: string; targetId: string; value?: number; timestamp: number }[];
   isGodMode: boolean;
 }
 
