@@ -21,6 +21,7 @@ const Backend = isTouchDevice() ? TouchBackend : HTML5Backend;
 
 import { GhostTrailOverlay } from './components/GhostTrailOverlay';
 import { FlashlightOverlay } from './components/FlashlightOverlay';
+import { SlimeOverlay } from './components/SlimeOverlay';
 
 function App() {
   const [gameState, setGameState] = useState<'menu' | 'game' | 'stats' | 'deckbuilder'>('menu');
@@ -57,6 +58,7 @@ function App() {
       <ErrorBoundary>
         <GhostTrailOverlay />
         <FlashlightOverlay />
+        <SlimeOverlay />
         <div className="bg-stone-950 min-h-screen text-stone-100 font-sans selection:bg-rose-500/30">
            <AnimatePresence mode="wait">
           {gameState === 'menu' && (
