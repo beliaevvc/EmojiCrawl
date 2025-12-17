@@ -1,7 +1,7 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw, BookOpen } from 'lucide-react';
+import { Flag, Search, X, Shield, Swords, Zap, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw, BookOpen } from 'lucide-react';
 import { useDrop } from 'react-dnd';
 import { loadUIPositions, saveUIPositions, WindowPosition } from '../utils/uiStorage';
 import { gameReducer, initialState } from '../utils/gameReducer';

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { X, Skull, Swords, Shield, Coins, Zap, ShoppingBag, RotateCcw, Trophy, AlertTriangle } from 'lucide-react';
+import { X, Skull, Swords, Shield, Coins, Zap, Trophy, AlertTriangle } from 'lucide-react';
 import { CardType } from '../types/game';
 
 interface VisualCardProps {
