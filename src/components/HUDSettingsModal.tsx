@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { X, Check, BarChart3, Layers, Trash2, Activity, ScrollText, Tag, LayoutDashboard } from 'lucide-react';
+import { X, BarChart3, Layers, Trash2, Activity, ScrollText, Tag, LayoutDashboard } from 'lucide-react';
 import { HUDVisibility, saveUIVisibility } from '../utils/uiStorage';
 
 interface HUDSettingsModalProps {

@@ -3,7 +3,7 @@ import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw, BookOpen, Settings, Flag, Search, Crown, Activity, Zap, Swords, Shield, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useDrop } from 'react-dnd';
-import { loadUIPositions, saveUIPositions, WindowPosition, loadUIVisibility, saveUIVisibility, HUDVisibility } from '../utils/uiStorage';
+import { loadUIPositions, saveUIPositions, WindowPosition, loadUIVisibility, HUDVisibility } from '../utils/uiStorage';
 import { gameReducer, initialState } from '../utils/gameReducer';
 import CardComponent from './CardComponent';
 import Slot from './Slot';
