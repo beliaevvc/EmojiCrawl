@@ -1,7 +1,7 @@
 // ... imports
 import React, { useReducer, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { Flag, Search, X, Shield, Swords, Skull, Zap, Coins, ChevronUp, ChevronDown, Activity, Crown, Eye, EyeOff, ChevronLeft, ChevronRight, RotateCcw, BookOpen } from 'lucide-react';
 import { useDrop } from 'react-dnd';
 import { loadUIPositions, saveUIPositions, WindowPosition } from '../utils/uiStorage';
 import { gameReducer, initialState } from '../utils/gameReducer';
@@ -13,6 +13,7 @@ import { FloatingTextOverlay, FloatingTextItem } from './FloatingText';
 import { GameStatsOverlay } from './GameStatsOverlay';
 import { saveRun } from '../utils/statsStorage';
 import { ConfirmationModal } from './ConfirmationModal';
+import { RulesModal } from './RulesModal';
 import { SPELLS } from '../data/spells';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 
@@ -96,70 +97,6 @@ const SellZone = ({ onSell, children }: { onSell: (item: any) => void, children:
     return <div ref={drop} className={isOver ? 'scale-110 transition-transform' : ''}>{children}</div>
 };
 
-// ... RulesModal (Keeping existing logic)
-const RulesModal = ({ onClose }: { onClose: () => void }) => (
-    <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-        className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
-        onClick={onClose}
-    >
-        <div className="bg-stone-900 border border-stone-700 rounded-lg p-6 max-w-lg w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <button onClick={onClose} className="absolute top-4 right-4 text-stone-500 hover:text-white transition-colors">
-                <X size={24} />
-            </button>
-            <h2 className="text-2xl font-bold text-stone-200 mb-6 text-center tracking-widest uppercase">Правила Игры</h2>
-            <div className="space-y-6 text-stone-400 text-sm md:text-base h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                 <section>
-                    <h3 className="flex items-center gap-2 text-stone-200 font-bold mb-2">
-                        <Skull size={18} className="text-rose-500" /> Цель
-                    </h3>
-                    <p>Очистите колоду и стол от всех карт монстров. Выживите, сохранив HP больше 0.</p>
-                </section>
-                <section>
-                    <h3 className="flex items-center gap-2 text-stone-200 font-bold mb-2">
-                        <Swords size={18} className="text-stone-400" /> Бой
-                    </h3>
-                    <ul className="list-disc list-inside space-y-1 ml-1">
-                        <li>Перетащите <span className="text-rose-400">Монстра</span> на <span className="text-stone-300">Оружие</span>: монстр умирает, оружие теряет прочность.</li>
-                        <li>Перетащите <span className="text-rose-400">Монстра</span> на <span className="text-stone-300">Щит</span>: щит поглощает урон.</li>
-                        <li>Перетащите <span className="text-rose-400">Монстра</span> на <span className="text-green-400">Героя</span>: вы получаете полный урон.</li>
-                    </ul>
-                </section>
-                <section>
-                    <h3 className="flex items-center gap-2 text-stone-200 font-bold mb-2">
-                        <Coins size={18} className="text-amber-400" /> Предметы
-                    </h3>
-                    <ul className="list-disc list-inside space-y-1 ml-1">
-                        <li><span className="text-amber-400">Монеты</span> и <span className="text-emerald-400">Зелья</span> используются автоматически при взятии в руку.</li>
-                        <li>Использованный слот руки блокируется до конца раунда.</li>
-                        <li>Оружие и Зелья можно <b>Продать</b> (кнопка 💎).</li>
-                    </ul>
-                </section>
-                <section>
-                    <h3 className="flex items-center gap-2 text-stone-200 font-bold mb-2">
-                        <Zap size={18} className="text-indigo-400" /> Заклинания
-                    </h3>
-                    <p className="mb-2">Перетащите карту заклинания на цель:</p>
-                    <ul className="space-y-2 ml-1">
-                        <li>📜 <b>Побег</b> (на монстра): Замешать всех врагов в колоду.</li>
-                        <li>📜 <b>Кровосос</b> (на монстра): Лечение на силу монстра.</li>
-                        <li>📜 <b>Зельефикация</b> (на предмет): Превратить предмет в зелье.</li>
-                        <li>📜 <b>Ветер</b> (на монстра/монету): Вернуть карту в колоду.</li>
-                        <li>📜 <b>Жертва</b> (на монстра): Урон монстру (13 - ваш HP).</li>
-                    </ul>
-                </section>
-                <section>
-                    <h3 className="flex items-center gap-2 text-stone-200 font-bold mb-2">
-                        <Shield size={18} className="text-stone-500" /> Сброс
-                    </h3>
-                    <p>Кнопка 🛡️ (-5 HP): Убирает все карты со стола в колоду. Доступно если HP {'>'} 5.</p>
-                </section>
-            </div>
-        </div>
-    </motion.div>
-);
 
 // Mini Stats Item Component
 const DeckStatItem = ({ icon, count, color }: { icon: string, count: number, color: string }) => (
@@ -1220,6 +1157,11 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
             label="New Game" 
             onClick={() => setShowRestartConfirm(true)} 
             danger={true}
+         />
+         <SystemButton 
+            icon={<BookOpen size={20} />} 
+            label="Правила" 
+            onClick={() => setShowRules(true)} 
          />
          <SystemButton 
             icon={<Search size={20} />} 
