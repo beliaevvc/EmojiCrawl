@@ -286,6 +286,9 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [flashlightMode]);
 
+  // Ghost Trail Easter Egg State
+  // Moved to global GhostTrailOverlay component
+
   // Secret Codes Listener (Lumos/Nox)
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -293,7 +296,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
           
           if (keySequenceRef.current.includes('LUMOS') || keySequenceRef.current.includes('SVET')) {
               setFlashlightMode(true);
-              keySequenceRef.current = ''; // Reset
+              keySequenceRef.current = '';
           }
           if (keySequenceRef.current.includes('NOX')) {
               setFlashlightMode(false);
