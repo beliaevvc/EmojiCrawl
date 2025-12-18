@@ -1,7 +1,17 @@
 {
-  "version": "0.0.132",
-  "buildDate": "12/18/2025, 1:04:35 PM",
+  "version": "0.0.134",
+  "buildDate": "12/18/2025, 9:17:02 PM",
   "commits": [
+    {
+      "hash": "65504d2",
+      "date": "18.12.2025 21:09",
+      "message": "Добавление системы проклятий в игру"
+    },
+    {
+      "hash": "03593c2",
+      "date": "18.12.2025 18:48",
+      "message": "Обновление конфигурационных файлов и компонентов с добавлением пустых строк для улучшения читаемости кода. Также внесены изменения в компонент ConfirmationModal для использования createPortal, что улучшает отображение модального окна. Обновлен GameScreen для интеграции функционала кошелька и добавления кристаллов при победе. Обновлен GameStatsOverlay для отображения собранных монет. Обновлен MainMenu для загрузки баланса при старте и добавления компонента WalletComponent."
+    },
     {
       "hash": "8fe8b23",
       "date": "18.12.2025 04:40",
@@ -241,16 +251,6 @@
       "hash": "0cdfdef",
       "date": "16.12.2025 05:18",
       "message": "Add Notes feature to DeckbuilderScreen with modal integration"
-    },
-    {
-      "hash": "6cedb54",
-      "date": "16.12.2025 04:45",
-      "message": "Add visual effects for Junk and Bones abilities in GameScreen"
-    },
-    {
-      "hash": "ab189e7",
-      "date": "16.12.2025 04:43",
-      "message": "Enhance GameScreen and gameReducer to prevent selling 'skull' items from the backpack. Update visual feedback for 'skull' sales and adjust hand clearing logic to include 'skull' type, improving game state management and user experience."
     }
   ]
 }

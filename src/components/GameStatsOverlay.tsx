@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { GameStats } from '../types/game';
 import { Skull, Trophy, RefreshCw, LogOut } from 'lucide-react';
 

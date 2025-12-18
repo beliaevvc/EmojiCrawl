@@ -43,7 +43,8 @@ export const initialState: GameState = {
   scoutCards: null,
   isGodMode: false,
   hpUpdates: [],
-  curse: null
+  curse: null,
+  hasActed: false
 };
 
 // ... (Action Types)
@@ -947,7 +948,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         overheads: { overheal: 0, overdamage: 0, overdef: 0 },
         stats: { ...initialStats, startTime: Date.now(), runType: runType, templateName: action.templateName },
         activeEffects: [],
-        curse: startingCurse
+        curse: startingCurse,
+        hasActed: false
       };
 
       // Apply Spawn Abilities for initial hand
@@ -975,6 +977,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
 
     case 'TAKE_CARD_TO_HAND': {
+      nextState = { ...state, hasActed: true }; // Mark action
       if (action.hand === 'backpack' && hasActiveAbility(state, 'web')) {
           logMessage = 'ПАУТИНА: Рюкзак заблокирован!';
           break;
@@ -1105,6 +1108,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
 
     case 'INTERACT_WITH_MONSTER': {
+        nextState = { ...state, hasActed: true };
         // ... (existing logic)
         const monsterIdx = findCardInSlots(state.enemySlots, action.monsterId);
         if (monsterIdx === -1) return state;
@@ -1191,7 +1195,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
     // ... (Use Spell logic needs hidden check too)
     case 'USE_SPELL_ON_TARGET': {
-        const { spellCardId, targetId } = action;
+      nextState = { ...state, hasActed: true }; // Mark action
+      const { spellCardId, targetId } = action;
         
         // Find target card to check if hidden
         const targetLocPre = findCardLocation(state, targetId);
@@ -1665,6 +1670,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
     
     case 'RESET_HAND': {
+        nextState = { ...state, hasActed: true };
         const cost = state.isGodMode ? 0 : 5;
         const cardsOnTable = state.enemySlots.filter(c => c !== null).length;
         
@@ -1688,6 +1694,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
     
     case 'SELL_ITEM': {
+        nextState = { ...state, hasActed: true };
         if (hasActiveAbility(state, 'scream')) {
             logMessage = 'КРИК: Продажа заблокирована монстром!';
             break;

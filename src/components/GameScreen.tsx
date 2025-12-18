@@ -22,6 +22,9 @@ import { MonsterLabelType } from '../types/game';
 import { useWalletStore } from '../stores/useWalletStore';
 import { CursePicker } from './CursePicker';
 import { CURSES } from '../data/curses';
+import { CurseSlot } from './CurseSlot';
+import { CurseActivationBanner } from './CurseActivationBanner';
+import { CurseType } from '../types/game';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
 
@@ -76,9 +79,10 @@ const EnemySlotDropZone = ({
     const [{ isOver, canDrop }, drop] = useDrop(() => ({
         accept: ItemTypes.CARD,
         // Allow spells AND weapons to be dropped on monsters
-        canDrop: (item: any) => !!card && (item.type === 'spell' || (item.type === 'weapon' && card.type === 'monster')),
+        // BLOCK: Fog (hidden cards)
+        canDrop: (item: any) => !!card && !card.isHidden && (item.type === 'spell' || (item.type === 'weapon' && card.type === 'monster')),
         drop: (item: any) => {
-            if (card) onDropOnEnemy(item, card.id);
+            if (card && !card.isHidden) onDropOnEnemy(item, card.id);
         },
         collect: (monitor) => ({
             isOver: !!monitor.isOver(),
@@ -398,6 +402,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [showGodModeToggle, setShowGodModeToggle] = useState(false); // Visibility of God Mode button
   const [showHUDSettings, setShowHUDSettings] = useState(false);
   const [showCursePicker, setShowCursePicker] = useState(false);
+  const [pendingCurse, setPendingCurse] = useState<CurseType | null>(null);
+  const [showCurseConfirm, setShowCurseConfirm] = useState(false);
   const [isResetHovered, setIsResetHovered] = useState(false);
   const [hudVisibility, setHudVisibility] = useState<HUDVisibility>(loadUIVisibility());
   const { addCrystals } = useWalletStore();
@@ -1005,6 +1011,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-stone-900/20 via-stone-950/80 to-stone-950 pointer-events-none z-0"></div>
        <div className="absolute inset-0 flex justify-between opacity-5 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(90deg, transparent 49%, #000 50%, transparent 51%)', backgroundSize: '12.5% 100%' }}></div>
 
+       <CurseActivationBanner curse={state.curse || null} />
+
       {/* --- Top Panel --- */}
       <div className="flex justify-between items-center z-10 w-full px-2 md:px-4 pt-2 md:pt-4">
         <div className="flex items-center gap-4 md:gap-8">
@@ -1018,42 +1026,8 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                  </span>
             </button>
 
-            {/* Curse Slot */}
-            <div className="relative">
-                {state.curse ? (
-                    <div className="group relative w-10 h-10 md:w-12 md:h-12 rounded-full bg-stone-900/80 border border-stone-600 flex items-center justify-center text-2xl shadow-lg cursor-help transition-all hover:scale-110 hover:border-stone-400">
-                        {CURSES.find(c => c.id === state.curse)?.icon}
-                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-48 bg-stone-900 border border-stone-600 p-3 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                            <div className="text-center">
-                                <div className="font-bold text-stone-200 text-xs uppercase tracking-wider mb-1">
-                                    {CURSES.find(c => c.id === state.curse)?.name}
-                                </div>
-                                <div className="text-[10px] text-stone-400 leading-tight">
-                                    {CURSES.find(c => c.id === state.curse)?.description}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <button 
-                        onClick={() => {
-                            // Only allow picking in round 1 if no curse active
-                            if (state.round === 1) setShowCursePicker(true);
-                        }}
-                        className={`
-                            w-10 h-10 md:w-12 md:h-12 rounded-full 
-                            border-2 border-dashed border-stone-800 bg-stone-900/30 
-                            flex items-center justify-center text-stone-600 
-                            transition-all
-                            ${state.round === 1 ? 'hover:border-stone-500 hover:text-stone-400 cursor-pointer hover:bg-stone-800/50' : 'opacity-30 cursor-default'}
-                        `}
-                        title={state.round === 1 ? "Добавить проклятие" : "Проклятие не выбрано"}
-                    >
-                        {state.round === 1 && <span className="text-xl font-bold">+</span>}
-                    </button>
-                )}
-            </div>
-
+            {/* Curse Slot Removed from here */}
+            
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-3 px-4 py-2 bg-stone-900/90 border border-stone-700 rounded shadow-lg backdrop-blur-sm">
                   <span className="font-bold text-stone-400 text-base tracking-widest font-sans">ОСТАЛОСЬ</span>
@@ -1113,8 +1087,19 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
       {/* --- Main Game Area --- */}
       <div className="flex-1 flex items-center justify-center w-full z-10 gap-2 md:gap-8 relative px-2 md:px-4">
         
-        {/* Left Side: Reset Button */}
-        <div className="flex items-center justify-center w-20 md:w-32">
+        {/* Left Side: Reset Button & Curse Slot */}
+        <div className="flex flex-row items-center justify-end gap-2 md:gap-4 min-w-[6rem] md:min-w-[8rem]">
+            {/* Curse Slot (Moved here) */}
+            <div className="z-20">
+                <CurseSlot 
+                   curse={state.curse || null} 
+                   isLocked={state.hasActed} 
+                   onClick={() => {
+                       if (!state.curse && !state.hasActed) setShowCursePicker(true);
+                   }} 
+                />
+            </div>
+
             <button 
               className={`group flex flex-col items-center gap-1 active:scale-95 transition-transform scale-75 md:scale-100 ${!canReset ? 'opacity-50 pointer-events-none grayscale' : ''}`}
               onClick={handleReset}
@@ -1132,7 +1117,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
         </div>
 
         {/* Center: The Grid */}
-        <div className="grid grid-cols-4 gap-2 md:gap-4 w-full max-w-sm md:max-w-xl aspect-[2/1] transition-all duration-300">
+        <div className="relative grid grid-cols-4 gap-2 md:gap-4 w-full max-w-sm md:max-w-xl aspect-[2/1] transition-all duration-300">
           
           {/* Enemy Row */}
           {state.enemySlots.map((card, i) => (
@@ -1487,11 +1472,27 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
           {showCursePicker && (
               <CursePicker 
                   onSelect={(curse) => {
-                      dispatch({ type: 'ACTIVATE_CURSE', curse });
+                      setPendingCurse(curse);
                       setShowCursePicker(false);
+                      setShowCurseConfirm(true);
                   }}
                   onClose={() => setShowCursePicker(false)}
               />
+          )}
+          {showCurseConfirm && pendingCurse && (
+                <ConfirmationModal 
+                    title="Принять Проклятие?"
+                    message={`Вы собираетесь активировать проклятие "${CURSES.find(c => c.id === pendingCurse)?.name}". Это действие необратимо и будет действовать всю игру.`}
+                    onConfirm={() => {
+                        dispatch({ type: 'ACTIVATE_CURSE', curse: pendingCurse });
+                        setShowCurseConfirm(false);
+                        setPendingCurse(null);
+                    }}
+                    onCancel={() => {
+                        setShowCurseConfirm(false);
+                        setPendingCurse(null);
+                    }}
+                />
           )}
       </AnimatePresence>
 

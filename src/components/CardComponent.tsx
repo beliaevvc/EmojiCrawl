@@ -41,7 +41,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.CARD,
     item: { ...card, location }, // Include location in drag item
-    canDrag: isDraggable && !isBlocked, // Disable drag if blocked
+    canDrag: isDraggable && !isBlocked && !card.isHidden, // Disable drag if blocked or hidden
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
@@ -87,7 +87,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
   return (
     <motion.div
       ref={setRefs}
-      onClick={onClick}
+      onClick={!card.isHidden ? onClick : undefined}
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ 
           scale: 1, 
@@ -116,67 +116,73 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
         ${isDebuffed ? 'ring-2 ring-rose-500/50' : ''} 
       `}
     >
-      {/* Card Back for Hidden Cards (Fog) */}
+      {/* Card Back for Hidden Cards (Universal) */}
       {card.isHidden && (
-         <div className="absolute inset-0 bg-stone-900 rounded-full flex items-center justify-center z-50 border-2 border-stone-700">
-            <div className="text-4xl opacity-20">☁️</div>
+         <div className="absolute inset-0 bg-stone-950 rounded-full flex items-center justify-center z-50 border-2 border-stone-700 overflow-hidden">
+             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #44403c 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+             <div className="text-3xl opacity-10 font-display">?</div>
          </div>
       )}
 
-      {card.type !== 'spell' && !card.isHidden && (
-        <div className={`
-          absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-5 h-5 md:w-7 md:h-7 rounded-full 
-          flex items-center justify-center text-[10px] md:text-xs font-bold shadow-md z-10
-          ${isDebuffed ? 'bg-stone-900 text-rose-400 border border-rose-500' : (card.type === 'monster' ? 'bg-rose-700 text-rose-100 border border-rose-500' : 'bg-stone-700 text-stone-200 border border-stone-500')}
-        `}>
-          {displayValue}
-        </div>
-      )}
-      
-      {/* Penalty Indicator */}
-      {isDebuffed && (
-          <div className="absolute bottom-5 -right-2 md:bottom-7 md:-right-3 text-[10px] md:text-xs font-bold text-rose-500 drop-shadow-black animate-pulse bg-black/50 px-1 rounded">
-              {penalty}
-          </div>
-      )}
-      
-      <span className="drop-shadow-md">{card.icon}</span>
+      {/* Content (Only if not hidden) */}
+      {!card.isHidden && (
+        <>
+            {card.type !== 'spell' && (
+                <div className={`
+                absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-5 h-5 md:w-7 md:h-7 rounded-full 
+                flex items-center justify-center text-[10px] md:text-xs font-bold shadow-md z-10
+                ${isDebuffed ? 'bg-stone-900 text-rose-400 border border-rose-500' : (card.type === 'monster' ? 'bg-rose-700 text-rose-100 border border-rose-500' : 'bg-stone-700 text-stone-200 border border-stone-500')}
+                `}>
+                {displayValue}
+                </div>
+            )}
+            
+            {/* Penalty Indicator */}
+            {isDebuffed && (
+                <div className="absolute bottom-5 -right-2 md:bottom-7 md:-right-3 text-[10px] md:text-xs font-bold text-rose-500 drop-shadow-black animate-pulse bg-black/50 px-1 rounded">
+                    {penalty}
+                </div>
+            )}
+            
+            <span className="drop-shadow-md">{card.icon}</span>
 
-      {/* Monster Ability Badge */}
-      {card.type === 'monster' && card.ability && (
-          <div className="absolute -top-2 md:-top-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-stone-900 border border-stone-600 flex items-center justify-center shadow-lg z-20 text-xs md:text-sm" title={MONSTER_ABILITIES.find(a => a.id === card.ability)?.name}>
-              {MONSTER_ABILITIES.find(a => a.id === card.ability)?.icon}
-          </div>
-      )}
+            {/* Monster Ability Badge */}
+            {card.type === 'monster' && card.ability && (
+                <div className="absolute -top-2 md:-top-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-stone-900 border border-stone-600 flex items-center justify-center shadow-lg z-20 text-xs md:text-sm" title={MONSTER_ABILITIES.find(a => a.id === card.ability)?.name}>
+                    {MONSTER_ABILITIES.find(a => a.id === card.ability)?.icon}
+                </div>
+            )}
 
-      {/* Monster Label (Moved to Top Left) */}
-      {card.type === 'monster' && card.label && !isBlocked && (
-          <div 
-            className="absolute -top-1 left-2 w-3 h-3 rounded-full border border-stone-900 shadow-lg z-20"
-            title={card.label}
-            style={{
-                backgroundColor: 
-                    card.label === 'ordinary' ? '#10b981' :
-                    card.label === 'tank' ? '#eab308' :
-                    card.label === 'medium' ? '#f97316' :
-                    card.label === 'mini-boss' ? '#a855f7' :
-                    card.label === 'boss' ? '#e11d48' : 'transparent'
-            }}
-          />
-      )}
+            {/* Monster Label (Moved to Top Left) */}
+            {card.type === 'monster' && card.label && !isBlocked && (
+                <div 
+                    className="absolute -top-1 left-2 w-3 h-3 rounded-full border border-stone-900 shadow-lg z-20"
+                    title={card.label}
+                    style={{
+                        backgroundColor: 
+                            card.label === 'ordinary' ? '#10b981' :
+                            card.label === 'tank' ? '#eab308' :
+                            card.label === 'medium' ? '#f97316' :
+                            card.label === 'mini-boss' ? '#a855f7' :
+                            card.label === 'boss' ? '#e11d48' : 'transparent'
+                    }}
+                />
+            )}
 
-      {/* Price Multiplier Badge */}
-      {card.priceMultiplier && card.priceMultiplier > 1 && (
-          <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-yellow-500 text-black font-bold text-[10px] flex items-center justify-center border border-yellow-300 shadow-md z-20">
-              x{card.priceMultiplier}
-          </div>
-      )}
+            {/* Price Multiplier Badge */}
+            {card.priceMultiplier && card.priceMultiplier > 1 && (
+                <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-yellow-500 text-black font-bold text-[10px] flex items-center justify-center border border-yellow-300 shadow-md z-20">
+                    x{card.priceMultiplier}
+                </div>
+            )}
 
-      {/* Spell Name Badge (Optional, but helps ID spells) */}
-      {card.type === 'spell' && card.name && (
-          <div className="absolute -bottom-2 px-1 py-0.5 bg-black/60 rounded text-[6px] md:text-[8px] text-indigo-200 uppercase tracking-wider border border-indigo-900/50">
-              {card.name.substring(0, 4)}
-          </div>
+            {/* Spell Name Badge (Optional, but helps ID spells) */}
+            {card.type === 'spell' && card.name && (
+                <div className="absolute -bottom-2 px-1 py-0.5 bg-black/60 rounded text-[6px] md:text-[8px] text-indigo-200 uppercase tracking-wider border border-indigo-900/50">
+                    {card.name.substring(0, 4)}
+                </div>
+            )}
+        </>
       )}
     </motion.div>
   );

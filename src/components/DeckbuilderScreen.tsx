@@ -385,23 +385,36 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     };
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="relative w-full min-h-screen bg-stone-950 flex flex-col p-4 md:p-8 overflow-hidden font-sans select-none"
+            className="w-full h-screen bg-[#141211] flex flex-col relative overflow-hidden font-sans select-none"
         >
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+            {/* Background */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-stone-900/20 via-stone-950/80 to-stone-950 pointer-events-none z-0"></div>
 
-            {/* Header */}
-            <div className="relative z-10 flex items-center justify-between mb-4 md:mb-8 max-w-4xl mx-auto w-full">
-                <button 
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-stone-400 hover:text-stone-200 transition-colors group"
-                >
-                    <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="font-bold tracking-widest uppercase text-sm hidden md:inline">Назад</span>
-                </button>
+            {/* Header - Fixed */}
+            <div className="relative z-10 w-full px-4 py-4 flex justify-between items-center bg-[#141211]/80 backdrop-blur-md border-b border-stone-800 shrink-0">
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={onBack}
+                        className="flex items-center gap-2 text-stone-400 hover:text-stone-200 transition-colors group"
+                    >
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="font-bold tracking-widest uppercase text-sm hidden md:inline">Назад</span>
+                    </button>
+                    <div>
+                        <h1 className="font-display font-bold text-xl md:text-3xl text-stone-200 tracking-wider uppercase">
+                            Конструктор
+                        </h1>
+                        <p className="text-stone-500 text-xs flex items-center gap-2">
+                            Всего карт: <span className="text-stone-300 font-mono">{totalCards}</span>
+                            {initialTemplate && <span className="px-2 py-0.5 bg-indigo-900/30 text-indigo-400 rounded text-[10px] uppercase border border-indigo-900/50">{initialTemplate.name}</span>}
+                        </p>
+                    </div>
+                </div>
                 
                 <div className="flex items-center gap-4">
                     <button 
@@ -434,25 +447,18 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                     >
                         <RotateCcw size={18} className="group-hover:-rotate-180 transition-transform duration-500" />
                     </button>
-
-                    <div className="flex items-center gap-2 bg-stone-900/50 px-3 py-1.5 rounded-lg border border-stone-800">
-                        <span className="text-stone-500 text-xs font-bold uppercase">Всего карт</span>
-                        <span className="text-stone-200 font-mono font-bold">{totalCards}</span>
-                    </div>
                 </div>
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl mx-auto z-10 relative">
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-32 w-full">
+                <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto z-10 relative">
                 
-                <div className="text-center mb-12">
+                <div className="text-center mb-12 mt-4">
                     <h2 className="text-5xl md:text-7xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-b from-stone-200 to-stone-500 uppercase tracking-tighter drop-shadow-2xl relative inline-block">
                         Deckbuilder
                         <div className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-stone-500 to-transparent opacity-50"></div>
                     </h2>
-                    <p className="text-stone-500 text-xs font-bold tracking-[0.5em] uppercase mt-4">
-                        {initialTemplate ? `Template: ${initialTemplate.name}` : 'Конструктор колоды'}
-                    </p>
                 </div>
 
                 <div className="flex items-center gap-6 w-full max-w-5xl mb-8 opacity-80">
@@ -533,44 +539,56 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         onClick={() => setShowSpellsEditor(true)}
                         isModified={isSpellsModified}
                     />
+                </div>
 
-                    {/* Curse */}
-                    <CategoryCard 
-                        icon={customCurse ? (CURSES.find(c => c.id === customCurse)?.icon || "👻") : "👻"}
-                        label="Проклятие"
-                        subtitle={customCurse ? CURSES.find(c => c.id === customCurse)?.name : "Нет"}
-                        accentColor="purple"
-                        onClick={() => setShowCursePicker(true)}
-                        isModified={isCurseModified}
-                    />
+                {/* Modifiers Section */}
+                <div className="w-full max-w-5xl mx-auto mt-8 mb-16 px-2">
+                    <h2 className="text-sm font-bold text-stone-500 uppercase tracking-widest mb-4 flex items-center gap-2 px-1">
+                        <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
+                        Модификаторы
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Curse */}
+                        <CategoryCard 
+                            icon={customCurse ? (CURSES.find(c => c.id === customCurse)?.icon || "👻") : "👻"}
+                            label="Проклятие"
+                            subtitle={customCurse ? CURSES.find(c => c.id === customCurse)?.name : "Нет"}
+                            accentColor="purple"
+                            onClick={() => setShowCursePicker(true)}
+                            isModified={isCurseModified}
+                        />
+                    </div>
+                </div>
                 </div>
             </div>
 
-            {/* Bottom Actions */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col md:flex-row gap-4 justify-center items-center mt-auto pt-8">
-                <button 
-                    onClick={() => setShowSaveTemplate(true)}
-                    className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-stone-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-stone-200 transition-all font-bold uppercase tracking-widest text-xs group"
-                >
-                    <Save size={18} className="group-hover:scale-110 transition-transform"/>
-                    Сохранить шаблон
-                </button>
-                
-                <button 
-                    onClick={handleStartCustom}
-                    className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-indigo-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-indigo-300 transition-all font-bold uppercase tracking-widest text-xs group"
-                >
-                    <Swords size={18} className="group-hover:rotate-12 transition-transform"/>
-                    Начать кастом забег
-                </button>
+            {/* Bottom Actions - Fixed */}
+            <div className="relative z-10 w-full p-4 bg-[#141211]/80 backdrop-blur-md border-t border-stone-800 shrink-0">
+                <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-4 justify-center items-center">
+                    <button 
+                        onClick={() => setShowSaveTemplate(true)}
+                        className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-stone-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-stone-200 transition-all font-bold uppercase tracking-widest text-xs group"
+                    >
+                        <Save size={18} className="group-hover:scale-110 transition-transform"/>
+                        Сохранить шаблон
+                    </button>
+                    
+                    <button 
+                        onClick={handleStartCustom}
+                        className="w-full md:w-auto px-6 py-4 bg-stone-900 border border-stone-700 hover:border-indigo-500 rounded-xl flex items-center justify-center gap-3 text-stone-400 hover:text-indigo-300 transition-all font-bold uppercase tracking-widest text-xs group"
+                    >
+                        <Swords size={18} className="group-hover:rotate-12 transition-transform"/>
+                        Начать кастом забег
+                    </button>
 
-                <button 
-                    onClick={onStartStandard}
-                    className="w-full md:w-auto px-8 py-4 bg-stone-100 text-stone-950 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:scale-105 transition-all shadow-lg shadow-stone-900/50"
-                >
-                    <Play size={18} fill="currentColor" />
-                    Начать обычный забег
-                </button>
+                    <button 
+                        onClick={onStartStandard}
+                        className="w-full md:w-auto px-8 py-4 bg-stone-100 text-stone-950 rounded-xl flex items-center justify-center gap-3 font-bold uppercase tracking-widest text-xs hover:bg-white hover:scale-105 transition-all shadow-lg shadow-stone-900/50"
+                    >
+                        <Play size={18} fill="currentColor" />
+                        Начать обычный забег
+                    </button>
+                </div>
             </div>
 
             <AnimatePresence>

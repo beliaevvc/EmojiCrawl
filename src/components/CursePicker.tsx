@@ -1,6 +1,6 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { CURSES, CurseDef } from '../data/curses';
+import { CURSES } from '../data/curses';
 import { CurseType } from '../types/game';
 
 interface CursePickerProps {

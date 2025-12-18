@@ -132,6 +132,7 @@ export interface GameState {
   lastEffect?: { type: string; targetId: string; value?: number; timestamp: number } | { type: string; targetId: string; value?: number; timestamp: number }[];
   isGodMode: boolean;
   curse: CurseType | null; // Active curse
+  hasActed: boolean; // Блокирует выбор проклятия после первого действия
 }
 
 export const MAX_HP = 13;
