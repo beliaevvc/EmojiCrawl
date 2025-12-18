@@ -285,10 +285,41 @@ export const RulesModal = ({ onClose }: { onClose: () => void }) => {
 
                     <div className="w-full h-px bg-stone-800"></div>
 
-                    {/* 8. Win/Loss */}
+                    {/* 8. Curses */}
+                    <section className="space-y-4">
+                        <h3 className="text-stone-100 font-bold text-lg flex items-center gap-2">
+                            <span className="text-rose-500">8.</span> Проклятья
+                        </h3>
+                        
+                        <div className="flex flex-col md:flex-row items-center gap-6 bg-stone-950/30 p-4 rounded-lg border border-stone-800">
+                            {/* Visual Curse Token */}
+                            <div className="relative shrink-0">
+                                <div className="w-16 h-16 rounded-full bg-stone-900 border border-stone-600 flex items-center justify-center text-4xl shadow-lg relative z-10">
+                                    <span className="filter drop-shadow-lg">☁️</span>
+                                </div>
+                                {/* Glow Effect */}
+                                <div className="absolute inset-0 bg-stone-400/20 blur-xl rounded-full scale-125 pointer-events-none"></div>
+                            </div>
+
+                            <div className="text-sm text-stone-300 space-y-2">
+                                <p>
+                                    Иногда в начале игры появляются <strong>Проклятья</strong>. Не пугайтесь названия — это особые условия, которые меняют правила забега.
+                                </p>
+                                <ul className="list-disc list-inside text-stone-400 space-y-1">
+                                    <li>Они могут быть как <span className="text-rose-400">негативными</span> (усложнять игру), так и <span className="text-emerald-400">позитивными</span> (давать бонусы).</li>
+                                    <li>Выбор проклятья доступен <strong>только до первого действия</strong>.</li>
+                                    <li>Как только вы сделали ход — проклятье фиксируется (или пропадает, если не выбрано) до конца игры.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div className="w-full h-px bg-stone-800"></div>
+
+                    {/* 9. Win/Loss */}
                     <section className="space-y-2">
                         <h3 className="text-stone-100 font-bold text-lg flex items-center gap-2">
-                            <span className="text-rose-500">8.</span> Победа и поражение
+                            <span className="text-rose-500">9.</span> Победа и поражение
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="bg-emerald-950/20 border border-emerald-900/50 p-3 rounded-lg">

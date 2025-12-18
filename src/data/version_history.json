@@ -1,7 +1,12 @@
 {
-  "version": "0.0.135",
-  "buildDate": "12/18/2025, 10:02:44 PM",
+  "version": "0.0.136",
+  "buildDate": "12/18/2025, 10:17:14 PM",
   "commits": [
+    {
+      "hash": "ba03794",
+      "date": "18.12.2025 22:16",
+      "message": "Обновление системы проклятий: добавлены новые механики (Отравление, Закалка, Жадность) с соответствующими визуальными и функциональными изменениями. Обновлены компоненты GameScreen и CurseActivationBanner для интеграции новых эффектов. Обновлена документация в memory-bank/gameMechanics.md, memory-bank/gameContent.md и memory-bank/uiDesign.md для отражения изменений."
+    },
     {
       "hash": "8cf3fdb",
       "date": "18.12.2025 21:17",
@@ -246,11 +251,6 @@
       "hash": "78fa9cf",
       "date": "16.12.2025 08:49",
       "message": "Refactor NotesModal to consolidate window state management, enabling persistent resizing and repositioning. Introduce new resize handles for improved user interaction and update local storage handling for window dimensions."
-    },
-    {
-      "hash": "ad7aa88",
-      "date": "16.12.2025 08:45",
-      "message": "Refactor NotesModal component to enhance interaction handling for resizing and moving. Introduce new state management for position and size, improving user experience with draggable and resizable modal functionality."
     }
   ]
 }
