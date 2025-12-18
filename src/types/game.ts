@@ -14,7 +14,12 @@ export type MonsterAbilityType =
 
 export type MonsterLabelType = 'ordinary' | 'tank' | 'medium' | 'mini-boss' | 'boss';
 
-export type CurseType = 'fog' | 'full_moon';
+export type CurseType =
+    | 'fog'
+    | 'full_moon'
+    | 'poison'      // 🥦 Отравление: зелья лечат хуже
+    | 'tempering'   // 🛠️ Закалка: оружие сильнее
+    | 'greed';      // 💰 Жадность: +2 💎 от любой монеты (облачный бонус)
 
 export interface Card {
   id: string;

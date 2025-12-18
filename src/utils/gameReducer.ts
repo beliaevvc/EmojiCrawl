@@ -445,9 +445,10 @@ const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' 
 const updateMirrorMonsters = (state: GameState): GameState => {
     // Calculate max weapon damage
     let maxDmg = 0;
-    if (state.leftHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.leftHand.card.value);
-    if (state.rightHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.rightHand.card.value);
-    if (state.backpack.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.backpack.card.value);
+    const temperingBonus = state.curse === 'tempering' ? 1 : 0;
+    if (state.leftHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.leftHand.card.value + temperingBonus);
+    if (state.rightHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.rightHand.card.value + temperingBonus);
+    if (state.backpack.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.backpack.card.value + temperingBonus);
 
     let newState = { ...state };
     const newSlots = [...newState.enemySlots];
@@ -609,6 +610,9 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
     if (!weapon || weapon.type !== 'weapon') return { state };
 
     let damage = weapon.value;
+    if (newState.curse === 'tempering') {
+        damage += 1;
+    }
     
     // Miss Ability (Debuff on player)
     if (newState.activeEffects.includes('miss')) {
@@ -1012,6 +1016,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          blocked = true;
 
          const offeringMonsters = newState.enemySlots.filter(c => c?.type === 'monster' && c.ability === 'offering');
+         const greedBonus = newState.curse === 'greed' ? 2 : 0;
          
          if (offeringMonsters.length > 0) {
              const newSlots = [...newState.enemySlots];
@@ -1039,12 +1044,30 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              
              newState.enemySlots = newSlots;
              logType = 'combat';
-             nextState = newState;
+             
+             // Greed is a "cloud bonus": it does NOT increase the coin value / offering heal,
+             // but still grants +2 💎 to the player for using any coin.
+             if (greedBonus > 0) {
+                 const withGreed = updateStats(
+                     {
+                         ...newState,
+                         player: { ...newState.player, coins: newState.player.coins + greedBonus }
+                     },
+                     { coinsCollected: newState.stats.coinsCollected + greedBonus }
+                 );
+                 nextState = withGreed;
+                 logMessage += ` ЖАДНОСТЬ: +${greedBonus} 💎.`;
+                 logType = 'gain';
+             } else {
+                 nextState = newState;
+             }
          } else {
-             playerUpdates = { coins: newState.player.coins + card.value };
-             logMessage += `Собрано: +${card.value} монет`;
+             const gained = card.value + greedBonus;
+             playerUpdates = { coins: newState.player.coins + gained };
+             logMessage += `Собрано: +${gained} монет`;
+             if (greedBonus > 0) logMessage += ` (ЖАДНОСТЬ: +${greedBonus})`;
              logType = 'gain';
-             nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + card.value });
+             nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + gained });
          }
       } else if (card.type === 'potion' && action.hand !== 'backpack') {
          newState.discardPile = [...newState.discardPile, card];
@@ -1054,7 +1077,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          let rotMod = 0;
          if (hasActiveAbility(newState, 'rot')) rotMod = -2;
          
-         const effectiveHeal = Math.max(0, healAmount + rotMod);
+         let poisonMod = 0;
+         if (newState.curse === 'poison') poisonMod = -1;
+         
+         const effectiveHeal = Math.max(0, healAmount + rotMod + poisonMod);
 
          const neededHeal = newState.player.maxHp - newState.player.hp;
          const overheal = Math.max(0, effectiveHeal - neededHeal);
@@ -1065,6 +1091,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
          
          logMessage += `Выпито зелье: +${actualHeal} HP`;
          if (rotMod < 0) logMessage += ' (ГНИЛЬ: -2)';
+         if (poisonMod < 0) logMessage += ' (ОТРАВЛЕНИЕ: -1)';
          
          nextState = updateStats(nextState, { hpHealed: newState.stats.hpHealed + actualHeal });
 

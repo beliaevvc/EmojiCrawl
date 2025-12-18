@@ -874,6 +874,22 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const hasRot = state.enemySlots.some(card => 
       card && card.type === 'monster' && card.ability === 'rot'
   );
+  
+  const getCardModifier = (card: Card | null): number => {
+      if (!card) return 0;
+      if (card.type === 'potion') {
+          const rotMod = hasRot ? -2 : 0;
+          const poisonMod = state.curse === 'poison' ? -1 : 0;
+          return rotMod + poisonMod;
+      }
+      if (card.type === 'weapon') {
+          return state.curse === 'tempering' ? 1 : 0;
+      }
+      if (card.type === 'coin') {
+          return state.curse === 'greed' ? 2 : 0;
+      }
+      return 0;
+  };
 
   const hasWeb = state.enemySlots.some(card => 
       card && card.type === 'monster' && card.ability === 'web'
@@ -1139,7 +1155,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                                 isDraggable={true} 
                                 onClick={() => handleCardClick(card)}
                                 isBlocked={isStealthBlocked(card)}
-                                penalty={hasRot && card.type === 'potion' ? -2 : 0}
+                                penalty={getCardModifier(card)}
                            /> 
                         )}
                     </AnimatePresence>
@@ -1164,7 +1180,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                       // FIX: Only pass interaction handler if card is a SHIELD
                       onInteract={state.leftHand.card?.type === 'shield' ? handleMonsterInteraction('shield_left') : undefined}
                       onCardClick={() => state.leftHand.card && handleCardClick(state.leftHand.card)}
-                      penalty={hasRot && state.leftHand.card?.type === 'potion' ? -2 : 0}
+                      penalty={getCardModifier(state.leftHand.card)}
                       location="hand"
                   />
               </div>
@@ -1225,7 +1241,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                       // FIX: Only pass interaction handler if card is a SHIELD
                       onInteract={state.rightHand.card?.type === 'shield' ? handleMonsterInteraction('shield_right') : undefined}
                       onCardClick={() => state.rightHand.card && handleCardClick(state.rightHand.card)}
-                      penalty={hasRot && state.rightHand.card?.type === 'potion' ? -2 : 0}
+                      penalty={getCardModifier(state.rightHand.card)}
                       location="hand"
                   />
               </div>
@@ -1241,7 +1257,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                   isBlocked={hasWeb || state.backpack.blocked}
                   canDropItem={(item) => item.type !== 'monster' && item.location !== 'hand'}
                   onCardClick={() => state.backpack.card && handleCardClick(state.backpack.card)}
-                  penalty={hasRot && state.backpack.card?.type === 'potion' ? -2 : 0}
+                  penalty={getCardModifier(state.backpack.card)}
                   location="backpack"
               />
               {hasWeb && (

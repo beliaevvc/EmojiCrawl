@@ -10,7 +10,7 @@ interface CardProps {
   isDraggable?: boolean;
   onClick?: () => void;
   isBlocked?: boolean;
-  penalty?: number; // New prop for visual penalty
+  penalty?: number; // Visual modifier (can be negative or positive)
   onDragChange?: (isDragging: boolean) => void;
   location?: 'hand' | 'backpack' | 'field'; // Added location prop
 }
@@ -81,8 +81,14 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
     }
   }
 
-  const displayValue = penalty ? Math.max(0, card.value + penalty) : card.value;
-  const isDebuffed = penalty !== 0;
+  const modifier = penalty || 0;
+  const isModified = modifier !== 0;
+  const isBuff = modifier > 0;
+
+  // Coins: do NOT "change nominal" in the main badge; show bonus separately.
+  const applyModifierToMainBadge = card.type !== 'coin';
+  const displayValue = (isModified && applyModifierToMainBadge) ? Math.max(0, card.value + modifier) : card.value;
+  const modifierLabel = modifier > 0 ? `+${modifier}` : `${modifier}`;
 
   return (
     <motion.div
@@ -113,7 +119,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
         ${(isDraggable && !isBlocked) ? 'cursor-grab active:cursor-grabbing hover:scale-105' : (onClick ? 'cursor-help' : 'cursor-default')} 
         select-none z-10
         ${isShaking ? 'ring-4 ring-rose-500' : ''}
-        ${isDebuffed ? 'ring-2 ring-rose-500/50' : ''} 
+        ${isModified ? (isBuff ? 'ring-2 ring-emerald-500/50' : 'ring-2 ring-rose-500/50') : ''} 
       `}
     >
       {/* Card Back for Hidden Cards (Universal) */}
@@ -131,16 +137,18 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
                 <div className={`
                 absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-5 h-5 md:w-7 md:h-7 rounded-full 
                 flex items-center justify-center text-[10px] md:text-xs font-bold shadow-md z-10
-                ${isDebuffed ? 'bg-stone-900 text-rose-400 border border-rose-500' : (card.type === 'monster' ? 'bg-rose-700 text-rose-100 border border-rose-500' : 'bg-stone-700 text-stone-200 border border-stone-500')}
+                ${isModified
+                    ? (isBuff ? 'bg-stone-900 text-emerald-300 border border-emerald-500' : 'bg-stone-900 text-rose-400 border border-rose-500')
+                    : (card.type === 'monster' ? 'bg-rose-700 text-rose-100 border border-rose-500' : 'bg-stone-700 text-stone-200 border border-stone-500')}
                 `}>
                 {displayValue}
                 </div>
             )}
             
             {/* Penalty Indicator */}
-            {isDebuffed && (
-                <div className="absolute bottom-5 -right-2 md:bottom-7 md:-right-3 text-[10px] md:text-xs font-bold text-rose-500 drop-shadow-black animate-pulse bg-black/50 px-1 rounded">
-                    {penalty}
+            {isModified && (
+                <div className={`absolute bottom-5 -right-2 md:bottom-7 md:-right-3 text-[10px] md:text-xs font-bold drop-shadow-black animate-pulse bg-black/50 px-1 rounded ${isBuff ? 'text-emerald-400' : 'text-rose-500'}`}>
+                    {modifierLabel}
                 </div>
             )}
             

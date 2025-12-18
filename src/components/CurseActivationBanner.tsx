@@ -24,6 +24,22 @@ export const CurseActivationBanner = ({ curse }: CurseActivationBannerProps) => 
     }, [curse]);
 
     const curseDef = activeCurse ? CURSES.find(c => c.id === activeCurse) : null;
+    const glowClass = (() => {
+        switch (activeCurse) {
+            case 'fog':
+                return 'bg-stone-400';
+            case 'full_moon':
+                return 'bg-amber-600';
+            case 'poison':
+                return 'bg-lime-500';
+            case 'tempering':
+                return 'bg-cyan-400';
+            case 'greed':
+                return 'bg-yellow-500';
+            default:
+                return 'bg-stone-600';
+        }
+    })();
 
     return (
         <AnimatePresence>
@@ -37,7 +53,7 @@ export const CurseActivationBanner = ({ curse }: CurseActivationBannerProps) => 
                 >
                     <div className="relative">
                         {/* Backdrop Glow */}
-                        <div className={`absolute inset-0 blur-3xl opacity-30 scale-150 ${activeCurse === 'fog' ? 'bg-stone-400' : 'bg-amber-600'}`}></div>
+                        <div className={`absolute inset-0 blur-3xl opacity-30 scale-150 ${glowClass}`}></div>
                         
                         <div className="bg-stone-950/90 border border-stone-700 backdrop-blur-md px-10 py-6 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col items-center text-center max-w-md mx-4 relative overflow-hidden">
                             {/* Decorative Lines */}

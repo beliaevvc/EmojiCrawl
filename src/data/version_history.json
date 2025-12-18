@@ -1,7 +1,12 @@
 {
-  "version": "0.0.134",
-  "buildDate": "12/18/2025, 9:17:02 PM",
+  "version": "0.0.135",
+  "buildDate": "12/18/2025, 10:02:44 PM",
   "commits": [
+    {
+      "hash": "8cf3fdb",
+      "date": "18.12.2025 21:17",
+      "message": "Обновление системы проклятий и улучшение документации"
+    },
     {
       "hash": "65504d2",
       "date": "18.12.2025 21:09",
@@ -246,11 +251,6 @@
       "hash": "ad7aa88",
       "date": "16.12.2025 08:45",
       "message": "Refactor NotesModal component to enhance interaction handling for resizing and moving. Introduce new state management for position and size, improving user experience with draggable and resizable modal functionality."
-    },
-    {
-      "hash": "0cdfdef",
-      "date": "16.12.2025 05:18",
-      "message": "Add Notes feature to DeckbuilderScreen with modal integration"
     }
   ]
 }
