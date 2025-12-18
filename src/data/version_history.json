@@ -1,7 +1,12 @@
 {
-  "version": "0.0.131",
-  "buildDate": "12/18/2025, 3:23:30 AM",
+  "version": "0.0.132",
+  "buildDate": "12/18/2025, 1:04:35 PM",
   "commits": [
+    {
+      "hash": "8fe8b23",
+      "date": "18.12.2025 04:40",
+      "message": "Refactor CategoryCard component for improved styling and functionality"
+    },
     {
       "hash": "d579581",
       "date": "18.12.2025 03:16",
@@ -246,11 +251,6 @@
       "hash": "ab189e7",
       "date": "16.12.2025 04:43",
       "message": "Enhance GameScreen and gameReducer to prevent selling 'skull' items from the backpack. Update visual feedback for 'skull' sales and adjust hand clearing logic to include 'skull' type, improving game state management and user experience."
-    },
-    {
-      "hash": "43af456",
-      "date": "16.12.2025 04:08",
-      "message": "Remove 'graveyard' ability and associated logic from monster abilities and game reducer. Update relevant types to reflect this change, streamlining the codebase and improving maintainability."
     }
   ]
 }

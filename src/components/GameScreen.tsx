@@ -19,6 +19,7 @@ import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import { MonsterLabelsWindow } from './MonsterLabelsWindow';
 import { HUDSettingsModal } from './HUDSettingsModal';
 import { MonsterLabelType } from '../types/game';
+import { useWalletStore } from '../stores/useWalletStore';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
 
@@ -396,6 +397,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [showHUDSettings, setShowHUDSettings] = useState(false);
   const [isResetHovered, setIsResetHovered] = useState(false);
   const [hudVisibility, setHudVisibility] = useState<HUDVisibility>(loadUIVisibility());
+  const { addCrystals } = useWalletStore();
 
   // Sequential HP Visualization
   const [visualHp, setVisualHp] = useState(state.player.hp);
@@ -582,10 +584,15 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
     });
   }, []);
 
-  // Monitor Game Status for Saving
+  // Monitor Game Status for Saving and Wallet
   useEffect(() => {
       if (state.status === 'won' || state.status === 'lost') {
           saveRun(state.stats, state.status, state.overheads);
+          
+          // Add crystals to wallet on win
+          if (state.status === 'won' && state.player.coins > 0) {
+              addCrystals(state.player.coins);
+          }
       }
   }, [state.status, state.stats, state.overheads]);
 

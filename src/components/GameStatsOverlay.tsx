@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GameStats } from '../types/game';
 import { Skull, Trophy, RefreshCw, LogOut } from 'lucide-react';
 
@@ -55,9 +55,21 @@ export const GameStatsOverlay = ({ stats, status, playerHp, onRestart, onExit }:
                     </h2>
                     
                     {isWin && (
-                        <p className="mt-2 text-emerald-200/60 text-sm font-bold tracking-widest uppercase">
-                            Остаток HP: <span className="text-emerald-400 text-lg ml-1">{playerHp}</span>
-                        </p>
+                        <div className="mt-4 flex flex-col items-center gap-1">
+                            <p className="text-emerald-200/60 text-sm font-bold tracking-widest uppercase">
+                                Остаток HP: <span className="text-emerald-400 text-lg ml-1">{playerHp}</span>
+                            </p>
+                            {stats.coinsCollected > 0 && (
+                                <motion.p 
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="text-amber-200/60 text-sm font-bold tracking-widest uppercase flex items-center gap-2 bg-amber-900/10 px-3 py-1 rounded-full border border-amber-500/10"
+                                >
+                                    Добыча: <span className="text-amber-400 text-lg ml-1">+{stats.coinsCollected} 💎</span>
+                                </motion.p>
+                            )}
+                        </div>
                     )}
                 </div>
 

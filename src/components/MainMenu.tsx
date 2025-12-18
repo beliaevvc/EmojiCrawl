@@ -10,6 +10,8 @@ import versionData from '../data/version_history.json';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useDevQuestStore } from '../stores/useDevQuestStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
+import { WalletComponent } from './WalletComponent';
+import { useWalletStore } from '../stores/useWalletStore';
 
 const QUOTES = [
     "Серега конечно красавчик, такой прототип запилил",
@@ -124,6 +126,7 @@ interface MainMenuProps {
 const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: MainMenuProps) => {
   const { completeAnomaly } = useDevQuestStore();
   const { isScreensaverEnabled } = useSettingsStore();
+  const { fetchBalance } = useWalletStore();
   const [showLoadTemplate, setShowLoadTemplate] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -561,6 +564,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
 
   useEffect(() => {
     initializeAuth();
+    fetchBalance(); // Загружаем баланс при старте
   }, []);
 
   // Stickers Configuration
@@ -791,6 +795,10 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         className="mb-12 text-center z-10 relative"
       >
         <div className={`absolute -top-16 left-1/2 -translate-x-1/2 flex items-center gap-4 transition-opacity duration-300 ${chaosStage !== 'idle' ? 'opacity-0' : 'opacity-100'}`}>
+             
+             {/* Wallet */}
+             <WalletComponent />
+
              {/* Auth Button / User Profile */}
              <AnimatePresence mode="wait">
                 {user ? (

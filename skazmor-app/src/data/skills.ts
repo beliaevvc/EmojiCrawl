@@ -35,3 +35,6 @@ export const SKILLS: SkillDefinition[] = [
 
 
 
+
+
+

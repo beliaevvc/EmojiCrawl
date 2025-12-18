@@ -1,0 +1,11 @@
+# Rules for Skazmor Project
+
+## Documentation Maintenance
+- **ALWAYS** update `memory-bank/gameMechanics.md` when modifying game logic, rules, or mechanics in the code (especially `gameReducer.ts`).
+- **ALWAYS** update `memory-bank/gameContent.md` when adding or modifying game content (cards, monsters, spells, abilities).
+- **ALWAYS** consult `memory-bank/uiDesign.md` when creating UI and update it when changing the design system.
+- Keep documentation in Russian as per user preference.
+
+## Language
+- Communicate in Russian.
+
