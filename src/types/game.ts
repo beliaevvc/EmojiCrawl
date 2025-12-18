@@ -14,6 +14,8 @@ export type MonsterAbilityType =
 
 export type MonsterLabelType = 'ordinary' | 'tank' | 'medium' | 'mini-boss' | 'boss';
 
+export type CurseType = 'fog' | 'full_moon';
+
 export interface Card {
   id: string;
   type: CardType;
@@ -26,6 +28,7 @@ export interface Card {
   name?: string;
   description?: string;
   priceMultiplier?: number;
+  isHidden?: boolean; // For Fog curse
 }
 
 export interface Player {
@@ -91,6 +94,7 @@ export interface DeckConfig {
     coins: number[];
     spells: SpellType[];
     monsters: MonsterGroupConfig[];
+    curse?: CurseType | null; // Added curse config
 }
 
 export interface DeckTemplate {
@@ -127,6 +131,7 @@ export interface GameState {
   scoutCards: Card[] | null;
   lastEffect?: { type: string; targetId: string; value?: number; timestamp: number } | { type: string; targetId: string; value?: number; timestamp: number }[];
   isGodMode: boolean;
+  curse: CurseType | null; // Active curse
 }
 
 export const MAX_HP = 13;

@@ -9,14 +9,160 @@ import PotionsEditor from './PotionsEditor';
 import CoinsEditor from './CoinsEditor';
 import SpellsEditor from './SpellsEditor';
 import MonstersEditor, { DEFAULT_MONSTER_GROUPS } from './MonstersEditor';
-import { DeckConfig, SpellType, MonsterGroupConfig, DeckTemplate } from '../types/game';
+import { DeckConfig, SpellType, MonsterGroupConfig, DeckTemplate, CurseType } from '../types/game';
 import { BASE_SPELLS } from '../data/spells';
 import { ConfirmationModal } from './ConfirmationModal';
 import SaveTemplateModal from './SaveTemplateModal';
 import { saveTemplate } from '../utils/storage';
 import { encodeDeckConfig, decodeDeckConfig } from '../utils/shareUtils';
+import { CURSES } from '../data/curses';
+import { CursePicker } from './CursePicker';
 
 // ... (CategoryCard component remains same)
+const CategoryCard = ({ 
+    icon, 
+    label, 
+    count, 
+    onClick,
+    accentColor = "stone",
+    isModified = false,
+    subtitle
+}: { 
+    icon: string; 
+    label: string; 
+    count?: number; 
+    onClick?: () => void;
+    accentColor?: "stone" | "rose" | "emerald" | "amber" | "indigo" | "sky" | "purple";
+    isModified?: boolean;
+    subtitle?: string;
+}) => {
+    const styles = {
+        stone: { 
+            border: "border-stone-400", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-stone-900/50",
+            ring: "ring-stone-600/30",
+            text: "text-stone-400",
+            glow: "group-hover:bg-stone-500/5"
+        },
+        rose: { 
+            border: "border-rose-800", 
+            bg: "bg-rose-950/40", 
+            shadow: "shadow-rose-900/50",
+            ring: "ring-rose-600/30",
+            text: "text-rose-400",
+            glow: "group-hover:bg-rose-500/5"
+        },
+        emerald: { 
+            border: "border-emerald-700", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-emerald-900/50",
+            ring: "ring-emerald-600/30",
+            text: "text-emerald-400",
+            glow: "group-hover:bg-emerald-500/5"
+        },
+        amber: { 
+            border: "border-amber-500", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-amber-900/50",
+            ring: "ring-amber-600/30",
+            text: "text-amber-400",
+            glow: "group-hover:bg-amber-500/5"
+        },
+        indigo: { 
+            border: "border-indigo-500", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-indigo-900/50",
+            ring: "ring-indigo-600/30",
+            text: "text-indigo-400",
+            glow: "group-hover:bg-indigo-500/5"
+        },
+        sky: { 
+            border: "border-sky-500", 
+            bg: "bg-stone-800/80", 
+            shadow: "shadow-sky-900/50",
+            ring: "ring-sky-600/30",
+            text: "text-sky-400",
+            glow: "group-hover:bg-sky-500/5"
+        },
+        purple: {
+            border: "border-purple-500",
+            bg: "bg-stone-800/80",
+            shadow: "shadow-purple-900/50",
+            ring: "ring-purple-600/30",
+            text: "text-purple-400",
+            glow: "group-hover:bg-purple-500/5"
+        }
+    }[accentColor];
+
+    return (
+        <motion.div 
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClick}
+            className={`
+                relative group cursor-pointer overflow-hidden
+                flex flex-col items-center justify-center gap-4
+                h-48 w-full rounded-2xl 
+                bg-stone-900/40 backdrop-blur-sm border border-stone-800
+                transition-all duration-300
+                hover:border-stone-600 hover:shadow-2xl
+            `}
+        >
+            <div className={`absolute inset-0 transition-colors duration-500 ${styles.glow}`}></div>
+            
+            {/* Background Pattern/Icon Faded */}
+            <div className="absolute -right-4 -bottom-4 text-8xl opacity-[0.03] select-none pointer-events-none filter grayscale contrast-200">
+                {icon}
+            </div>
+
+            {/* Game Token Style Circle */}
+            <div className={`
+                relative z-10 
+                w-20 h-20 rounded-full flex items-center justify-center text-4xl
+                border-2 ${styles.border} ${styles.bg}
+                shadow-[0_0_15px_rgba(0,0,0,0.3)]
+                ring-4 ${styles.ring}
+                group-hover:scale-110 transition-transform duration-300
+            `}>
+                {icon}
+            </div>
+
+            <div className="flex flex-col items-center z-10">
+                <span className={`font-bold uppercase tracking-widest text-xs transition-colors duration-300 ${styles.text} group-hover:text-stone-200`}>
+                    {label}
+                </span>
+                {count !== undefined && (
+                    <span className="text-[10px] text-stone-500 font-mono mt-1 group-hover:text-stone-400 transition-colors">
+                        {count} items
+                    </span>
+                )}
+                {subtitle && (
+                    <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mt-1 group-hover:text-stone-400 transition-colors">
+                        {subtitle}
+                    </span>
+                )}
+            </div>
+
+            {/* Badges */}
+            <div className="absolute top-3 left-3">
+                 {isModified && (
+                    <div className="bg-rose-500/20 border border-rose-500/50 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse flex items-center">
+                        EDITED
+                    </div>
+                )}
+            </div>
+
+            <div className="absolute top-3 right-3 flex gap-2">
+                {count !== undefined && (
+                    <div className="w-6 h-6 bg-stone-950/80 border border-stone-800 text-stone-400 text-[10px] font-mono font-bold flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm">
+                        {count}
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+};
 
 const ExportModal = ({ config, onClose }: { config: DeckConfig, onClose: () => void }) => {
     const [copied, setCopied] = useState(false);
@@ -125,136 +271,6 @@ interface DeckbuilderScreenProps {
     initialTemplate?: DeckTemplate | null;
 }
 
-const CategoryCard = ({ 
-    icon, 
-    label, 
-    count, 
-    onClick,
-    accentColor = "stone",
-    isModified = false
-}: { 
-    icon: string; 
-    label: string; 
-    count?: number; 
-    onClick?: () => void;
-    accentColor?: "stone" | "rose" | "emerald" | "amber" | "indigo" | "sky";
-    isModified?: boolean;
-}) => {
-    const styles = {
-        stone: { 
-            border: "border-stone-400", 
-            bg: "bg-stone-800/80", 
-            shadow: "shadow-stone-900/50",
-            ring: "ring-stone-600/30",
-            text: "text-stone-400",
-            glow: "group-hover:bg-stone-500/5"
-        },
-        rose: { 
-            border: "border-rose-800", 
-            bg: "bg-rose-950/40", 
-            shadow: "shadow-rose-900/50",
-            ring: "ring-rose-600/30",
-            text: "text-rose-400",
-            glow: "group-hover:bg-rose-500/5"
-        },
-        emerald: { 
-            border: "border-emerald-700", 
-            bg: "bg-stone-800/80", 
-            shadow: "shadow-emerald-900/50",
-            ring: "ring-emerald-600/30",
-            text: "text-emerald-400",
-            glow: "group-hover:bg-emerald-500/5"
-        },
-        amber: { 
-            border: "border-amber-500", 
-            bg: "bg-stone-800/80", 
-            shadow: "shadow-amber-900/50",
-            ring: "ring-amber-600/30",
-            text: "text-amber-400",
-            glow: "group-hover:bg-amber-500/5"
-        },
-        indigo: { 
-            border: "border-indigo-500", 
-            bg: "bg-stone-800/80", 
-            shadow: "shadow-indigo-900/50",
-            ring: "ring-indigo-600/30",
-            text: "text-indigo-400",
-            glow: "group-hover:bg-indigo-500/5"
-        },
-        sky: { 
-            border: "border-sky-500", 
-            bg: "bg-stone-800/80", 
-            shadow: "shadow-sky-900/50",
-            ring: "ring-sky-600/30",
-            text: "text-sky-400",
-            glow: "group-hover:bg-sky-500/5"
-        },
-    }[accentColor];
-
-    return (
-        <motion.div 
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onClick}
-            className={`
-                relative group cursor-pointer overflow-hidden
-                flex flex-col items-center justify-center gap-4
-                h-48 w-full rounded-2xl 
-                bg-stone-900/40 backdrop-blur-sm border border-stone-800
-                transition-all duration-300
-                hover:border-stone-600 hover:shadow-2xl
-            `}
-        >
-            <div className={`absolute inset-0 transition-colors duration-500 ${styles.glow}`}></div>
-            
-            {/* Background Pattern/Icon Faded */}
-            <div className="absolute -right-4 -bottom-4 text-8xl opacity-[0.03] select-none pointer-events-none filter grayscale contrast-200">
-                {icon}
-            </div>
-
-            {/* Game Token Style Circle */}
-            <div className={`
-                relative z-10 
-                w-20 h-20 rounded-full flex items-center justify-center text-4xl
-                border-2 ${styles.border} ${styles.bg}
-                shadow-[0_0_15px_rgba(0,0,0,0.3)]
-                ring-4 ${styles.ring}
-                group-hover:scale-110 transition-transform duration-300
-            `}>
-                {icon}
-            </div>
-
-            <div className="flex flex-col items-center z-10">
-                <span className={`font-bold uppercase tracking-widest text-xs transition-colors duration-300 ${styles.text} group-hover:text-stone-200`}>
-                    {label}
-                </span>
-                {count !== undefined && (
-                    <span className="text-[10px] text-stone-500 font-mono mt-1 group-hover:text-stone-400 transition-colors">
-                        {count} items
-                    </span>
-                )}
-            </div>
-
-            {/* Badges */}
-            <div className="absolute top-3 left-3">
-                 {isModified && (
-                    <div className="bg-rose-500/20 border border-rose-500/50 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse flex items-center">
-                        EDITED
-                    </div>
-                )}
-            </div>
-
-            <div className="absolute top-3 right-3 flex gap-2">
-                {count !== undefined && (
-                    <div className="w-6 h-6 bg-stone-950/80 border border-stone-800 text-stone-400 text-[10px] font-mono font-bold flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm">
-                        {count}
-                    </div>
-                )}
-            </div>
-        </motion.div>
-    );
-};
-
 const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemplate }: DeckbuilderScreenProps) => {
     
     // Config State
@@ -265,6 +281,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const [customCoins, setCustomCoins] = useState<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10]);
     const [customSpells, setCustomSpells] = useState<SpellType[]>([...BASE_SPELLS]);
     const [customMonsters, setCustomMonsters] = useState<MonsterGroupConfig[]>(DEFAULT_MONSTER_GROUPS);
+    const [customCurse, setCustomCurse] = useState<CurseType | null>(null);
 
     // Initial Load
     useEffect(() => {
@@ -277,6 +294,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
             setCustomCoins(config.coins);
             setCustomSpells(config.spells);
             setCustomMonsters(config.monsters);
+            setCustomCurse(config.curse || null);
         }
     }, [initialTemplate]);
 
@@ -288,6 +306,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const [showCoinsEditor, setShowCoinsEditor] = useState(false);
     const [showSpellsEditor, setShowSpellsEditor] = useState(false);
     const [showMonstersEditor, setShowMonstersEditor] = useState(false);
+    const [showCursePicker, setShowCursePicker] = useState(false);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
@@ -309,6 +328,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const isCoinsModified = JSON.stringify(customCoins.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10].slice().sort((a,b) => a-b));
     const isSpellsModified = !arraysEqual(customSpells, BASE_SPELLS);
     const isMonstersModified = JSON.stringify(customMonsters) !== JSON.stringify(DEFAULT_MONSTER_GROUPS);
+    const isCurseModified = customCurse !== null;
 
     // Total Counts
     const monsterCount = customMonsters.reduce((acc, g) => acc + g.count, 0);
@@ -321,7 +341,8 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
         potions: customPotions,
         coins: customCoins,
         spells: customSpells,
-        monsters: customMonsters
+        monsters: customMonsters,
+        curse: customCurse
     });
 
     const handleStartCustom = () => {
@@ -336,6 +357,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
         setCustomCoins([2, 3, 4, 5, 6, 7, 8, 9, 10]);
         setCustomSpells([...BASE_SPELLS]);
         setCustomMonsters([...DEFAULT_MONSTER_GROUPS]);
+        setCustomCurse(null);
         setShowResetConfirm(false);
     };
 
@@ -359,6 +381,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
         setCustomCoins(config.coins);
         setCustomSpells(config.spells);
         setCustomMonsters(config.monsters);
+        setCustomCurse(config.curse || null);
     };
 
     return (
@@ -511,16 +534,15 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                         isModified={isSpellsModified}
                     />
 
-                    {/* Empty Slot for symmetry if needed, or maybe a random "Lucky" slot? For now, we leave 7 items, so one space is empty in 4-col grid. 
-                        Let's add a placeholder or info card? Or just leave it. 
-                        Maybe a "Total" card?
-                    */}
-                    <motion.div
-                        className="relative group flex flex-col items-center justify-center h-48 w-full rounded-2xl border-2 border-dashed border-stone-800/50 hover:border-stone-700/50 transition-colors"
-                    >
-                        <div className="text-stone-800 text-4xl mb-2 opacity-50">?</div>
-                        <span className="text-stone-800 text-[10px] font-bold uppercase tracking-widest">Coming Soon</span>
-                    </motion.div>
+                    {/* Curse */}
+                    <CategoryCard 
+                        icon={customCurse ? (CURSES.find(c => c.id === customCurse)?.icon || "👻") : "👻"}
+                        label="Проклятие"
+                        subtitle={customCurse ? CURSES.find(c => c.id === customCurse)?.name : "Нет"}
+                        accentColor="purple"
+                        onClick={() => setShowCursePicker(true)}
+                        isModified={isCurseModified}
+                    />
                 </div>
             </div>
 
@@ -621,6 +643,18 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                             setShowMonstersEditor(false);
                         }}
                         onClose={() => setShowMonstersEditor(false)}
+                    />
+                )}
+                {showCursePicker && (
+                    <CursePicker 
+                        onSelect={(curse) => {
+                            // If re-selecting same, untoggle? No, need a clear button.
+                            // Assuming CursePicker only allows selection. 
+                            // If already selected, maybe just update?
+                            setCustomCurse(curse);
+                            setShowCursePicker(false);
+                        }}
+                        onClose={() => setShowCursePicker(false)}
                     />
                 )}
                 {showResetConfirm && (

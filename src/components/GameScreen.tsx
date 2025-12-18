@@ -20,6 +20,8 @@ import { MonsterLabelsWindow } from './MonsterLabelsWindow';
 import { HUDSettingsModal } from './HUDSettingsModal';
 import { MonsterLabelType } from '../types/game';
 import { useWalletStore } from '../stores/useWalletStore';
+import { CursePicker } from './CursePicker';
+import { CURSES } from '../data/curses';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
 
@@ -395,6 +397,7 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [showInfo, setShowInfo] = useState(false); // Deck Stats & Logs Toggle
   const [showGodModeToggle, setShowGodModeToggle] = useState(false); // Visibility of God Mode button
   const [showHUDSettings, setShowHUDSettings] = useState(false);
+  const [showCursePicker, setShowCursePicker] = useState(false);
   const [isResetHovered, setIsResetHovered] = useState(false);
   const [hudVisibility, setHudVisibility] = useState<HUDVisibility>(loadUIVisibility());
   const { addCrystals } = useWalletStore();
@@ -1015,6 +1018,42 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
                  </span>
             </button>
 
+            {/* Curse Slot */}
+            <div className="relative">
+                {state.curse ? (
+                    <div className="group relative w-10 h-10 md:w-12 md:h-12 rounded-full bg-stone-900/80 border border-stone-600 flex items-center justify-center text-2xl shadow-lg cursor-help transition-all hover:scale-110 hover:border-stone-400">
+                        {CURSES.find(c => c.id === state.curse)?.icon}
+                        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-48 bg-stone-900 border border-stone-600 p-3 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                            <div className="text-center">
+                                <div className="font-bold text-stone-200 text-xs uppercase tracking-wider mb-1">
+                                    {CURSES.find(c => c.id === state.curse)?.name}
+                                </div>
+                                <div className="text-[10px] text-stone-400 leading-tight">
+                                    {CURSES.find(c => c.id === state.curse)?.description}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={() => {
+                            // Only allow picking in round 1 if no curse active
+                            if (state.round === 1) setShowCursePicker(true);
+                        }}
+                        className={`
+                            w-10 h-10 md:w-12 md:h-12 rounded-full 
+                            border-2 border-dashed border-stone-800 bg-stone-900/30 
+                            flex items-center justify-center text-stone-600 
+                            transition-all
+                            ${state.round === 1 ? 'hover:border-stone-500 hover:text-stone-400 cursor-pointer hover:bg-stone-800/50' : 'opacity-30 cursor-default'}
+                        `}
+                        title={state.round === 1 ? "Добавить проклятие" : "Проклятие не выбрано"}
+                    >
+                        {state.round === 1 && <span className="text-xl font-bold">+</span>}
+                    </button>
+                )}
+            </div>
+
             <div className="flex items-center gap-2">
                 <div className="flex items-center gap-3 px-4 py-2 bg-stone-900/90 border border-stone-700 rounded shadow-lg backdrop-blur-sm">
                   <span className="font-bold text-stone-400 text-base tracking-widest font-sans">ОСТАЛОСЬ</span>
@@ -1442,6 +1481,18 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
 
       <AnimatePresence>
           {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+          {showCursePicker && (
+              <CursePicker 
+                  onSelect={(curse) => {
+                      dispatch({ type: 'ACTIVATE_CURSE', curse });
+                      setShowCursePicker(false);
+                  }}
+                  onClose={() => setShowCursePicker(false)}
+              />
+          )}
       </AnimatePresence>
 
       <AnimatePresence>

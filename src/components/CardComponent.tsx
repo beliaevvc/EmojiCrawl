@@ -116,7 +116,14 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
         ${isDebuffed ? 'ring-2 ring-rose-500/50' : ''} 
       `}
     >
-      {card.type !== 'spell' && (
+      {/* Card Back for Hidden Cards (Fog) */}
+      {card.isHidden && (
+         <div className="absolute inset-0 bg-stone-900 rounded-full flex items-center justify-center z-50 border-2 border-stone-700">
+            <div className="text-4xl opacity-20">☁️</div>
+         </div>
+      )}
+
+      {card.type !== 'spell' && !card.isHidden && (
         <div className={`
           absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-5 h-5 md:w-7 md:h-7 rounded-full 
           flex items-center justify-center text-[10px] md:text-xs font-bold shadow-md z-10

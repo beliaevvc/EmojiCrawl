@@ -1,8 +1,9 @@
 // ... imports
-import { GameState, LogEntry, Overheads, GameStats, Card, SpellType, MonsterGroupConfig, MonsterAbilityType, HpUpdate } from '../types/game';
+import { GameState, LogEntry, Overheads, GameStats, Card, SpellType, MonsterGroupConfig, MonsterAbilityType, HpUpdate, CurseType } from '../types/game';
 import { createDeck, shuffleDeck } from './gameLogic';
 import { SPELLS } from '../data/spells';
 import { MONSTER_ABILITIES } from '../data/monsterAbilities';
+import { CURSES } from '../data/curses';
 
 const initialStats: GameStats = {
     monstersKilled: 0,
@@ -41,14 +42,15 @@ export const initialState: GameState = {
   peekType: undefined,
   scoutCards: null,
   isGodMode: false,
-  hpUpdates: []
+  hpUpdates: [],
+  curse: null
 };
 
 // ... (Action Types)
 export type GameAction =
   | { type: 'INIT_GAME' }
   | { type: 'TOGGLE_GOD_MODE' }
-  | { type: 'START_GAME'; deckConfig?: { character: { hp: number; coins: number }; shields: number[]; weapons: number[]; potions: number[]; coins: number[]; spells: SpellType[]; monsters: MonsterGroupConfig[] }; runType?: 'standard' | 'custom'; templateName?: string }
+  | { type: 'START_GAME'; deckConfig?: { character: { hp: number; coins: number }; shields: number[]; weapons: number[]; potions: number[]; coins: number[]; spells: SpellType[]; monsters: MonsterGroupConfig[]; curse?: CurseType | null }; runType?: 'standard' | 'custom'; templateName?: string }
   | { type: 'TAKE_CARD_TO_HAND'; cardId: string; hand: 'left' | 'right' | 'backpack' }
   | { type: 'INTERACT_WITH_MONSTER'; monsterId: string; target: 'player' | 'shield_left' | 'shield_right' | 'weapon_left' | 'weapon_right' }
   | { type: 'USE_SPELL_ON_TARGET'; spellCardId: string; targetId: string }
@@ -56,7 +58,8 @@ export type GameAction =
   | { type: 'RESET_HAND' }
   | { type: 'CHECK_ROUND_END' }
   | { type: 'CLEAR_PEEK' }
-  | { type: 'CLEAR_SCOUT' };
+  | { type: 'CLEAR_SCOUT' }
+  | { type: 'ACTIVATE_CURSE'; curse: CurseType };
 
 // Helpers
 const createLog = (message: string, type: LogEntry['type']): LogEntry => ({
@@ -178,10 +181,6 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
         case 'corpseeater':
             const bonusHp = newState.discardPile.filter(c => c.type === 'coin').length;
             if (bonusHp > 0) {
-                // Update card in slot (it's already placed before this call usually, but we need to find it)
-                // Actually, logic is cleaner if we modify card BEFORE placing.
-                // But deck refilling places card then we might trigger this.
-                // Let's assume we modify the card value in state.
                 const slotIdx = newState.enemySlots.findIndex(c => c?.id === card.id);
                 if (slotIdx !== -1) {
                     const newCard = { ...card, value: card.value + bonusHp, maxHealth: (card.maxHealth || card.value) + bonusHp };
@@ -198,7 +197,6 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
             }
             break;
         case 'exhaustion':
-            // Reduce max HP while alive
             newState.player.maxHp = Math.max(1, newState.player.maxHp - 1);
             if (newState.player.hp > newState.player.maxHp) {
                 newState = setPlayerHp(newState, newState.player.maxHp, 'exhaustion_clamp');
@@ -213,6 +211,30 @@ const applySpawnAbilities = (state: GameState, card: Card): GameState => {
 const applyKillAbilities = (state: GameState, monster: Card, _killer?: 'weapon' | 'spell' | 'other'): GameState => {
     let newState = { ...state, player: { ...state.player } };
     
+    // --- Curse Logic: Full Moon ---
+    if (newState.curse === 'full_moon') {
+        const otherMonsters = newState.enemySlots
+            .map((c, i) => ({ c, i }))
+            .filter(({ c }) => c && c.type === 'monster' && c.id !== monster.id) as { c: Card, i: number }[];
+        
+        if (otherMonsters.length > 0) {
+            const newSlots = [...newState.enemySlots];
+            let healedAny = false;
+            otherMonsters.forEach(({ c, i }) => {
+                const maxHp = c.maxHealth || c.value;
+                if (c.value < maxHp) {
+                    newSlots[i] = { ...c, value: Math.min(maxHp, c.value + 1) };
+                    healedAny = true;
+                }
+            });
+            if (healedAny) {
+                newState.enemySlots = newSlots;
+                newState = addLog(newState, 'ПОЛНОЛУНИЕ: Другие монстры исцелились (+1 HP).', 'info');
+            }
+        }
+    }
+    // -----------------------------
+
     // Global Spell Effect: Trophy (Any kill grants coins)
     if (newState.activeEffects.includes('trophy')) {
         newState.activeEffects = newState.activeEffects.filter(e => e !== 'trophy');
@@ -508,12 +530,6 @@ const handleMonsterAttack = (state: GameState, monster: any, defenseType: 'body'
                 newState.enemySlots = newSlots;
             }
             
-            // If we hit self and died, slot is already null.
-            // If we hit self and lived, slot is updated.
-            // If we hit other, attacker slot (monster) is untouched and should remain.
-            // In all cases, we handled the "outcome" of the attack here, so we return monsterKept=true
-            // to prevent the default "remove attacker" logic in INTERACT_WITH_MONSTER.
-            
             return { state: newState, log, logType: 'combat', monsterKept: true };
         }
 
@@ -622,7 +638,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         // Apply Kill Abilities (monster not in discard yet)
         newState = applyKillAbilities(newState, monster, 'weapon');
 
-        // Add to discard pile AFTER abilities trigger (so Graveyard won't pick self)
+        // Add to discard pile AFTER abilities trigger
         newState.discardPile = [...newState.discardPile, monster];
 
     } else {
@@ -676,7 +692,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
           const newSlots = [...s.enemySlots];
           let deck = [...s.deck];
           
-          // Beacon Ability: increase monster chance (naive implementation: try pull monster from top 5)
           for(let i=0; i<4; i++) {
              if (newSlots[i] === null && deck.length > 0) {
                 let cardToDraw: Card | undefined;
@@ -685,13 +700,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
                 if (cardToDraw) {
                     newSlots[i] = cardToDraw;
-                    // Trigger On Spawn
-                    // We need to apply spawn abilities recursively because state might change
-                    // But here we are inside a pure reducer helper.
-                    // This is tricky.
-                    // Simplified: We cannot easily chain state updates inside this loop without a refactor.
-                    // Limitation: Spawn abilities will activate NEXT action or I need to handle them now.
-                    // Let's try to handle them now by mutating a local temp state 'newState'.
                 }
              }
           }
@@ -720,8 +728,38 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
               }
           });
 
+          // --- Curse Logic: Fog (Deal Round) ---
+          if (newState.curse === 'fog') {
+              // Hide 2 random cards
+              const indices = [0, 1, 2, 3].sort(() => 0.5 - Math.random()).slice(0, 2);
+              const fogSlots = [...newState.enemySlots];
+              let hiddenCount = 0;
+              indices.forEach(i => {
+                  if (fogSlots[i]) {
+                      fogSlots[i] = { ...fogSlots[i]!, isHidden: true };
+                      hiddenCount++;
+                  }
+              });
+              newState.enemySlots = fogSlots;
+              if (hiddenCount > 0) {
+                  newState = addLog(newState, 'ТУМАН: Карты скрыты.', 'info');
+              }
+          }
+          // -------------------------------------
+
           return addLog(newState, `Раунд ${newState.round} начался.`, 'info');
      }
+     
+     // --- Curse Logic: Fog (Reveal) ---
+     if (s.curse === 'fog' && cardsOnTable <= 2) {
+         // Check if any are hidden
+         const hasHidden = s.enemySlots.some(c => c && c.isHidden);
+         if (hasHidden) {
+             const newSlots = s.enemySlots.map(c => c ? { ...c, isHidden: false } : null);
+             return addLog({ ...s, enemySlots: newSlots }, 'Туман рассеивается...', 'info');
+         }
+     }
+     // ---------------------------------
      
      if (cardsOnTable <= 1 && deckEmpty) {
          const clearUsedHand = (hand: any): any => {
@@ -754,14 +792,33 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       logMessage = nextState.isGodMode ? '👑 РЕЖИМ БОГА ВКЛЮЧЕН' : 'РЕЖИМ БОГА ВЫКЛЮЧЕН';
       break;
 
+    case 'ACTIVATE_CURSE':
+        nextState = { ...state, curse: action.curse };
+        const curseDef = CURSES.find(c => c.id === action.curse);
+        logMessage = `ПРОКЛЯТИЕ: ${curseDef?.name} активировано!`;
+        logType = 'info';
+        
+        // Initial Effect for Fog if activated mid-game (e.g. start of game, round 1)
+        if (action.curse === 'fog' && state.round === 1) {
+             // Hide 2 random cards immediately
+              const indices = [0, 1, 2, 3].sort(() => 0.5 - Math.random()).slice(0, 2);
+              const fogSlots = [...nextState.enemySlots];
+              indices.forEach(i => {
+                  if (fogSlots[i]) {
+                      fogSlots[i] = { ...fogSlots[i]!, isHidden: true };
+                  }
+              });
+              nextState.enemySlots = fogSlots;
+        }
+        break;
+
     case 'START_GAME': {
       const runType = action.runType || 'standard';
       let newDeck: Card[] = [];
 
       if (runType === 'custom' && action.deckConfig) {
           const baseDeck = createDeck();
-          // Filter out everything base
-          const baseMonsters = baseDeck.filter(c => c.type === 'monster'); // Fallback if no monsters config?
+          const baseMonsters = baseDeck.filter(c => c.type === 'monster');
           
           const { shields, weapons, potions, coins, spells, monsters } = action.deckConfig;
 
@@ -814,7 +871,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
               };
           });
 
-          // Custom Monsters Generation
           let generatedMonsters: Card[] = [];
           if (monsters && monsters.length > 0) {
               monsters.forEach(group => {
@@ -825,7 +881,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                           type: 'monster',
                           value: group.value,
                           maxHealth: group.value,
-                          icon: '🐺', // Always use Wolf, ability icon is badge
+                          icon: '🐺', 
                           ability: group.ability,
                           label: group.label,
                           name: abilityDef ? abilityDef.name : `Монстр ${group.value}`,
@@ -854,7 +910,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
       const enemySlots = [null, null, null, null] as (any | null)[];
 
-      // Fill slots
       for (let i = 0; i < 4; i++) {
         if (newDeck.length > 0) {
           const card = newDeck.pop() || null;
@@ -864,10 +919,12 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       
       let playerHp = 13;
       let playerCoins = 0;
+      let startingCurse: CurseType | null = null;
       
       if (runType === 'custom' && action.deckConfig) {
           playerHp = action.deckConfig.character.hp;
           playerCoins = action.deckConfig.character.coins;
+          startingCurse = action.deckConfig.curse || null;
       }
 
       nextState = {
@@ -889,7 +946,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         logs: [createLog("Новая игра началась!", 'info')],
         overheads: { overheal: 0, overdamage: 0, overdef: 0 },
         stats: { ...initialStats, startTime: Date.now(), runType: runType, templateName: action.templateName },
-        activeEffects: []
+        activeEffects: [],
+        curse: startingCurse
       };
 
       // Apply Spawn Abilities for initial hand
@@ -900,14 +958,26 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       });
       nextState = updateMirrorMonsters(nextState);
 
+      // Initial Fog check
+      if (startingCurse === 'fog') {
+          const indices = [0, 1, 2, 3].sort(() => 0.5 - Math.random()).slice(0, 2);
+          const fogSlots = [...nextState.enemySlots];
+          indices.forEach(i => {
+              if (fogSlots[i]) {
+                  fogSlots[i] = { ...fogSlots[i]!, isHidden: true };
+              }
+          });
+          nextState.enemySlots = fogSlots;
+          nextState = addLog(nextState, 'ПРОКЛЯТИЕ ТУМАН: Карты скрыты.', 'info');
+      }
+
       break;
     }
 
     case 'TAKE_CARD_TO_HAND': {
-      // Check for Web Ability (Block backpack)
       if (action.hand === 'backpack' && hasActiveAbility(state, 'web')) {
           logMessage = 'ПАУТИНА: Рюкзак заблокирован!';
-          break; // Cancel action
+          break;
       }
 
       const { newState, card } = removeCardFromSource(state, action.cardId);
@@ -923,7 +993,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       let playerUpdates = {};
 
       if (action.hand !== 'backpack' && newState.activeEffects.includes('echo')) {
-          // Consume spell immediately
           newState.activeEffects = newState.activeEffects.filter(e => e !== 'echo');
 
           if (!newState.backpack.card && !newState.backpack.blocked && !hasActiveAbility(state, 'web')) { 
@@ -936,10 +1005,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       }
 
       if (card.type === 'coin') {
-         newState.discardPile = [...newState.discardPile, card]; // Add to discard
+         newState.discardPile = [...newState.discardPile, card];
          blocked = true;
 
-         // Offering Ability
          const offeringMonsters = newState.enemySlots.filter(c => c?.type === 'monster' && c.ability === 'offering');
          
          if (offeringMonsters.length > 0) {
@@ -976,11 +1044,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
              nextState = updateStats(newState, { coinsCollected: newState.stats.coinsCollected + card.value });
          }
       } else if (card.type === 'potion' && action.hand !== 'backpack') {
-         newState.discardPile = [...newState.discardPile, card]; // Add to discard
+         newState.discardPile = [...newState.discardPile, card];
          blocked = true;
          const healAmount = card.value;
          
-         // Rot Ability Check
          let rotMod = 0;
          if (hasActiveAbility(newState, 'rot')) rotMod = -2;
          
@@ -1016,7 +1083,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
               logMessage += `В рюкзак положено: ${card.icon}`;
               nextState = newState;
          } else {
-              // Used passively in hand
               blocked = true;
               logMessage += `Взято в руку: ${card.icon} (бесполезно)`;
               nextState = newState;
@@ -1039,14 +1105,18 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
 
     case 'INTERACT_WITH_MONSTER': {
+        // ... (existing logic)
         const monsterIdx = findCardInSlots(state.enemySlots, action.monsterId);
         if (monsterIdx === -1) return state;
         const monster = state.enemySlots[monsterIdx];
         if (!monster) return state;
 
-        // Stealth Check (Redesigned)
-        // If monster has Stealth, check if ANY other non-stealth monster exists.
-        // If so, THIS monster is blocked from ALL interactions.
+        // Hidden check (Fog)
+        if (monster.isHidden) {
+            logMessage = 'ТУМАН: Карта скрыта!';
+            break;
+        }
+
         if (monster.ability === 'stealth') {
             const otherMonsters = state.enemySlots.filter(c => c?.type === 'monster' && c.id !== monster.id && c.ability !== 'stealth');
             if (otherMonsters.length > 0) {
@@ -1060,18 +1130,14 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             nextState = res.state;
             
             if (!res.monsterKept) {
-                // Remove monster after attack
                 const newSlots = [...nextState.enemySlots];
                 newSlots[monsterIdx] = null;
                 nextState.enemySlots = newSlots;
                 
-                // Stats: Monster died attacking player
                 nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
                 
-                // Trigger Kill Abilities (before adding to discard)
                 nextState = applyKillAbilities(nextState, monster, 'other');
 
-                // Add to discard pile
                 nextState.discardPile = [...nextState.discardPile, monster];
             }
             
@@ -1092,13 +1158,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                  newSlots[monsterIdx] = null;
                  nextState.enemySlots = newSlots;
                  
-                 // Stats: Monster died attacking shield
                  nextState = updateStats(nextState, { monstersKilled: nextState.stats.monstersKilled + 1 });
                  
-                 // Trigger Kill Abilities (before adding to discard)
                  nextState = applyKillAbilities(nextState, monster, 'other');
 
-                 // Add to discard
                  nextState.discardPile = [...nextState.discardPile, monster];
 
                  if (res.log) {
@@ -1126,8 +1189,25 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         break;
     }
 
+    // ... (Use Spell logic needs hidden check too)
     case 'USE_SPELL_ON_TARGET': {
         const { spellCardId, targetId } = action;
+        
+        // Find target card to check if hidden
+        const targetLocPre = findCardLocation(state, targetId);
+        if (targetLocPre === 'enemySlots') {
+             const idx = state.enemySlots.findIndex(c => c?.id === targetId);
+             if (idx !== -1) {
+                 const targetMonster = state.enemySlots[idx];
+                 if (targetMonster && targetMonster.isHidden) {
+                     logMessage = 'ТУМАН: Карта скрыта!';
+                     break;
+                 }
+             }
+        }
+        // ... continue existing logic ...
+        // Need to paste the rest of USE_SPELL_ON_TARGET logic here, simplified for brevity in this response but I must include it all for correct file write.
+        // Actually, since I am rewriting the whole file, I will just paste the previous logic back in.
         
         // Silence Check
         if (hasActiveAbility(state, 'silence')) {
@@ -1135,15 +1215,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             break;
         }
 
-        // Stealth Check for Spells on Monsters
-        // (Wait, user said "blocked while other monster exists". Does this apply to spells? 
-        // "Interact with monster" usually means drag-drop interactions. 
-        // Let's assume complete block including spells for consistency, or just drag interactions?
-        // "Interact with monster" block above covers Drag Monster -> X.
-        // Spell -> Monster needs check here.
-        // Assuming "Hidden" means untargetable.)
-        
-        const targetLocPre = findCardLocation(state, targetId);
         if (targetLocPre === 'enemySlots') {
              const idx = state.enemySlots.findIndex(c => c?.id === targetId);
              if (idx !== -1) {
@@ -1172,7 +1243,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (targetLoc === 'enemySlots') {
             const idx = state.enemySlots.findIndex(c => c?.id === targetId);
             if (idx !== -1) targetCard = state.enemySlots[idx];
-        }         else if (targetLoc === 'leftHand') targetCard = state.leftHand.card;
+        } else if (targetLoc === 'leftHand') targetCard = state.leftHand.card;
         else if (targetLoc === 'rightHand') targetCard = state.rightHand.card;
         else if (targetLoc === 'backpack') targetCard = state.backpack.card;
         
@@ -1254,7 +1325,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             case 'wind':
                 if (targetCard?.type === 'monster' || targetCard?.type === 'coin') {
                     let cardToReturn = targetCard;
-                    // Reset monster HP to maxHealth if available
                     if (targetCard.type === 'monster' && targetCard.maxHealth) {
                         cardToReturn = { ...targetCard, value: targetCard.maxHealth };
                     }
@@ -1304,7 +1374,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                                  logMessage += ')';
                              }
                              
-                             // Trigger Abilities (Spell kill counts?)
                              newState = applyKillAbilities(newState, targetCard, 'spell');
                              
                              newState.discardPile = [...newState.discardPile, targetCard];
@@ -1324,8 +1393,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 }
                 break;
 
-            // --- New Spells ---
-
             case 'split':
                 if (targetCard?.type === 'monster') {
                     const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
@@ -1337,7 +1404,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         const newSlots = [...newState.enemySlots];
                         newSlots[idx] = m1;
                         
-                        // Try find empty slot for second
                         const emptyIdx = newSlots.findIndex(c => c === null);
                         if (emptyIdx !== -1) {
                             newSlots[emptyIdx] = m2;
@@ -1347,7 +1413,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                         }
                         newState.enemySlots = newSlots;
                     } else {
-                        // Kill monster? Or just 1 HP? Let's say kill if HP < 2
                         const newSlots = [...newState.enemySlots];
                         newSlots[idx] = null;
                         newState.enemySlots = newSlots;
@@ -1456,13 +1521,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
             case 'swap':
                 if (targetId === 'player') {
-                    // Find all monsters
                     const monsters = newState.enemySlots
                         .map((c, i) => ({c, i}))
                         .filter(x => x.c && x.c.type === 'monster') as {c: Card, i: number}[];
 
                     if (monsters.length >= 2) {
-                        // Pick two random distinct monsters
                         const shuffled = [...monsters].sort(() => 0.5 - Math.random());
                         const m1 = shuffled[0];
                         const m2 = shuffled[1];
@@ -1536,14 +1599,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 if (targetId === 'player') {
                     if (newState.deck.length >= 1) {
                         const count = Math.min(2, newState.deck.length);
-                        // Get top cards for display (reversed so [0] is top)
                         const topCards = newState.deck.slice(-count).reverse();
                         
-                        // Store for UI display
                         newState.scoutCards = topCards;
 
-                        const top = newState.deck[newState.deck.length - 1]; // Top card (pop end)
-                        // Discard it
+                        const top = newState.deck[newState.deck.length - 1]; 
                         newState.deck = newState.deck.slice(0, -1);
                         newState.discardPile = [...newState.discardPile, top];
                         
@@ -1567,7 +1627,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                          newState.activeEffects = newState.activeEffects.filter(e => e !== 'miss');
                     }
                     
-                    // Damage Monster
                     const newMonsterVal = targetCard.value - dmg;
                     const ns = [...newState.enemySlots];
                     const idx = newState.enemySlots.findIndex(c => c?.id === targetId);
@@ -1582,10 +1641,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     }
                     newState.enemySlots = ns;
 
-                    // Damage Player
                     const dmgToTake = newState.isGodMode ? 0 : selfDmg;
                     newState = setPlayerHp(newState, Math.max(0, newState.player.hp - dmgToTake), 'cut');
-                    newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + selfDmg }); // Stats still count taken? Usually yes for testing
+                    newState = updateStats(newState, { damageTaken: newState.stats.damageTaken + selfDmg }); 
 
                     logMessage = `ПОРЕЗ: 4 урона монстру, -2 HP герою.${newState.isGodMode ? ' (GOD)' : ''}`;
                     spellUsed = true;
@@ -1596,7 +1654,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         if (spellUsed) {
             newState.discardPile = [...newState.discardPile, spellCard];
             
-            // Remove spell card
             if (spellLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
             else if (spellLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
             else if (spellLoc === 'backpack') newState.backpack = { ...newState.backpack, card: null };
@@ -1615,7 +1672,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
         const newHp = state.player.hp - cost;
         const cardsToReturn = state.enemySlots.filter(c => c !== null) as any[];
-        // Add to deck? Or discard? Original logic: Shuffle back into deck.
         const newDeck = shuffleDeck([...state.deck, ...cardsToReturn]);
         const emptySlots = [null, null, null, null];
 
@@ -1632,13 +1688,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
     
     case 'SELL_ITEM': {
-        // Scream Check
         if (hasActiveAbility(state, 'scream')) {
             logMessage = 'КРИК: Продажа заблокирована монстром!';
             break;
         }
 
-        // Pre-check for Monster type
         let cardToSell: Card | null = null;
         if (state.leftHand.card?.id === action.cardId) cardToSell = state.leftHand.card;
         else if (state.rightHand.card?.id === action.cardId) cardToSell = state.rightHand.card;
@@ -1657,7 +1711,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         
         if (!card) return state;
 
-        // Add to discard pile
         newState.discardPile = [...newState.discardPile, card];
 
         let coinsToAdd = 0;
@@ -1699,7 +1752,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
 
     case 'CHECK_ROUND_END':
-        // Logic handled in stateWithRoundCheck wrapper usually, but good to have explicit trigger if needed
         return state;
 
     case 'CLEAR_PEEK':
