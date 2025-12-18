@@ -25,6 +25,8 @@ import { CURSES } from '../data/curses';
 import { CurseSlot } from './CurseSlot';
 import { CurseActivationBanner } from './CurseActivationBanner';
 import { CurseType } from '../types/game';
+import { MaskedFlashlightOverlay } from './MaskedFlashlightOverlay';
+import { setFlashlightLocked } from '../utils/flashlightLock';
 
 const BUFF_SPELLS = ['trophy', 'deflection', 'echo', 'snack', 'armor'];
 
@@ -407,6 +409,16 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
   const [isResetHovered, setIsResetHovered] = useState(false);
   const [hudVisibility, setHudVisibility] = useState<HUDVisibility>(loadUIVisibility());
   const { addCrystals } = useWalletStore();
+
+  // Curse "Тьма": lock Lumos/Nox flashlight while active (front-only)
+  useEffect(() => {
+      const locked = state.curse === 'darkness';
+      setFlashlightLocked(locked);
+      return () => {
+          // Ensure unlock on unmount
+          setFlashlightLocked(false);
+      };
+  }, [state.curse]);
 
   // Sequential HP Visualization
   const [visualHp, setVisualHp] = useState(state.player.hp);
@@ -1026,6 +1038,14 @@ const GameScreen = ({ onExit, deckConfig, runType = 'standard', templateName }: 
        {/* Backgrounds */}
        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-stone-900/20 via-stone-950/80 to-stone-950 pointer-events-none z-0"></div>
        <div className="absolute inset-0 flex justify-between opacity-5 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(90deg, transparent 49%, #000 50%, transparent 51%)', backgroundSize: '12.5% 100%' }}></div>
+
+       {/* Curse "Тьма" overlay: darken field, but keep HUD/modals visible (higher z) */}
+       <MaskedFlashlightOverlay
+          enabled={state.curse === 'darkness'}
+          radiusPx={150}
+          softEdgePercent={10}
+          zIndexClassName="z-[15]"
+       />
 
        <CurseActivationBanner curse={state.curse || null} />
 

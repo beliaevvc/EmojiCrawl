@@ -36,6 +36,8 @@ export const CurseActivationBanner = ({ curse }: CurseActivationBannerProps) => 
                 return 'bg-cyan-400';
             case 'greed':
                 return 'bg-yellow-500';
+            case 'darkness':
+                return 'bg-indigo-500';
             default:
                 return 'bg-stone-600';
         }

@@ -17,6 +17,8 @@ import { saveTemplate } from '../utils/storage';
 import { encodeDeckConfig, decodeDeckConfig } from '../utils/shareUtils';
 import { CURSES } from '../data/curses';
 import { CursePicker } from './CursePicker';
+import { MaskedFlashlightOverlay } from './MaskedFlashlightOverlay';
+import { setFlashlightLocked } from '../utils/flashlightLock';
 
 // ... (CategoryCard component remains same)
 const CategoryCard = ({ 
@@ -283,6 +285,16 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const [customMonsters, setCustomMonsters] = useState<MonsterGroupConfig[]>(DEFAULT_MONSTER_GROUPS);
     const [customCurse, setCustomCurse] = useState<CurseType | null>(null);
 
+    // Curse "Тьма": lock Lumos/Nox flashlight while active (front-only)
+    useEffect(() => {
+        const locked = customCurse === 'darkness';
+        setFlashlightLocked(locked);
+        return () => {
+            // Ensure unlock on unmount
+            setFlashlightLocked(false);
+        };
+    }, [customCurse]);
+
     // Initial Load
     useEffect(() => {
         if (initialTemplate) {
@@ -394,6 +406,14 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
             {/* Background */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-stone-900/20 via-stone-950/80 to-stone-950 pointer-events-none z-0"></div>
+
+            {/* Curse "Тьма" overlay: darken deckbuilder content, but keep header/footer/modals visible */}
+            <MaskedFlashlightOverlay
+                enabled={customCurse === 'darkness'}
+                radiusPx={150}
+                softEdgePercent={10}
+                zIndexClassName="z-[15]"
+            />
 
             {/* Header - Fixed */}
             <div className="relative z-10 w-full px-4 py-4 flex justify-between items-center bg-[#141211]/80 backdrop-blur-md border-b border-stone-800 shrink-0">

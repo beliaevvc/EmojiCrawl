@@ -1,7 +1,12 @@
 {
-  "version": "0.0.136",
-  "buildDate": "12/18/2025, 10:17:14 PM",
+  "version": "0.0.137",
+  "buildDate": "12/18/2025, 11:10:23 PM",
   "commits": [
+    {
+      "hash": "070664c",
+      "date": "18.12.2025 22:29",
+      "message": "Обновление модального окна правил: добавлено описание механики проклятий с визуальными элементами и изменением структуры. Обновлены версии в конфигурационных файлах."
+    },
     {
       "hash": "ba03794",
       "date": "18.12.2025 22:16",
@@ -246,11 +251,6 @@
       "hash": "b31dfc5",
       "date": "16.12.2025 09:30",
       "message": "Enhance NotesModal component by adding a new resize handle for the bottom side, allowing users to resize the modal vertically. Update interaction handling to support the new 'resize-s' type, improving overall user experience with modal resizing functionality."
-    },
-    {
-      "hash": "78fa9cf",
-      "date": "16.12.2025 08:49",
-      "message": "Refactor NotesModal to consolidate window state management, enabling persistent resizing and repositioning. Introduce new resize handles for improved user interaction and update local storage handling for window dimensions."
     }
   ]
 }

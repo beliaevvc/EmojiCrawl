@@ -28,6 +28,7 @@ const Backend = isTouchDevice() ? TouchBackend : HTML5Backend;
 import { GhostTrailOverlay } from './components/GhostTrailOverlay';
 import { FlashlightOverlay } from './components/FlashlightOverlay';
 import { SlimeOverlay } from './components/SlimeOverlay';
+import { isFlashlightLocked } from './utils/flashlightLock';
 
 function App() {
   const [gameState, setGameState] = useState<'menu' | 'game' | 'stats' | 'deckbuilder'>('menu');
@@ -63,12 +64,16 @@ function App() {
       keyBufferRef.current = (keyBufferRef.current + e.key).slice(-10).toLowerCase();
       
       if (keyBufferRef.current.endsWith('lumos')) {
-        completeAnomaly('MAGIC_WORD_1');
-        // Trigger flashlight effect if not already handled by existing logic
-        window.dispatchEvent(new CustomEvent('toggle-flashlight', { detail: true }));
+        if (!isFlashlightLocked()) {
+          completeAnomaly('MAGIC_WORD_1');
+          // Trigger flashlight effect if not already handled by existing logic
+          window.dispatchEvent(new CustomEvent('toggle-flashlight', { detail: true }));
+        }
       }
       if (keyBufferRef.current.endsWith('nox')) {
-        window.dispatchEvent(new CustomEvent('toggle-flashlight', { detail: false }));
+        if (!isFlashlightLocked()) {
+          window.dispatchEvent(new CustomEvent('toggle-flashlight', { detail: false }));
+        }
       }
       
       // SBROS - Full Reset
