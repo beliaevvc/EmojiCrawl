@@ -1,7 +1,12 @@
 {
-  "version": "0.0.137",
-  "buildDate": "12/18/2025, 11:10:23 PM",
+  "version": "0.0.138",
+  "buildDate": "12/18/2025, 11:17:53 PM",
   "commits": [
+    {
+      "hash": "e4b1e39",
+      "date": "18.12.2025 23:11",
+      "message": "Добавление нового проклятия **🌑 Тьма** с визуальным оверлеем, который затемняет экран и создает круг света вокруг курсора. Обновлены компоненты GameScreen и DeckbuilderScreen для интеграции новой механики. Обновлена документация в memory-bank/gameMechanics.md, memory-bank/gameContent.md и memory-bank/uiDesign.md для отражения изменений."
+    },
     {
       "hash": "070664c",
       "date": "18.12.2025 22:29",
@@ -246,11 +251,6 @@
       "hash": "8a194a6",
       "date": "16.12.2025 10:04",
       "message": "Update package.json scripts to include version generation and enhance MainMenu with version history feature. Add version badge and modal for displaying version information, improving user experience and accessibility to version details."
-    },
-    {
-      "hash": "b31dfc5",
-      "date": "16.12.2025 09:30",
-      "message": "Enhance NotesModal component by adding a new resize handle for the bottom side, allowing users to resize the modal vertically. Update interaction handling to support the new 'resize-s' type, improving overall user experience with modal resizing functionality."
     }
   ]
 }
