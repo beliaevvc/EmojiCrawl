@@ -102,7 +102,9 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
   };
 
   const getBgColor = () => {
-    if (isMerchantLeave) return 'bg-stone-900/70';
+    // Важно: токены торговца НЕ должны просвечивать (под ними часто лежит “последняя карта раунда”).
+    // Поэтому фон делаем полностью непрозрачным.
+    if (isMerchantLeave) return 'bg-stone-950';
     switch (card.type) {
        case 'monster': return 'bg-rose-950/40';
        case 'skull': return 'bg-stone-950/60';
@@ -110,7 +112,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
        case 'bravery_potion':
        case 'claymore':
        case 'prayer_spell':
-         return 'bg-amber-950/15';
+        return 'bg-amber-950';
        default: return 'bg-stone-800/80';
     }
   }
@@ -124,6 +126,16 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
   const displayValue = (isModified && applyModifierToMainBadge) ? Math.max(0, card.value + modifier) : card.value;
   const modifierLabel = modifier > 0 ? `+${modifier}` : `${modifier}`;
 
+  // Для токенов торговца (товары/🚪) нельзя снижать opacity, иначе будет видно то, что лежит под ними.
+  // Состояние “нельзя купить” показываем grayscale/кольцами, но не прозрачностью.
+  const isMerchantToken =
+    isMerchantArtifact ||
+    isMerchantLeave ||
+    typeof (card as any).merchantPrice === 'number' ||
+    !!(card as any).merchantOfferType;
+
+  const blockedOpacity = isMerchantToken ? 1 : 0.6;
+
   return (
     <motion.div
       ref={setRefs}
@@ -131,7 +143,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ 
           scale: 1, 
-          opacity: isDragging ? 0 : (isBlocked ? 0.6 : 1), // Hide original when dragging to show slot underneath
+          opacity: isDragging ? 0 : (isBlocked ? blockedOpacity : 1), // Hide original when dragging to show slot underneath
           filter: isBlocked ? 'grayscale(0.8)' : 'none', // Grayscale for blocked
           x: isShaking ? [0, -5, 5, -5, 5, 0] : 0,
       }}

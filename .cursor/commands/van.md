@@ -5,10 +5,10 @@ This command initializes the Memory Bank system, performs platform detection, de
 ## Memory Bank Integration
 
 **CRITICAL:** All Memory Bank files are located in `memory-bank/` directory:
-- `memory-bank/tasks.md` - Source of truth for task tracking
-- `memory-bank/activeContext.md` - Current focus
-- `memory-bank/progress.md` - Implementation status
-- `memory-bank/projectbrief.md` - Project foundation
+- `memory-bank/process/tasks.md` - Source of truth for task tracking
+- `memory-bank/process/activeContext.md` - Current focus
+- `memory-bank/process/progress.md` - Implementation status
+- `memory-bank/project/projectbrief.md` - Project foundation
 
 ## Progressive Rule Loading
 
@@ -45,7 +45,7 @@ After determining complexity level, load:
    - Verify essential files exist
 
 3. **Task Analysis**
-   - Read `memory-bank/tasks.md` if exists
+   - Read `memory-bank/process/tasks.md` if exists
    - Analyze task requirements
    - Determine complexity level (1-4)
 
@@ -54,8 +54,8 @@ After determining complexity level, load:
    - **Level 2-4:** Transition to `/plan` command
 
 5. **Update Memory Bank**
-   - Update `memory-bank/tasks.md` with complexity determination
-   - Update `memory-bank/activeContext.md` with current focus
+   - Update `memory-bank/process/tasks.md` with complexity determination
+   - Update `memory-bank/process/activeContext.md` with current focus
 
 ## Usage
 

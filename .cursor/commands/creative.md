@@ -5,14 +5,14 @@ This command performs structured design exploration for components flagged durin
 ## Memory Bank Integration
 
 Reads from:
-- `memory-bank/tasks.md` - Components requiring creative phases
-- `memory-bank/activeContext.md` - Current project context
+- `memory-bank/process/tasks.md` - Components requiring creative phases
+- `memory-bank/process/activeContext.md` - Current project context
 
 Creates:
 - `memory-bank/creative/creative-[feature_name].md` - Design decision documents
 
 Updates:
-- `memory-bank/tasks.md` - Records design decisions
+- `memory-bank/process/tasks.md` - Records design decisions
 
 ## Progressive Rule Loading
 
@@ -54,12 +54,12 @@ Load: .cursor/rules/isolation_rules/Phases/CreativePhase/creative-phase-algorith
 ## Workflow
 
 1. **Verify Planning Complete**
-   - Check `memory-bank/tasks.md` for planning completion
+   - Check `memory-bank/process/tasks.md` for planning completion
    - Verify creative phases are identified
    - If not complete, return to `/plan` command
 
 2. **Identify Creative Phases**
-   - Read components flagged for creative work from `memory-bank/tasks.md`
+   - Read components flagged for creative work from `memory-bank/process/tasks.md`
    - Prioritize components for design exploration
 
 3. **Execute Creative Phase**
@@ -75,11 +75,11 @@ Load: .cursor/rules/isolation_rules/Phases/CreativePhase/creative-phase-algorith
 
 4. **Document Decisions**
    - Create `memory-bank/creative/creative-[feature_name].md`
-   - Update `memory-bank/tasks.md` with design decisions
+   - Update `memory-bank/process/tasks.md` with design decisions
 
 5. **Verify Completion**
    - Ensure all flagged components have completed creative phases
-   - Mark creative phase as complete in `memory-bank/tasks.md`
+   - Mark creative phase as complete in `memory-bank/process/tasks.md`
 
 ## Usage
 

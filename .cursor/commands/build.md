@@ -5,13 +5,13 @@ This command implements the planned changes following the implementation plan an
 ## Memory Bank Integration
 
 Reads from:
-- `memory-bank/tasks.md` - Implementation plan and checklists
+- `memory-bank/process/tasks.md` - Implementation plan and checklists
 - `memory-bank/creative/creative-*.md` - Design decisions (Level 3-4)
-- `memory-bank/activeContext.md` - Current project context
+- `memory-bank/process/activeContext.md` - Current project context
 
 Updates:
-- `memory-bank/tasks.md` - Implementation progress, test results, and status
-- `memory-bank/progress.md` - Build status, test outcomes, and observations
+- `memory-bank/process/tasks.md` - Implementation progress, test results, and status
+- `memory-bank/process/progress.md` - Build status, test outcomes, and observations
 
 ## Progressive Rule Loading
 
@@ -28,7 +28,7 @@ Load: .cursor/rules/isolation_rules/visual-maps/implement-mode-map.mdc
 ```
 
 ### Step 3: Load Complexity-Specific Implementation Rules
-Based on complexity level from `memory-bank/tasks.md`:
+Based on complexity level from `memory-bank/process/tasks.md`:
 
 **Level 1:**
 ```
@@ -50,12 +50,12 @@ Load: .cursor/rules/isolation_rules/Level4/phased-implementation.mdc
 ## Workflow
 
 1. **Verify Prerequisites**
-   - Check `memory-bank/tasks.md` for planning completion
+   - Check `memory-bank/process/tasks.md` for planning completion
    - For Level 3-4: Verify creative phase documents exist
    - Review implementation plan
 
 2. **Determine Complexity Level**
-   - Read complexity level from `memory-bank/tasks.md`
+   - Read complexity level from `memory-bank/process/tasks.md`
    - Load appropriate workflow rules
 
 3. **Execute Implementation**
@@ -66,7 +66,7 @@ Load: .cursor/rules/isolation_rules/Level4/phased-implementation.mdc
    - Implement targeted fix
    - Write test(s) validating the fix
    - Run tests and ensure they pass
-   - Update `memory-bank/tasks.md`
+   - Update `memory-bank/process/tasks.md`
 
    **Level 2 (Simple Enhancement):**
    - Review build plan
@@ -74,7 +74,7 @@ Load: .cursor/rules/isolation_rules/Level4/phased-implementation.mdc
    - Implement changes sequentially
    - Write tests for each success criterion
    - Run all tests and ensure they pass
-   - Update `memory-bank/tasks.md`
+   - Update `memory-bank/process/tasks.md`
 
    **Level 3-4 (Feature/System):**
    - Review plan and creative decisions
@@ -86,14 +86,14 @@ Load: .cursor/rules/isolation_rules/Level4/phased-implementation.mdc
      - Do NOT proceed to next phase until all tests pass
    - Integration testing
    - Document implementation
-   - Update `memory-bank/tasks.md` and `memory-bank/progress.md`
+   - Update `memory-bank/process/tasks.md` and `memory-bank/process/progress.md`
 
 4. **Test-Driven Phase Completion**
-   - Extract success criteria from current phase in `memory-bank/tasks.md`
+   - Extract success criteria from current phase in `memory-bank/process/tasks.md`
    - Write test cases covering each success criterion
    - Execute all tests
    - **Gate:** All tests MUST pass before phase completion
-   - Document test results in `memory-bank/tasks.md`
+   - Document test results in `memory-bank/process/tasks.md`
    - If tests fail: fix implementation, re-run tests, repeat until all pass
 
 5. **Command Execution**
@@ -105,11 +105,11 @@ Load: .cursor/rules/isolation_rules/Level4/phased-implementation.mdc
    - Verify all build steps completed
    - Verify all success criteria tests pass
    - Verify changes meet requirements
-   - Update `memory-bank/tasks.md` with completion status
+   - Update `memory-bank/process/tasks.md` with completion status
 
 ## Usage
 
-Type `/build` to start implementation based on the plan in `memory-bank/tasks.md`.
+Type `/build` to start implementation based on the plan in `memory-bank/process/tasks.md`.
 
 ## Next Steps
 

@@ -1020,7 +1020,14 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
    * Примечание: покупка/артефакты будут следующей партией. Сейчас “витрина + уйти + 1 продажа”.
    */
   if (state.merchant.isActive) {
-    const allowed = action.type === 'MERCHANT_LEAVE' || action.type === 'MERCHANT_BUY' || action.type === 'SELL_ITEM';
+    // Важно: во время торговца блокируем только "игровые" действия боя/магии/сброса и т.п.,
+    // но системные команды (например "Новая игра") должны работать всегда.
+    const allowed =
+      action.type === 'MERCHANT_LEAVE' ||
+      action.type === 'MERCHANT_BUY' ||
+      action.type === 'SELL_ITEM' ||
+      action.type === 'START_GAME' ||
+      action.type === 'INIT_GAME';
     if (!allowed) {
       // Не спамим лог каждый раз — в партии 1 достаточно просто блокировать.
       return state;

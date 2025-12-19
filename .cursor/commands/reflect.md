@@ -5,15 +5,15 @@ This command facilitates structured reflection on completed implementation, docu
 ## Memory Bank Integration
 
 Reads from:
-- `memory-bank/tasks.md` - Completed implementation details
-- `memory-bank/progress.md` - Implementation status and observations
+- `memory-bank/process/tasks.md` - Completed implementation details
+- `memory-bank/process/progress.md` - Implementation status and observations
 - `memory-bank/creative/creative-*.md` - Design decisions (Level 3-4)
 
 Creates:
-- `memory-bank/reflection/reflection-[task_id].md` - Reflection document
+- `memory-bank/process/reflection/reflection-[task_id].md` - Reflection document
 
 Updates:
-- `memory-bank/tasks.md` - Reflection status
+- `memory-bank/process/tasks.md` - Reflection status
 
 ## Progressive Rule Loading
 
@@ -29,7 +29,7 @@ Load: .cursor/rules/isolation_rules/visual-maps/reflect-mode-map.mdc
 ```
 
 ### Step 3: Load Complexity-Specific Reflection Rules
-Based on complexity level from `memory-bank/tasks.md`:
+Based on complexity level from `memory-bank/process/tasks.md`:
 
 **Level 1:**
 ```
@@ -54,7 +54,7 @@ Load: .cursor/rules/isolation_rules/Level4/reflection-comprehensive.mdc
 ## Workflow
 
 1. **Verify Implementation Complete**
-   - Check `memory-bank/tasks.md` for implementation completion
+   - Check `memory-bank/process/tasks.md` for implementation completion
    - If not complete, return to `/build` command
 
 2. **Review Implementation**
@@ -84,11 +84,11 @@ Load: .cursor/rules/isolation_rules/Level4/reflection-comprehensive.mdc
    - Document technical improvements
 
 4. **Create Reflection Document**
-   - Create `memory-bank/reflection/reflection-[task_id].md`
+   - Create `memory-bank/process/reflection/reflection-[task_id].md`
    - Structure: Summary, What Went Well, Challenges, Lessons Learned, Process Improvements, Technical Improvements, Next Steps
 
 5. **Update Memory Bank**
-   - Update `memory-bank/tasks.md` with reflection status
+   - Update `memory-bank/process/tasks.md` with reflection status
    - Mark reflection phase as complete
 
 ## Usage

@@ -5,12 +5,12 @@ This command creates detailed implementation plans based on complexity level det
 ## Memory Bank Integration
 
 Reads from:
-- `memory-bank/tasks.md` - Task requirements and complexity level
-- `memory-bank/activeContext.md` - Current project context
-- `memory-bank/projectbrief.md` - Project foundation (if exists)
+- `memory-bank/process/tasks.md` - Task requirements and complexity level
+- `memory-bank/process/activeContext.md` - Current project context
+- `memory-bank/project/projectbrief.md` - Project foundation (if exists)
 
 Updates:
-- `memory-bank/tasks.md` - Adds detailed implementation plan
+- `memory-bank/process/tasks.md` - Adds detailed implementation plan
 
 ## Progressive Rule Loading
 
@@ -26,7 +26,7 @@ Load: .cursor/rules/isolation_rules/visual-maps/plan-mode-map.mdc
 ```
 
 ### Step 3: Load Complexity-Specific Planning Rules
-Based on complexity level from `memory-bank/tasks.md`:
+Based on complexity level from `memory-bank/process/tasks.md`:
 
 **Level 2:**
 ```
@@ -51,8 +51,8 @@ Load: .cursor/rules/isolation_rules/Level4/workflow-level4.mdc
 ## Workflow
 
 1. **Read Task Context**
-   - Read `memory-bank/tasks.md` to get complexity level
-   - Read `memory-bank/activeContext.md` for current context
+   - Read `memory-bank/process/tasks.md` to get complexity level
+   - Read `memory-bank/process/activeContext.md` for current context
    - Review codebase structure
 
 2. **Create Implementation Plan**
@@ -70,12 +70,12 @@ Load: .cursor/rules/isolation_rules/Level4/workflow-level4.mdc
    - Document which components need creative exploration
 
 5. **Update Memory Bank**
-   - Update `memory-bank/tasks.md` with complete plan
+   - Update `memory-bank/process/tasks.md` with complete plan
    - Mark planning phase as complete
 
 ## Usage
 
-Type `/plan` to start planning based on the task in `memory-bank/tasks.md`.
+Type `/plan` to start planning based on the task in `memory-bank/process/tasks.md`.
 
 ## Next Steps
 

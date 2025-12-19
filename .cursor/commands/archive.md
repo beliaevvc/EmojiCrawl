@@ -5,18 +5,18 @@ This command creates comprehensive archive documentation and updates the Memory 
 ## Memory Bank Integration
 
 Reads from:
-- `memory-bank/tasks.md` - Complete task details and checklists
-- `memory-bank/reflection/reflection-[task_id].md` - Reflection document
-- `memory-bank/progress.md` - Implementation status
+- `memory-bank/process/tasks.md` - Complete task details and checklists
+- `memory-bank/process/reflection/reflection-[task_id].md` - Reflection document
+- `memory-bank/process/progress.md` - Implementation status
 - `memory-bank/creative/creative-*.md` - Creative phase documents (Level 3-4)
 
 Creates:
 - `memory-bank/archive/archive-[task_id].md` - Archive document
 
 Updates:
-- `memory-bank/tasks.md` - Mark task as COMPLETE
-- `memory-bank/progress.md` - Add archive reference
-- `memory-bank/activeContext.md` - Reset for next task
+- `memory-bank/process/tasks.md` - Mark task as COMPLETE
+- `memory-bank/process/progress.md` - Add archive reference
+- `memory-bank/process/activeContext.md` - Reset for next task
 
 ## Progressive Rule Loading
 
@@ -32,7 +32,7 @@ Load: .cursor/rules/isolation_rules/visual-maps/archive-mode-map.mdc
 ```
 
 ### Step 3: Load Complexity-Specific Archive Rules
-Based on complexity level from `memory-bank/tasks.md`:
+Based on complexity level from `memory-bank/process/tasks.md`:
 
 **Level 1:**
 ```
@@ -57,7 +57,7 @@ Load: .cursor/rules/isolation_rules/Level4/archive-comprehensive.mdc
 ## Workflow
 
 1. **Verify Reflection Complete**
-   - Check that `memory-bank/reflection/reflection-[task_id].md` exists
+   - Check that `memory-bank/process/reflection/reflection-[task_id].md` exists
    - Verify reflection is complete
    - If not complete, return to `/reflect` command
 
@@ -65,12 +65,12 @@ Load: .cursor/rules/isolation_rules/Level4/archive-comprehensive.mdc
 
    **Level 1:**
    - Create quick summary
-   - Update `memory-bank/tasks.md` marking task complete
+   - Update `memory-bank/process/tasks.md` marking task complete
 
    **Level 2:**
    - Create basic archive document
    - Document changes made
-   - Update `memory-bank/tasks.md` and `memory-bank/progress.md`
+   - Update `memory-bank/process/tasks.md` and `memory-bank/process/progress.md`
 
    **Level 3-4:**
    - Create comprehensive archive document
@@ -109,10 +109,10 @@ Load: .cursor/rules/isolation_rules/Level4/archive-comprehensive.mdc
 
 4. **Update Memory Bank**
    - Create `memory-bank/archive/archive-[task_id].md`
-   - Mark task as COMPLETE in `memory-bank/tasks.md`
-   - Update `memory-bank/progress.md` with archive reference
-   - Reset `memory-bank/activeContext.md` for next task
-   - Clear completed task details from `memory-bank/tasks.md` (keep structure)
+   - Mark task as COMPLETE in `memory-bank/process/tasks.md`
+   - Update `memory-bank/process/progress.md` with archive reference
+   - Reset `memory-bank/process/activeContext.md` for next task
+   - Clear completed task details from `memory-bank/process/tasks.md` (keep structure)
 
 ## Usage
 
