@@ -1,8 +1,19 @@
+/**
+ * SpellPicker — UI-пикер заклинаний (поиск + выбор).
+ *
+ * Слой: UI (React).
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - список заклинаний для отображения берём из `baseGameContent.spells`,
+ * - UI не импортит `src/data/spells.ts` напрямую — это упрощает смену content pack’ов.
+ *
+ * Механика заклинаний (как они работают) — НЕ здесь, а в domain reducer.
+ */
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Plus } from 'lucide-react';
-import { SPELLS } from '../data/spells';
-import { SpellType } from '../types/game';
+import { baseGameContent } from '@/features/game/application/gameContent';
+import type { SpellType } from '@/types/game';
 
 interface SpellPickerProps {
     onSelect: (spellId: SpellType) => void;
@@ -12,7 +23,7 @@ interface SpellPickerProps {
 const SpellPicker = ({ onSelect, onClose }: SpellPickerProps) => {
     const [search, setSearch] = useState('');
 
-    const filteredSpells = SPELLS.filter(spell => 
+    const filteredSpells = baseGameContent.spells.filter(spell => 
         spell.name.toLowerCase().includes(search.toLowerCase()) || 
         spell.description.toLowerCase().includes(search.toLowerCase())
     );

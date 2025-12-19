@@ -1,85 +1,107 @@
-# InfoHUD и Интерфейс Игры
+# InfoHUD (режим “Info”) и дополнительный интерфейс боя
 
-Этот документ описывает устройство **InfoHUD** (Информационного Интерфейса) в проекте Skazmor — дополнительного слоя данных, который активируется по запросу игрока.
+## Назначение
+InfoHUD — это **дополнительный слой информации** в бою, который включается кнопкой **Info** (лупа) в нижней панели.
 
-> **Важно:** InfoHUD не включает в себя основные элементы геймплея (поле битвы, слоты, аватар героя) или базовые системные кнопки ("Новая игра", "Правила"). Он относится исключительно к **дополнительной справочной информации**, которая появляется при активации режима "Info".
+Важно:
+- InfoHUD **не заменяет** основной геймплейный UI (поле, слоты, аватар).
+- InfoHUD добавляет **аналитику и справочные окна**, которые можно включать/выключать и таскать по экрану.
 
-## Обзор
-InfoHUD — это конфигурируемая система оверлеев. Она обеспечивает игрока углубленной информацией о состоянии колоды, истории событий и статистике, которую можно включать или отключать по желанию.
+## Источник правды (Source of Truth)
+- Код (UI):
+  - `src/components/game/hud/GameBottomBar.tsx` — кнопка **Info** + дополнительные инструменты в Info‑режиме (настройки, сброс окон, God Mode).
+  - `src/components/game/hud/GameTopBar.tsx` — счётчик колоды + (в Info) breakdown по типам карт.
+  - `src/components/game/hud/HudWindows.tsx` — условный рендер плавающих окон в зависимости от `showInfo` и `HUDVisibility`.
+  - `src/components/HUDSettingsModal.tsx` — модалка “Интерфейс” (настройка `HUDVisibility`).
+  - `src/components/game/hud/useHudVisibility.ts` — persisted‑видимость окон.
+  - `src/components/game/hud/useHudWindowPositions.ts` — persisted‑позиции окон.
+- Код (persist / storage):
+  - `src/features/game/application/ports/UIStateRepository.ts` — тип `HUDVisibility` и контракт хранения UI‑состояния.
+  - `src/infrastructure/localStorage/ui/LocalStorageUIStateRepository.ts` — фактическое хранение (LocalStorage).
+  - `src/utils/uiStorage.ts` — **bridge** (совместимый API, без прямого `localStorage.*` в UI).
 
-## Структура InfoHUD
+## Где в коде (Entry points)
+- Ветка боя (компоновка HUD‑слоя):
+  - `src/components/game/screens/GameHudLayer.tsx`
+  - `src/components/game/screens/useGameScreenController.ts`
+- Плавающие окна:
+  - `src/components/game/windows/CardsViewer.tsx`
+  - `src/components/game/windows/OverheadStatsWindow.tsx`
+  - `src/components/game/windows/GameLogWindow.tsx`
+  - `src/components/MonsterLabelsWindow.tsx`
 
-Элементы InfoHUD становятся видимыми только когда активна кнопка **Info** (значок лупы) в нижней панели.
+## Содержание
 
-### 1. Верхняя панель (Top Panel Addons)
-Дополнения к стандартной верхней панели.
-*   **Детальная статистика (Deck Stats):** Ряд иконок рядом со счетчиком карт, показывающих точное количество карт каждого типа (Монстры, Монеты, Зелья, Щиты, Оружие, Свитки), оставшихся в колоде.
+### 1) Что включает InfoHUD (функционально)
+InfoHUD состоит из трёх частей, активных **только когда `showInfo === true`**:
 
-### 2. Нижняя панель управления (Control Overlays)
-Элементы управления самим InfoHUD, появляющиеся рядом с кнопкой Info.
-*   **Настройки (Settings):** Кнопка с шестеренкой. Открывает модальное окно, где игрок может выбрать, какие именно окна InfoHUD он хочет видеть (галочки вкл/выкл).
-*   **Сброс окон (Reset Layout):** Кнопка возврата всех плавающих окон на исходные позиции.
-*   **God Mode (Режим Бога):** Переключатель (глаз), активирующий бессмертие для целей тестирования/отладки.
+1) **Верхняя панель (TopBar Addons)**
+   - Breakdown по типам карт в колоде (Deck Stats).
 
-### 3. Плавающие окна (Floating Windows)
-Эти окна можно перемещать (Draggable) по экрану. Их видимость настраивается через меню "Настройки".
+2) **Нижняя панель (BottomBar Tools)**
+   - Кнопка “Настройки интерфейса” (открывает `HUDSettingsModal`).
+   - Кнопка “Сбросить окна” (очистка positions).
+   - Панель “читов” (God Mode) — появляется как отдельный блок по кнопке‑глазу.
 
-*   **Просмотр колоды (Deck Viewer):** Показывает прокручиваемый список карт, оставшихся в колоде.
-*   **Просмотр сброса (Discard Viewer):** Показывает список уже сыгранных карт. Включает в себя панель статистики с разбивкой по типам (сколько монстров, монет и т.д. ушло в сброс), аналогичную статистике колоды.
-*   **Журнал событий (Game Log):** Окно с историей последних действий (кто кого атаковал, сколько урона нанесено, эффекты лечения).
-*   **Аналитика (Overhead Stats):** Панель с продвинутой статистикой эффективности:
-    *   *Overheal:* Сколько лечения ушло впустую (когда HP полное).
-    *   *Overkill:* Сколько урона нанесено сверх необходимого для убийства.
-    *   *Overdef:* Сколько урона заблокировано броней впустую (когда урон меньше брони).
-*   **Справочник меток (Monster Labels):** Легенда цветовой кодировки монстров (какой цвет рамки соответствует типу "Танк", "Босс" и т.д.).
+3) **Плавающие окна (Floating Windows)**
+   - `CardsViewer`:
+     - “Колода”
+     - “Сброс” (+ опционально статистика сброса)
+   - `OverheadStatsWindow` (overheal/overkill/overdef)
+   - `GameLogWindow` (лог событий)
+   - `MonsterLabelsWindow` (легенда меток)
 
-## Настройки (Settings Modal)
-Вызывается кнопкой-шестеренкой при активном режиме Info. Позволяет игроку кастомизировать свой HUD, скрывая ненужные элементы.
-*   **Функция:** Управление видимостью каждого отдельного компонента (например, можно оставить только Журнал, скрыв Аналитику).
-*   **Сохранение:** Настройки сохраняются между игровыми сессиями.
+### 2) Модель состояния InfoHUD (важно различать)
+Есть три уровня состояния:
 
-## Визуальный Стиль
+- **`showInfo` (локально, на время сессии/экрана)**
+  - включает/выключает весь InfoHUD одним флагом
+  - хранится как UI‑state (React state), не обязателен к персисту
 
-Проект использует **Tailwind CSS** и **Framer Motion** для анимаций.
+- **`HUDVisibility` (persisted)**
+  - какие окна/под‑разделы включены (“deck stats”, “log window”, “discard stats”…)
+  - хранится через `UIStateRepository` (infra LocalStorage) и доступен UI через bridge `src/utils/uiStorage.ts`
 
-### Цветовая палитра
-*   **Фон:** Очень темный (`bg-[#141211]`, `bg-stone-950`).
-*   **Панели:** Полупрозрачный камень (`bg-stone-900/90`, `backdrop-blur-md`).
-*   **Акценты (значения):**
-    *   HP/Лечение: `emerald-400` / `emerald-500`.
-    *   Урон/Враги: `rose-400` / `rose-500`.
-    *   Магия/Свитки: `indigo-400`.
-    *   Золото: `amber-400`.
-    *   Щиты/Броня: `blue-400` / `stone-300`.
-*   **Типографика:**
-    *   Заголовки/Лейблы: Uppercase, tracking-widest, Bold.
-    *   Цифры: Monospace (`font-mono`).
+- **`windowPositions` (persisted)**
+  - позиции плавающих окон (x/y)
+  - хранится через тот же `UIStateRepository`
 
-### Эффекты
-*   **Стеклянный эффект:** Активное использование `backdrop-blur-sm/md` и полупрозрачных границ (`border-white/10`).
-*   **Тени:** Глубокие тени (`shadow-2xl`) для создания объема плавающих окон.
-*   **Анимации:**
-    *   Плавное появление окон (`opacity`, `scale`).
+### 3) Персистентность (как устроено хранение сейчас)
+Исторически UI писал напрямую в `localStorage`, но после Блока 5 это вынесено:
+- UI вызывает `saveUIVisibility/saveUIPositions` из `src/utils/uiStorage.ts`
+- `uiStorage.ts` — bridge, делегирует в application use‑cases и infra‑репозиторий
+- фактическое I/O находится в `src/infrastructure/localStorage/ui/LocalStorageUIStateRepository.ts`
 
-## Техническая Реализация
+### 4) Как добавить новый элемент в InfoHUD (пошагово)
 
-### Состояние (State)
-Весь UI берет данные из `GameScreen.tsx`.
-*   **HUDSettingsModal:** Управляет видимостью компонентов через локальный стейт `hudVisibility`.
-*   **God Mode:** Управляется через глобальный стейт игры (`isGodMode`).
+#### A) Если это новый floating window
+1) Создать компонент окна:
+   - обычно в `src/components/game/windows/*` (или отдельным компонентом рядом).
+2) Добавить ключ видимости:
+   - расширить `HUDVisibility` в `src/features/game/application/ports/UIStateRepository.ts`.
+   - обновить дефолты в `src/infrastructure/localStorage/ui/LocalStorageUIStateRepository.ts` (чтобы новый ключ имел начальное значение).
+3) Добавить переключатель в `HUDSettingsModal`:
+   - `src/components/HUDSettingsModal.tsx` → массив `SETTINGS`.
+4) Подключить окно в `HudWindows`:
+   - `src/components/game/hud/HudWindows.tsx` → условный рендер:
+     - `showInfo && hudVisibility.<key>`
+   - если окно draggable — прокинуть `position` + `onPositionChange` и использовать key (например `log/stats/deck/...`).
 
-### Персистентность (Storage)
-Настройки интерфейса сохраняются в `localStorage` через утилиты в `src/utils/uiStorage.ts`:
-*   `saveUIVisibility(visibility)`: Сохраняет выбор игрока (какие окна включены).
-*   `saveUIPositions(positions)`: Сохраняет координаты X/Y перетаскиваемых окон.
+#### B) Если это “addon” верхней/нижней панели
+1) Для TopBar: `src/components/game/hud/GameTopBar.tsx` (+ прокидывание props из `useGameScreenController`).
+2) Для BottomBar: `src/components/game/hud/GameBottomBar.tsx`.
 
-## Как добавить новый элемент в InfoHUD
+## Правила обновления
+- Обновлять этот документ, если меняются:
+  - список окон InfoHUD,
+  - места подключения (TopBar/BottomBar/HudWindows),
+  - модель персистентности (`UIStateRepository`, ключи и дефолты).
+- Не обновлять при косметических правках стилей: это в `uiDesign.md`.
 
-1.  Создать компонент в `src/components/`.
-2.  Добавить ключ видимости в `src/types/game.ts` (чтобы его можно было отключать).
-3.  Добавить переключатель в массив `SETTINGS` в `src/components/HUDSettingsModal.tsx` (иконка, название, описание).
-4.  Внедрить компонент в `GameScreen.tsx`:
-    *   Обернуть в проверку `showInfo` (глобальный переключатель).
-    *   Обернуть в проверку `hudVisibility.вашКлюч` (пользовательская настройка).
-    *   Использовать `AnimatePresence` для плавного скрытия.
-5.  Если окно плавающее — использовать `motion.div` с атрибутом `drag` и обработчиком `onDragEnd` для сохранения позиции.
+## Связанные документы
+- `memory-bank/uiDesign.md`
+- `memory-bank/systemPatterns.md`
+- `memory-bank/techContext.md`
+
+## Последнее обновление
+- 2025-12-19 — Приведено к текущей реализации InfoHUD (TopBar/BottomBar/HudWindows, persisted visibility/positions через `UIStateRepository` и bridge `uiStorage`) и новому формату документации (Блок 90).

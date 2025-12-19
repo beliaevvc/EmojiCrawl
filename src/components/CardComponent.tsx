@@ -1,9 +1,29 @@
+/**
+ * CardComponent — базовый UI-компонент отображения одной карты (token/card) в бою и в UI.
+ *
+ * Слой: UI (React).
+ *
+ * Что делает:
+ * - рисует внешний вид карты по `card.type`,
+ * - поддерживает drag&drop (react-dnd),
+ * - показывает вспомогательные бейджи/иконки (например способность монстра),
+ * - содержит небольшие UI-only эффекты (shake/ring при изменении value).
+ *
+ * Важно (границы слоёв):
+ * - здесь НЕТ доменной логики (правил боя) — только отображение и интеракции UI,
+ * - компонент не должен импортить `src/data/*`.
+ *
+ * Блок 4 (Content Layer):
+ * - “справочные” данные для UI (иконки/названия/описания способностей/заклинаний/проклятий)
+ *   приходят через `baseGameContent` (application слой), а не прямыми импортами из `data`.
+ * - это позволяет дальше вводить content packs без переписывания UI.
+ */
 import { useDrag } from 'react-dnd';
 import { Card as CardType } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MONSTER_ABILITIES } from '../data/monsterAbilities';
+import { baseGameContent } from '@/features/game/application/gameContent';
 
 interface CardProps {
   card: CardType;
@@ -156,8 +176,12 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
 
             {/* Monster Ability Badge */}
             {card.type === 'monster' && card.ability && (
-                <div className="absolute -top-2 md:-top-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-stone-900 border border-stone-600 flex items-center justify-center shadow-lg z-20 text-xs md:text-sm" title={MONSTER_ABILITIES.find(a => a.id === card.ability)?.name}>
-                    {MONSTER_ABILITIES.find(a => a.id === card.ability)?.icon}
+                <div
+                    className="absolute -top-2 md:-top-3 left-1/2 -translate-x-1/2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-stone-900 border border-stone-600 flex items-center justify-center shadow-lg z-20 text-xs md:text-sm"
+                    // Блок 4: название способности берём из `baseGameContent`, а не из `src/data/*`.
+                    title={baseGameContent.monsterAbilitiesById[card.ability]?.name}
+                >
+                    {baseGameContent.monsterAbilitiesById[card.ability]?.icon}
                 </div>
             )}
 

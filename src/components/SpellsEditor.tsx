@@ -1,10 +1,27 @@
+/**
+ * SpellsEditor — редактор списка заклинаний в декбилдере (UI).
+ *
+ * Слой: UI (React).
+ *
+ * Что делает:
+ * - показывает текущий список `SpellType[]`,
+ * - даёт добавить/удалить/очистить, показывает превью описания,
+ * - отдаёт результат наверх через `onSave`.
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - определения заклинаний (иконка/название/описание) берём из `baseGameContent.spellsById`,
+ * - UI не импортит `src/data/spells.ts`, чтобы контент можно было собирать/подменять через `GameContent`.
+ *
+ * Механика заклинаний — в domain reducer, здесь только редактор/визуал.
+ */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlusCircle, Check, RotateCcw, X, Trash2 } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import SpellPicker from './SpellPicker';
-import { SpellType } from '../types/game';
-import { BASE_SPELLS, SPELLS, SpellDefinition } from '../data/spells';
+import type { SpellType } from '../types/game';
+import type { SpellDefinition } from '@/content';
+import { baseGameContent } from '@/features/game/application/gameContent';
 
 interface SpellsEditorProps {
     initialValues: SpellType[];
@@ -21,7 +38,7 @@ const SpellCardItem = ({
     onDelete: () => void; 
     onClick: () => void;
 }) => {
-    const spell = SPELLS.find(s => s.id === spellId);
+    const spell = baseGameContent.spellsById[spellId];
     if (!spell) return null;
 
     return (
@@ -136,7 +153,7 @@ const SpellsEditor = ({ initialValues, onSave, onClose }: SpellsEditorProps) => 
                                 spellId={spell} 
                                 onDelete={() => handleDeleteClick(index)}
                                 onClick={() => {
-                                    const def = SPELLS.find(s => s.id === spell);
+                                    const def = baseGameContent.spellsById[spell];
                                     if (def) setSelectedSpell(def);
                                 }}
                             />
@@ -166,7 +183,7 @@ const SpellsEditor = ({ initialValues, onSave, onClose }: SpellsEditorProps) => 
                 {/* Footer Actions */}
                 <div className="flex gap-4 w-full pt-6 border-t border-stone-800 mt-4">
                     <button 
-                        onClick={() => setSpells([...BASE_SPELLS])}
+                        onClick={() => setSpells([...baseGameContent.baseSpellIds])}
                         className="flex-1 py-3 px-4 rounded-xl border border-stone-700 hover:bg-stone-800 text-stone-400 hover:text-stone-200 transition-colors flex items-center justify-center gap-2 font-bold uppercase text-xs tracking-widest"
                     >
                         <RotateCcw size={16} /> Сбросить

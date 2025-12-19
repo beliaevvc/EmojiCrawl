@@ -200,7 +200,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       // However, we need this listener on window to spawn cracks anywhere.
       window.addEventListener('click', handleCrackClick, { capture: true });
       return () => window.removeEventListener('click', handleCrackClick, { capture: true });
-  }, []);
+  }, [completeAnomaly]);
 
   // Crack SVG Variants
   const CrackSVG = ({ variant }: { variant: number }) => {
@@ -314,7 +314,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [completeAnomaly]);
 
   // Inactivity Tracker
   useEffect(() => {
@@ -345,7 +345,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         events.forEach(e => window.removeEventListener(e, resetIdle));
         clearInterval(interval);
     };
-  }, [showScreensaver, isScreensaverEnabled]);
+  }, [completeAnomaly, showScreensaver, isScreensaverEnabled]);
 
   // Screensaver Animation Loop
   useEffect(() => {
@@ -433,7 +433,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
         window.removeEventListener('pointerdown', handleGlobalClick);
         if (clickTimeout.current) clearTimeout(clickTimeout.current);
     };
-  }, [chaosStage]);
+  }, [chaosStage, completeAnomaly]);
 
   // Chaos Sequence Logic
   useEffect(() => {
@@ -565,7 +565,7 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
   useEffect(() => {
     initializeAuth();
     fetchBalance(); // Загружаем баланс при старте
-  }, []);
+  }, [fetchBalance, initializeAuth]);
 
   // Stickers Configuration
   const [stickers] = useState(() => {
@@ -816,7 +816,10 @@ const MainMenu = ({ onStartGame, onCreateGame, onShowStats, onLoadTemplate }: Ma
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider leading-none mb-0.5">Player</span>
-                            <span className="text-xs text-stone-300 font-mono leading-none max-w-[100px] truncate" title={user.email}>
+                            <span
+                                className="text-xs text-stone-300 font-mono leading-none max-w-[100px] truncate"
+                                title={user.email ?? undefined}
+                            >
                                 {user.email?.split('@')[0]}
                             </span>
                         </div>

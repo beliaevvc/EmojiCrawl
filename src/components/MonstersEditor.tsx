@@ -1,31 +1,34 @@
+/**
+ * MonstersEditor — редактор групп монстров для кастомного забега (UI).
+ *
+ * Слой: UI (React).
+ *
+ * Что делает:
+ * - показывает список групп монстров (`MonsterGroupConfig[]`),
+ * - позволяет добавлять/удалять/редактировать группы,
+ * - позволяет быстро выбрать “усиление” (ability) через `AbilityPicker`.
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - определения способностей (иконки/названия/описания) берём из `baseGameContent.monsterAbilitiesById`,
+ * - UI не импортит `src/data/monsterAbilities.ts` напрямую.
+ *
+ * Механика способностей (когда они срабатывают) — в domain reducer, здесь только редактор/визуал.
+ */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, RotateCcw, Plus, Minus, PlusCircle, Zap } from 'lucide-react';
 import { MonsterGroupConfig } from '../types/game';
-import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import { ConfirmationModal } from './ConfirmationModal';
 import MonsterGroupEditor from './MonsterGroupEditor';
 import AbilityPicker from './AbilityPicker';
+import { DEFAULT_MONSTER_GROUPS } from './MonstersEditor.defaults';
+import { baseGameContent } from '@/features/game/application/gameContent';
 
 interface MonstersEditorProps {
     initialGroups: MonsterGroupConfig[];
     onSave: (groups: MonsterGroupConfig[]) => void;
     onClose: () => void;
 }
-
-// Default layout from user description:
-// 2(2), 3(2), 4(2), 5(3), 6(2), 7(2), 8(2), 9(2), 10(3)
-export const DEFAULT_MONSTER_GROUPS: MonsterGroupConfig[] = [
-    { id: 'm2', value: 2, count: 2 },
-    { id: 'm3', value: 3, count: 2 },
-    { id: 'm4', value: 4, count: 2 },
-    { id: 'm5', value: 5, count: 2 },
-    { id: 'm6', value: 6, count: 2 },
-    { id: 'm7', value: 7, count: 2 },
-    { id: 'm8', value: 8, count: 2 },
-    { id: 'm9', value: 9, count: 2 },
-    { id: 'm10', value: 10, count: 3 },
-];
 
 const MonstersEditor = ({ initialGroups, onSave, onClose }: MonstersEditorProps) => {
     const [groups, setGroups] = useState<MonsterGroupConfig[]>(initialGroups.length > 0 ? initialGroups : DEFAULT_MONSTER_GROUPS);
@@ -122,7 +125,7 @@ const MonstersEditor = ({ initialGroups, onSave, onClose }: MonstersEditorProps)
                         
                         {/* Existing Groups */}
                         {groups.sort((a,b) => a.value - b.value).map((group) => {
-                            const abilityDef = group.ability ? MONSTER_ABILITIES.find(a => a.id === group.ability) : null;
+                            const abilityDef = group.ability ? baseGameContent.monsterAbilitiesById[group.ability] : null;
                             
                             return (
                                 <motion.div 

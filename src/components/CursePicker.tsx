@@ -1,7 +1,18 @@
+/**
+ * CursePicker — UI-пикер проклятий (выбор одного из доступных).
+ *
+ * Слой: UI (React).
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - список проклятий для отображения берём из `baseGameContent.curses`,
+ * - UI не импортит `src/data/curses.ts` напрямую (контент может собираться в `GameContent` packs).
+ *
+ * Механика проклятий (что делает fog/full_moon/...) — в domain reducer, здесь только выбор/визуал.
+ */
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { CURSES } from '../data/curses';
-import { CurseType } from '../types/game';
+import { baseGameContent } from '@/features/game/application/gameContent';
+import type { CurseType } from '@/types/game';
 
 interface CursePickerProps {
     onSelect: (curse: CurseType) => void;
@@ -36,7 +47,7 @@ export const CursePicker = ({ onSelect, onClose }: CursePickerProps) => {
                 </div>
 
                 <div className="grid gap-3">
-                    {CURSES.map((curse) => (
+                    {baseGameContent.curses.map((curse) => (
                         <button
                             key={curse.id}
                             onClick={() => onSelect(curse.id)}

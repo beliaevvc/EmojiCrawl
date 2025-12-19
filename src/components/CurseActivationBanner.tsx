@@ -1,7 +1,20 @@
+/**
+ * CurseActivationBanner — крупный UI-баннер “Проклятие активировано”.
+ *
+ * Слой: UI (React).
+ *
+ * Что делает:
+ * - реагирует на изменение `curse`,
+ * - показывает анимированный баннер на несколько секунд.
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - имя/описание/иконка берутся из `baseGameContent.cursesById`,
+ * - UI не импортит `src/data/curses.ts` напрямую.
+ */
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CurseType } from '../types/game';
-import { CURSES } from '../data/curses';
+import type { CurseType } from '@/types/game';
+import { baseGameContent } from '@/features/game/application/gameContent';
 
 interface CurseActivationBannerProps {
     curse: CurseType | null;
@@ -23,7 +36,7 @@ export const CurseActivationBanner = ({ curse }: CurseActivationBannerProps) => 
         }
     }, [curse]);
 
-    const curseDef = activeCurse ? CURSES.find(c => c.id === activeCurse) : null;
+    const curseDef = activeCurse ? baseGameContent.cursesById[activeCurse] : null;
     const glowClass = (() => {
         switch (activeCurse) {
             case 'fog':

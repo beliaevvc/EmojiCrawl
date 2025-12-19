@@ -1,5 +1,26 @@
 # Игровая Механика и Правила
 
+## Назначение
+Этот документ описывает **правила и инварианты** игры Skazmor: игровой цикл, взаимодействия, ограничения и важные нюансы механики.
+Он нужен как “спека механики”, а не как каталог контента.
+
+## Источник правды (Source of Truth)
+- Доменная механика:
+  - `src/features/game/domain/reducer/gameReducer.ts` — основная логика правил (редьюсер).
+  - `src/features/game/domain/deck/deckFactory.ts` — создание/перемешивание/генерация колоды (часть правил старта/раундов).
+  - `src/features/game/domain/model/types.ts` — доменные типы (`GameState`, `Card`, ids и т.п.).
+- Слой приложения (команды UI → GameAction):
+  - `src/features/game/application/gameSession.ts`
+- Контент (данные/описания):
+  - `memory-bank/gameContent.md` + `src/content/*` (описания/иконки/цвета), **не** механика.
+
+## Где в коде (Entry points)
+- `src/features/game/domain/reducer/gameReducer.ts`
+- `src/features/game/domain/deck/deckFactory.ts`
+- `src/features/game/application/gameSession.ts`
+- UI “где это проявляется”:
+  - `src/components/game/screens/useGameScreenController.ts` (showInfo, проклятия, HUD-логика на уровне экрана)
+
 Этот документ описывает основные игровые механики, правила взаимодействия объектов, ограничения и технические детали реализации игры Skazmor.
 
 ## 1. Основной Игровой Цикл
@@ -164,4 +185,20 @@
 ### Ограничения Реализации
 *   **Стек эффектов:** Эффекты типа "следующий удар" (`activeEffects`) снимаются сразу после срабатывания.
 *   **Взаимодействие:** Блокировки (Stealth, Silence) проверяются в начале кейса редьюсера. Если условие блокировки активно, действие отменяется (`return state` или `break`).
+
+## Правила обновления
+- Обновлять этот документ, если меняются:
+  - правила боя/раундов/победы/поражения,
+  - определения “что считается действием” (например, влияет на `hasActed`),
+  - правила проклятий/абилок (как механика, не как описание/иконка),
+  - семантика `GameAction` и важные поля `GameState` (инварианты).
+- Не обновлять при изменении только текстов/иконок/цветов — это `gameContent.md`.
+
+## Связанные документы
+- `memory-bank/gameContent.md`
+- `memory-bank/uiDesign.md`
+- `memory-bank/systemPatterns.md`
+
+## Последнее обновление
+- 2025-12-19 — Приведено к формату Memory Bank (Блок 90): добавлены Source of Truth / Entry points / правила обновления / Last updated.
 

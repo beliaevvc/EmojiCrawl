@@ -1,40 +1,40 @@
-import { RunHistoryEntry, GameStats, Overheads } from '../types/game';
+/**
+ * statsStorage — временный bridge для обратной совместимости.
+ *
+ * ### Что это
+ * Исторические функции для истории забегов:
+ * - `saveRun(stats, result, overheads)`
+ * - `getRunHistory()`
+ * - `clearHistory()`
+ *
+ * ### Почему это bridge (Блок 5)
+ * Раньше этот файл напрямую писал/читал `localStorage`.
+ * В Блоке 5 мы вынесли I/O в `infrastructure/localStorage/runHistory/*`,
+ * а логику форматирования записи забега — в application use-case.
+ *
+ * Здесь остаётся совместимый API, но прямого `localStorage` больше нет.
+ *
+ * ### Что именно считает use-case
+ * - не сохраняет дубликаты (dedupe по `startTime`)
+ * - считает `gameNumber`
+ * - проставляет `id/date/result/overheads`
+ */
 
-const STORAGE_KEY = 'skazmor_run_history';
+import type { RunHistoryEntry, GameStats, Overheads } from '@/types/game';
+import { createRunHistoryUseCases } from '@/features/runHistory/application';
+import { LocalStorageRunHistoryRepository } from '@/infrastructure/localStorage/runHistory/LocalStorageRunHistoryRepository';
+
+const runHistoryUseCases = createRunHistoryUseCases(new LocalStorageRunHistoryRepository());
 
 export const saveRun = (stats: GameStats, result: 'won' | 'lost', overheads: Overheads) => {
-    const history = getRunHistory();
-    const gameNumber = history.length + 1;
-    
-    // Check if this run was already saved to prevent duplicates on re-renders
-    // Using startTime as a unique identifier for the session
-    const existing = history.find(h => h.startTime === stats.startTime);
-    if (existing) return;
-
-    const newEntry: RunHistoryEntry = {
-        ...stats,
-        id: Math.random().toString(36).substr(2, 9),
-        gameNumber,
-        date: new Date().toISOString(),
-        result,
-        overheads
-    };
-    
-    // Add to beginning of array
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([newEntry, ...history]));
+  runHistoryUseCases.saveRun(stats, result, overheads);
 };
 
 export const getRunHistory = (): RunHistoryEntry[] => {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        console.error("Failed to load history", e);
-        return [];
-    }
+  return runHistoryUseCases.getRunHistory();
 };
 
 export const clearHistory = () => {
-    localStorage.removeItem(STORAGE_KEY);
+  runHistoryUseCases.clearHistory();
 };
 

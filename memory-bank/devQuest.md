@@ -1,7 +1,24 @@
 # Dev Log Quest: Протокол "Bounty Hunt"
 
-> **Статус:** Активен (Мета-игра для разработчиков)
-> **Цель:** Найти 9 скрытых аномалий в коде.
+## Назначение
+Dev Log Quest — это **мета‑слой** (плагин/пасхалки) для команды: мини‑квест, консоль и набор “аномалий”, которые можно находить во время плейтеста.
+
+> **Статус:** активен (мета‑игра для разработчиков)  
+> **Цель:** найти все аномалии из реестра.
+
+## Источник правды (Source of Truth)
+- Данные аномалий (id/title/hints): `src/data/devQuest.ts` (`QUEST_ANOMALIES`)
+- Состояние/прогресс/логи/баланс: `src/stores/useDevQuestStore.ts` (Zustand persist, ключ: `dev-quest-storage`)
+- Плагин (глобальные listeners + magic words): `src/app/plugins/DevQuestPlugin.tsx`
+- UI “консоли”: `src/components/DevConsole.tsx`
+- Глобальные оверлеи (фонарик/слизь/мел): `src/app/plugins/OverlaysPlugin.tsx` (+ компоненты в `src/components/*Overlay.tsx`)
+
+## Где в коде (Entry points)
+- Подключение плагинов/консоли: `src/app/AppShell.tsx`
+- Включение/отключение флагами: `src/app/appConfig.ts`
+- DevQuest Plugin: `src/app/plugins/DevQuestPlugin.tsx`
+- Store: `src/stores/useDevQuestStore.ts`
+- Console UI: `src/components/DevConsole.tsx`
 
 ## 1. Концепция
 Внутри приложения спрятана "Консоль Разработчика" (активируется кликом по иконке терминала). Это мета-игра, стилизованная под ретро-терминал / BIOS.
@@ -17,7 +34,7 @@
     *   **Level 3 ($25):** Прямая инструкция (MANUAL). Штрафной уровень с едким комментарием AI.
 
 ## 3. Реестр Аномалий (Anomalies)
-*Источник данных: `src/data/devQuest.ts`*
+*Источник данных: `src/data/devQuest.ts` (`QUEST_ANOMALIES`).*
 
 | ID                    | Триггер (Как найти)                                             | Эффект                                                |
 | :-------------------: | :-------------------------------------------------------------: | :---------------------------------------------------: |
@@ -28,7 +45,7 @@
 | **#ENTROPY_OVERLOAD** | Кликнуть **15 раз** подряд в пустое место экрана.               | Эффект "битых пикселей" / краш.                       |
 | **#MAGIC_WORD_1**     | Набрать на клавиатуре `lumos`. (Выкл: `nox`).                   | Включается эффект фонарика (Flashlight Overlay).      |
 | **#BIO_INPUT**        | Набрать на клавиатуре `mouse`. (Выкл: `cat`).                   | Эффект слизи/биомассы (Slime Overlay).                |
-| **#MATRIX_BREAK**     | `Alt + Click` по экрану. (Починить: `Ctrl + Click`).            | Экран покрывается трещинами.                          |
+| **#MATRIX_BREAK**     | `Alt + Click` по экрану. (`Ctrl/Cmd + Click` — очистка трещин в главном меню). | Экран покрывается трещинами (в главном меню).         |
 
 ## 4. Техническая Реализация
 
@@ -38,18 +55,49 @@
 *   `anomalies`: Объект состояния каждой аномалии (`isFound`, `hintsBought`).
 *   `logs`: Журнал событий консоли.
 
-### Глобальные Слушатели (`App.tsx`)
-В корневом компоненте `App.tsx` висит `useEffect`, который слушает:
-1.  `keydown`: Накапливает буфер последних 10 нажатий для проверки чит-кодов (`lumos`, `mouse`).
-2.  `click`: Считает быстрые клики для `#ENTROPY_OVERLOAD`.
-3.  `mousemove`/`idle`: Запускает таймер бездействия для `#IDLE_STATE`.
+### Глобальные слушатели (плагин `DevQuestPlugin`)
+Исторически слушатели жили в `App.tsx`, но после Блока 6 они вынесены в плагин:
+- `src/app/plugins/DevQuestPlugin.tsx`
+
+Плагин подписывается на глобальные события окна:
+1) `keydown`: буфер последних нажатий (magic words: `lumos/nox/mouse/cat/sbros`).
+2) `click`: быстрые клики (аномалия `ENTROPY_OVERLOAD`) + `Alt+Click` (аномалия `MATRIX_BREAK`).
+3) `mousemove` + таймер idle: аномалия `IDLE_STATE` (если включён screensaver в настройках).
+
+Важно:
+- Плагин показывает кнопки Settings/Terminal **только если есть авторизованный пользователь** (auth).
+- Плагин уважает глобальный lock фонарика (см. “Тьма”).
 
 ### Визуальные Эффекты
-Реализованы через отдельные Overlay-компоненты, которые рендерятся поверх всего интерфейса (через `createPortal` или просто absolute positioning в `App.tsx`):
-*   `FlashlightOverlay`
-*   `SlimeOverlay`
-*   `GhostTrailOverlay` (для мела)
+Реализованы как глобальные оверлеи (плагин `OverlaysPlugin`), рендерятся поверх всех экранов:
+- `src/app/plugins/OverlaysPlugin.tsx`:
+  - `FlashlightOverlay` (Lumos/Nox)
+  - `SlimeOverlay` (mouse/cat)
+  - `GhostTrailOverlay` (мел)
+
+Отдельный кейс:
+- “трещины” для `MATRIX_BREAK` сейчас реализованы в главном меню:
+  - `src/components/MainMenu.tsx` (Alt+Click добавляет трещины, Ctrl/Cmd+Click очищает).
+
+### Проклятие “Тьма” и блокировка Lumos/Nox
+Пасхалка `lumos/nox` может быть заблокирована, когда активна “Тьма”:
+- глобальный lock: `src/utils/flashlightLock.ts`
+- установка lock из game UI: `src/components/game/effects/useDarknessFlashlightLock.ts`
 
 ## 5. Чит-коды управления
 *   `sbros`: Полный сброс прогресса квеста (Reset Quest).
+
+## Правила обновления
+- Обновлять этот документ, если меняются:
+  - список аномалий (данные/триггеры),
+  - место, где висят глобальные listeners (плагин),
+  - структура плагинов (`AppShell`/`appConfig`/env‑флаги).
+- Не обновлять при мелких правках текста подсказок — если меняются только тексты, достаточно обновить `src/data/devQuest.ts`.
+
+## Связанные документы
+- `memory-bank/systemPatterns.md` (plugins и границы внешнего слоя)
+- `memory-bank/techContext.md` (env‑флаги, точки входа)
+
+## Последнее обновление
+- 2025-12-19 — Приведено к текущей архитектуре (DevQuestPlugin/OverlaysPlugin/AppShell) и формату Memory Bank (Блок 90).
 

@@ -1,55 +1,15 @@
-import { CurseType } from '../types/game';
-
-export interface CurseDef {
-    id: CurseType;
-    name: string;
-    description: string;
-    icon: string;
-    color: string;
-}
-
-export const CURSES: CurseDef[] = [
-    {
-        id: 'fog',
-        name: 'Туман',
-        description: 'Две монеты скрыты, пока на столе не останется 2 карты.',
-        icon: '☁️',
-        color: 'text-stone-400'
-    },
-    {
-        id: 'full_moon',
-        name: 'Полнолуние',
-        description: 'Смерть одного монстра исцеляет других (+1 HP).',
-        icon: '🌕',
-        color: 'text-amber-200'
-    },
-    {
-        id: 'poison',
-        name: 'Отравление',
-        description: 'Все зелья лечат на 1 HP меньше.',
-        icon: '🥦',
-        color: 'text-lime-300'
-    },
-    {
-        id: 'tempering',
-        name: 'Закалка',
-        description: 'Все оружия наносят на 1 урон больше.',
-        icon: '🛠️',
-        color: 'text-stone-200'
-    },
-    {
-        id: 'greed',
-        name: 'Жадность',
-        description: 'Любая монета даёт дополнительно +2 💎 (бонус поверх номинала).',
-        icon: '💰',
-        color: 'text-amber-300'
-    },
-    {
-        id: 'darkness',
-        name: 'Тьма',
-        description: 'Всё темнеет, вокруг курсора — круг света.',
-        icon: '🌑',
-        color: 'text-indigo-200'
-    }
-];
+/**
+ * @deprecated Блок 4 (Content Layer): curses переехали в `src/content/curses/*`.
+ *
+ * Оставлено как “мост” для обратной совместимости:
+ * - старые файлы могли импортить `CURSES` из `src/data/curses.ts`,
+ * - на время рефакторинга мы оставляем этот путь рабочим, чтобы не ломать UI/доменные участки массово.
+ *
+ * Новому коду нельзя импортить отсюда.
+ * Вместо этого:
+ * - для UI: используем `baseGameContent.curses` / `baseGameContent.cursesById`,
+ * - для сборки паков: `src/content/curses/baseCurses.ts`.
+ */
+export { BASE_CURSES as CURSES } from '@/content/curses';
+export type { CurseDefinition as CurseDef } from '@/content';
 

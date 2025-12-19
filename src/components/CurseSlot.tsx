@@ -1,5 +1,18 @@
-import { CurseType } from '../types/game';
-import { CURSES } from '../data/curses';
+/**
+ * CurseSlot — UI-слот проклятия на поле боя (токен + tooltip / “+” для выбора).
+ *
+ * Слой: UI (React).
+ *
+ * Что делает:
+ * - отображает текущее проклятие как токен (иконка + подсказка),
+ * - если проклятие не выбрано и выбор разрешён — показывает кнопку “+”.
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - описание/цвет/иконку проклятия берём через `baseGameContent.cursesById`,
+ * - UI не импортит `src/data/curses.ts` напрямую.
+ */
+import type { CurseType } from '@/types/game';
+import { baseGameContent } from '@/features/game/application/gameContent';
 import { motion } from 'framer-motion';
 
 interface CurseSlotProps {
@@ -9,7 +22,7 @@ interface CurseSlotProps {
 }
 
 export const CurseSlot = ({ curse, isLocked, onClick }: CurseSlotProps) => {
-    const curseDef = curse ? CURSES.find(c => c.id === curse) : null;
+    const curseDef = curse ? baseGameContent.cursesById[curse] : null;
 
     const Label = () => (
         <span className="text-[10px] font-bold tracking-widest text-stone-400 bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm uppercase select-none">

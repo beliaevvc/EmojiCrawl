@@ -1,7 +1,21 @@
+/**
+ * AuthModal — UI-модалка входа/регистрации.
+ *
+ * ### Что делает
+ * - даёт пользователю войти по email+password или создать аккаунт
+ * - показывает ошибки и состояние загрузки
+ *
+ * ### Важное архитектурное правило (Блок 5)
+ * Этот компонент **не должен** импортировать `supabase` напрямую.
+ * Он работает через `useAuthStore`, который в свою очередь вызывает application use-cases,
+ * а Supabase живёт в инфраструктурном адаптере.
+ *
+ * Так мы удерживаем чистые границы: UI → application → infrastructure.
+ */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, LogIn, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/useAuthStore';
 
 interface AuthModalProps {
     onClose: () => void;
@@ -14,6 +28,7 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
     const [error, setError] = useState<string | null>(null);
     const [mode, setMode] = useState<'signin' | 'signup'>('signin'); // Visual toggle only, logic handles both
     const [showPassword, setShowPassword] = useState(false);
+    const { signInWithPassword, signUp } = useAuthStore();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,18 +43,12 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
             // but we can make it smart later.
             
             if (mode === 'signup') {
-                const { error: signUpError } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
+                const { error: signUpError } = await signUp({ email, password });
                 if (signUpError) throw signUpError;
                 // If successful and no confirm needed, we are logged in!
                 onClose();
             } else {
-                const { error: signInError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
+                const { error: signInError } = await signInWithPassword({ email, password });
                 if (signInError) throw signInError;
                 onClose();
             }

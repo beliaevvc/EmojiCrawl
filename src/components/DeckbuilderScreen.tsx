@@ -1,3 +1,21 @@
+/**
+ * DeckbuilderScreen — экран настройки кастомного забега (UI).
+ *
+ * Слой: UI (React).
+ *
+ * Что делает:
+ * - позволяет собрать `DeckConfig` (персонаж, предметы, заклинания, группы монстров, проклятие),
+ * - сохраняет/загружает шаблоны, умеет шарить конфиг,
+ * - запускает кастомный забег с выбранными параметрами.
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - “справочные” данные (иконка/название проклятия, базовые заклинания и т.п.)
+ *   берём из `baseGameContent`, а не из `src/data/*`,
+ * - это нужно, чтобы позже можно было переключать content packs и не переписывать UI.
+ *
+ * Важно (Блок 5 позже):
+ * - этот экран сейчас использует LocalStorage (templates) напрямую — это будет предметом Блока 5.
+ */
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save, Play, Swords, RotateCcw, Share2, Download, Copy, Check, X, NotebookPen } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -8,14 +26,14 @@ import WeaponsEditor from './WeaponsEditor';
 import PotionsEditor from './PotionsEditor';
 import CoinsEditor from './CoinsEditor';
 import SpellsEditor from './SpellsEditor';
-import MonstersEditor, { DEFAULT_MONSTER_GROUPS } from './MonstersEditor';
+import MonstersEditor from './MonstersEditor';
+import { DEFAULT_MONSTER_GROUPS } from './MonstersEditor.defaults';
 import { DeckConfig, SpellType, MonsterGroupConfig, DeckTemplate, CurseType } from '../types/game';
-import { BASE_SPELLS } from '../data/spells';
+import { baseGameContent } from '@/features/game/application/gameContent';
 import { ConfirmationModal } from './ConfirmationModal';
 import SaveTemplateModal from './SaveTemplateModal';
 import { saveTemplate } from '../utils/storage';
 import { encodeDeckConfig, decodeDeckConfig } from '../utils/shareUtils';
-import { CURSES } from '../data/curses';
 import { CursePicker } from './CursePicker';
 import { MaskedFlashlightOverlay } from './MaskedFlashlightOverlay';
 import { setFlashlightLocked } from '../utils/flashlightLock';
@@ -281,7 +299,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const [customWeapons, setCustomWeapons] = useState<number[]>([2, 3, 4, 5, 6, 7]);
     const [customPotions, setCustomPotions] = useState<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10]);
     const [customCoins, setCustomCoins] = useState<number[]>([2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const [customSpells, setCustomSpells] = useState<SpellType[]>([...BASE_SPELLS]);
+    const [customSpells, setCustomSpells] = useState<SpellType[]>([...baseGameContent.baseSpellIds]);
     const [customMonsters, setCustomMonsters] = useState<MonsterGroupConfig[]>(DEFAULT_MONSTER_GROUPS);
     const [customCurse, setCustomCurse] = useState<CurseType | null>(null);
 
@@ -338,7 +356,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
     const isWeaponsModified = JSON.stringify(customWeapons.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7].slice().sort((a,b) => a-b));
     const isPotionsModified = JSON.stringify(customPotions.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10].slice().sort((a,b) => a-b));
     const isCoinsModified = JSON.stringify(customCoins.slice().sort((a,b) => a-b)) !== JSON.stringify([2, 3, 4, 5, 6, 7, 8, 9, 10].slice().sort((a,b) => a-b));
-    const isSpellsModified = !arraysEqual(customSpells, BASE_SPELLS);
+    const isSpellsModified = !arraysEqual(customSpells, baseGameContent.baseSpellIds);
     const isMonstersModified = JSON.stringify(customMonsters) !== JSON.stringify(DEFAULT_MONSTER_GROUPS);
     const isCurseModified = customCurse !== null;
 
@@ -367,7 +385,7 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
         setCustomWeapons([2, 3, 4, 5, 6, 7]);
         setCustomPotions([2, 3, 4, 5, 6, 7, 8, 9, 10]);
         setCustomCoins([2, 3, 4, 5, 6, 7, 8, 9, 10]);
-        setCustomSpells([...BASE_SPELLS]);
+        setCustomSpells([...baseGameContent.baseSpellIds]);
         setCustomMonsters([...DEFAULT_MONSTER_GROUPS]);
         setCustomCurse(null);
         setShowResetConfirm(false);
@@ -570,9 +588,9 @@ const DeckbuilderScreen = ({ onBack, onStartStandard, onStartCustom, initialTemp
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {/* Curse */}
                         <CategoryCard 
-                            icon={customCurse ? (CURSES.find(c => c.id === customCurse)?.icon || "👻") : "👻"}
+                            icon={customCurse ? (baseGameContent.cursesById[customCurse]?.icon || "👻") : "👻"}
                             label="Проклятие"
-                            subtitle={customCurse ? CURSES.find(c => c.id === customCurse)?.name : "Нет"}
+                            subtitle={customCurse ? baseGameContent.cursesById[customCurse]?.name : "Нет"}
                             accentColor="purple"
                             onClick={() => setShowCursePicker(true)}
                             isModified={isCurseModified}

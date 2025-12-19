@@ -116,7 +116,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
         // Fallback to local
     }
     return () => unsubscribeFromNotes();
-  }, [user]);
+  }, [user, fetchNotes, subscribeToNotes, unsubscribeFromNotes]);
 
   // Set active note when notes load
   useEffect(() => {
@@ -147,6 +147,7 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
         // We avoid updating if ID is same to prevent overwriting user typing
         setLocalTitle(activeNote.title || '');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Осознанно синхронизируем только по activeNoteId, чтобы не перетирать ввод при realtime-обновлениях activeNote.
   }, [activeNoteId]); // REMOVED activeNote dependency to stop overwriting!
 
   // We need to update localTitle if it was empty on first load though.
@@ -363,25 +364,28 @@ export const NotesModal = ({ onClose }: { onClose: () => void }) => {
   // Ref to track previous ID to detect switch
   const prevNoteIdRef = useRef<string | null>(null);
 
+  const hasActiveNote = Boolean(activeNote);
+  const activeNoteContent = activeNote?.content || '';
+
   // Sync editor content when active note changes OR view mode changes to editor
   useEffect(() => {
-    if (editorRef.current && activeNote && viewMode === 'editor') {
-        const isNoteSwitch = prevNoteIdRef.current !== activeNoteId;
+    if (!editorRef.current || !hasActiveNote || viewMode !== 'editor') return;
+
+    const isNoteSwitch = prevNoteIdRef.current !== activeNoteId;
         
-        // Always update content if we just switched notes OR just opened the editor view
-        if (isNoteSwitch || viewMode === 'editor') {
-            editorRef.current.innerHTML = activeNote.content || '';
-            prevNoteIdRef.current = activeNoteId;
-        } 
+    // Always update content if we just switched notes OR just opened the editor view
+    if (isNoteSwitch || viewMode === 'editor') {
+      editorRef.current.innerHTML = activeNoteContent;
+      prevNoteIdRef.current = activeNoteId;
+    } 
         
-        // Handle realtime updates while in editor
-        if (!isNoteSwitch && editorRef.current.innerHTML !== activeNote.content) {
-             if (document.activeElement !== editorRef.current) {
-                 editorRef.current.innerHTML = activeNote.content || '';
-             }
-        }
+    // Handle realtime updates while in editor
+    if (!isNoteSwitch && editorRef.current.innerHTML !== activeNoteContent) {
+      if (document.activeElement !== editorRef.current) {
+        editorRef.current.innerHTML = activeNoteContent;
+      }
     }
-  }, [activeNoteId, activeNote?.content, viewMode]); // Added viewMode dependency 
+  }, [activeNoteId, activeNoteContent, hasActiveNote, viewMode]); // Added viewMode dependency 
 
   // Don't render until client-side hydration (window check) 
   // If loading, show loader. If no notes and loaded, show empty state.

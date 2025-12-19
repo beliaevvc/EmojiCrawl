@@ -188,7 +188,7 @@ export const Chalkboard = ({ color = '#e7e5e4' }: { color?: string }) => {
             window.removeEventListener('pointerup', handlePointerUp);
             window.removeEventListener('pointercancel', handlePointerUp);
         };
-    }, [isDrawing]);
+    }, [isDrawing, completeAnomaly]);
 
     return (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">

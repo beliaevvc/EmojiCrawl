@@ -1,52 +1,61 @@
-import { DeckTemplate, RunHistoryEntry } from '../types/game';
+/**
+ * storage — временный bridge для обратной совместимости.
+ *
+ * ### Что это
+ * Исторический набор утилит для LocalStorage:
+ * - templates (шаблоны колод)
+ * - run history (история забегов)
+ *
+ * ### Почему это bridge (Блок 5)
+ * Раньше этот файл напрямую работал с `localStorage`.
+ * В Блоке 5 (Infrastructure adapters) мы переносим I/O в `src/infrastructure/localStorage/*`,
+ * чтобы внешний мир (LocalStorage) не был размазан по UI.
+ *
+ * Чтобы миграция была безопасной:
+ * - этот файл оставлен как совместимый API для существующих импортов,
+ * - но он больше НЕ содержит прямых `localStorage.*`,
+ * - он делегирует в use-cases (`createTemplatesUseCases`, `createRunHistoryUseCases`)
+ *   и инфраструктурные репозитории.
+ *
+ * ### Важно
+ * Новый код предпочтительнее вести через application use-cases/порты напрямую,
+ * а этот bridge со временем можно “сузить” или удалить, когда перепишем импорты.
+ */
 
-const TEMPLATES_KEY = 'skazmor_templates';
-const HISTORY_KEY = 'skazmor_run_history';
+import type { DeckTemplate, RunHistoryEntry } from '@/types/game';
+import { createTemplatesUseCases } from '@/features/templates/application';
+import { LocalStorageTemplatesRepository } from '@/infrastructure/localStorage/templates/LocalStorageTemplatesRepository';
+import { createRunHistoryUseCases } from '@/features/runHistory/application';
+import { LocalStorageRunHistoryRepository } from '@/infrastructure/localStorage/runHistory/LocalStorageRunHistoryRepository';
+
+const templatesUseCases = createTemplatesUseCases(new LocalStorageTemplatesRepository());
+const runHistoryUseCases = createRunHistoryUseCases(new LocalStorageRunHistoryRepository());
 
 // --- Templates ---
 
 export const getTemplates = (): DeckTemplate[] => {
-    try {
-        const stored = localStorage.getItem(TEMPLATES_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        console.error('Failed to load templates', e);
-        return [];
-    }
+  return templatesUseCases.getTemplates();
 };
 
 export const saveTemplate = (template: DeckTemplate): void => {
-    const templates = getTemplates();
-    const newTemplates = [...templates, template];
-    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(newTemplates));
+  templatesUseCases.saveTemplate(template);
 };
 
 export const deleteTemplate = (id: string): void => {
-    const templates = getTemplates();
-    const newTemplates = templates.filter(t => t.id !== id);
-    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(newTemplates));
+  templatesUseCases.deleteTemplate(id);
 };
 
-// --- History (Moving logic here if needed, but existing is in StatsScreen usually) ---
-// For now let's keep History logic where it is or centralized later. 
-// But we might need to access it easily.
+// --- History (legacy API) ---
 
 export const getRunHistory = (): RunHistoryEntry[] => {
-    try {
-        const stored = localStorage.getItem(HISTORY_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        return [];
-    }
+  return runHistoryUseCases.getRunHistory();
 };
 
 export const saveRunToHistory = (entry: RunHistoryEntry): void => {
-    const history = getRunHistory();
-    const newHistory = [entry, ...history];
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+  runHistoryUseCases.saveEntry(entry);
 };
 
 export const clearRunHistory = (): void => {
-    localStorage.removeItem(HISTORY_KEY);
+  runHistoryUseCases.clearHistory();
 };
 

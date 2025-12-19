@@ -1,9 +1,22 @@
+/**
+ * MonsterGroupEditor — модалка редактирования одной группы монстров (UI).
+ *
+ * Слой: UI (React).
+ *
+ * Что делает:
+ * - правит count/ability/label для конкретной группы,
+ * - использует `AbilityPicker` для выбора способности.
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - текущую выбранную способность (иконка/название/описание) берём из `baseGameContent.monsterAbilitiesById`,
+ * - UI не импортит `src/data/monsterAbilities.ts`.
+ */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Plus, Minus, Zap } from 'lucide-react';
 import { MonsterGroupConfig, MonsterAbilityType, MonsterLabelType } from '../types/game';
-import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import AbilityPicker from './AbilityPicker';
+import { baseGameContent } from '@/features/game/application/gameContent';
 
 interface MonsterGroupEditorProps {
     group: MonsterGroupConfig;
@@ -23,7 +36,7 @@ const MonsterGroupEditor = ({ group, onSave, onClose, onDeleteGroup }: MonsterGr
     const [label, setLabel] = useState<MonsterLabelType | undefined>(group.label);
     const [showAbilityPicker, setShowAbilityPicker] = useState(false);
 
-    const activeAbility = ability ? MONSTER_ABILITIES.find(a => a.id === ability) : null;
+    const activeAbility = ability ? baseGameContent.monsterAbilitiesById[ability] : null;
 
     const handleSave = () => {
         onSave({ ...group, count, ability, label });

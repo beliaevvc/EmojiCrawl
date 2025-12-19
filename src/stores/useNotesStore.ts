@@ -1,6 +1,27 @@
+/**
+ * useNotesStore — Zustand store для заметок.
+ *
+ * ### Что хранит
+ * - `notes`: массив заметок (из Supabase, если пользователь залогинен)
+ * - `loading/error`: состояние загрузки/ошибок
+ *
+ * ### Почему так устроено (Блок 5)
+ * В Блоке 5 мы выносим Supabase I/O в инфраструктуру:
+ * - этот store **не делает** `supabase.from('notes')...` и не управляет realtime-каналами напрямую,
+ * - вместо этого он вызывает application use-cases (`createNotesUseCases`),
+ * - а Supabase-адаптер реализует порт `NotesRepository`.
+ *
+ * ### Realtime подписка: важный инвариант
+ * Подписка может включаться/выключаться при смене `user` (см. `NotesModal`).
+ * Поэтому:
+ * - store хранит `disposeNotesSubscription` на уровне модуля,
+ * - перед каждой новой подпиской делает dispose старой,
+ * - и никогда не вызывает `removeAllChannels()` (это сломало бы другие realtime‑подсистемы).
+ */
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
+import { SupabaseNotesRepository } from '@/infrastructure/supabase/notes/SupabaseNotesRepository';
+import { createNotesUseCases } from '@/features/notes/application';
 
 export interface Note {
   id: string;
@@ -25,6 +46,15 @@ interface NotesState {
   unsubscribeFromNotes: () => void;
 }
 
+/**
+ * Блок 5 (Infrastructure adapters):
+ * - Supabase I/O вынесен в `infrastructure/supabase/notes/*`
+ * - store остаётся “тонким”: стейт + вызовы use-cases + локальная оптимистичность
+ */
+const notesUseCases = createNotesUseCases(new SupabaseNotesRepository());
+
+let disposeNotesSubscription: (() => void) | null = null;
+
 export const useNotesStore = create<NotesState>((set, get) => ({
   notes: [],
   loading: false,
@@ -33,13 +63,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   fetchNotes: async () => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .order('created_at', { ascending: true }); // Oldest first (left), Newest last (right)
-
+      const { notes, error } = await notesUseCases.fetchAll();
       if (error) throw error;
-      set({ notes: data as Note[] });
+      set({ notes: notes as Note[] });
     } catch (err: any) {
       console.error('Error fetching notes:', err);
       set({ error: err.message });
@@ -53,24 +79,17 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     if (!user) return null; // Only auth users can create
 
     try {
-      const newNote = {
+      const { note, error } = await notesUseCases.create({
         title,
         content,
         user_id: user.id,
-        // Make sure email exists, fallback to empty string if undefined
-        author_email: user.email || 'Anonymous', 
-      };
+        author_email: user.email || 'Anonymous',
+      });
 
-      const { data, error } = await supabase
-        .from('notes')
-        .insert([newNote])
-        .select()
-        .single();
-        
       if (error) throw error;
-      
-      await get().fetchNotes(); 
-      return data.id; // Return the new note ID
+
+      await get().fetchNotes();
+      return note?.id ?? null;
 
     } catch (err: any) {
       console.error('Error creating note:', err);
@@ -101,13 +120,11 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }));
 
     try {
-      const { error } = await supabase
-        .from('notes')
-        .update({ 
-            title: updates.title, 
-            content: updates.content 
-        })
-        .eq('id', id);
+      const { error } = await notesUseCases.update({
+        id,
+        title: updates.title,
+        content: updates.content,
+      });
 
       if (error) throw error;
       // Note: Subscription will trigger fetchNotes, but we can also do it manually to be safe/fast
@@ -120,7 +137,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   deleteNote: async (id: string) => {
     try {
-      const { error } = await supabase.from('notes').delete().eq('id', id);
+      const { error } = await notesUseCases.delete({ id });
       if (error) throw error;
       await get().fetchNotes();
     } catch (err: any) {
@@ -129,20 +146,17 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   subscribeToNotes: () => {
-    supabase
-      .channel('public:notes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, () => {
-        // Simple reload on any change
-        get().fetchNotes();
-      })
-      .subscribe();
-
-    // Store subscription to unsubscribe later?
-    // zustand store is global, maybe we just keep it running.
+    // Защита от дубликатов: store может быть вызван несколько раз при переключениях user/local.
+    if (disposeNotesSubscription) disposeNotesSubscription();
+    disposeNotesSubscription = notesUseCases.subscribeToChanges(() => {
+      get().fetchNotes();
+    });
   },
 
   unsubscribeFromNotes: () => {
-    supabase.removeAllChannels();
+    if (!disposeNotesSubscription) return;
+    disposeNotesSubscription();
+    disposeNotesSubscription = null;
   }
 }));
 

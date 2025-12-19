@@ -1,8 +1,19 @@
+/**
+ * AbilityPicker — UI-пикер способностей монстров (поиск + выбор).
+ *
+ * Слой: UI (React).
+ *
+ * Важно (Блок 4 / Content Layer):
+ * - список способностей для отображения берём из `baseGameContent.monsterAbilities`,
+ * - UI не импортит `src/data/monsterAbilities.ts` напрямую — это позволяет менять content pack’и.
+ *
+ * Механика способностей (когда и как они срабатывают) — в domain reducer, не здесь.
+ */
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Plus } from 'lucide-react';
-import { MONSTER_ABILITIES } from '../data/monsterAbilities';
 import { MonsterAbilityType } from '../types/game';
+import { baseGameContent } from '@/features/game/application/gameContent';
 
 interface AbilityPickerProps {
     onSelect: (abilityId: MonsterAbilityType) => void;
@@ -12,7 +23,7 @@ interface AbilityPickerProps {
 const AbilityPicker = ({ onSelect, onClose }: AbilityPickerProps) => {
     const [search, setSearch] = useState('');
 
-    const filtered = MONSTER_ABILITIES.filter(a => 
+    const filtered = baseGameContent.monsterAbilities.filter(a => 
         a.name.toLowerCase().includes(search.toLowerCase()) || 
         a.description.toLowerCase().includes(search.toLowerCase())
     );

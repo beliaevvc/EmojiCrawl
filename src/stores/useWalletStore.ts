@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from '../lib/supabase';
+import { SupabaseWalletRepository } from '@/infrastructure/supabase';
+import { createWalletUseCases } from '@/features/wallet/application';
 
 interface WalletState {
     crystals: number;
@@ -16,18 +17,11 @@ export const useWalletStore = create<WalletState>()(
             crystals: 0,
             
             fetchBalance: async () => {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return; // Используем локальный стейт если нет юзера
-
-                const { data, error } = await supabase
-                    .from('wallets')
-                    .select('crystals')
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (!error && data) {
-                    set({ crystals: Number(data.crystals) });
-                }
+                const repo = new SupabaseWalletRepository();
+                const wallet = createWalletUseCases(repo);
+                const balance = await wallet.fetchBalance();
+                if (balance === null) return; // Используем локальный стейт если нет юзера
+                set({ crystals: balance });
             },
 
             addCrystals: async (amount: number) => {
@@ -38,12 +32,9 @@ export const useWalletStore = create<WalletState>()(
                 set({ crystals: newValue });
 
                 // Синхронизация с Supabase
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    await supabase
-                        .from('wallets')
-                        .upsert({ user_id: user.id, crystals: newValue });
-                }
+                const repo = new SupabaseWalletRepository();
+                const wallet = createWalletUseCases(repo);
+                await wallet.persistBalance(newValue);
             },
 
             spendCrystals: async (amount: number) => {
@@ -52,13 +43,9 @@ export const useWalletStore = create<WalletState>()(
                     const newValue = current - amount;
                     set({ crystals: newValue });
 
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                        await supabase
-                            .from('wallets')
-                            .update({ crystals: newValue })
-                            .eq('user_id', user.id);
-                    }
+                    const repo = new SupabaseWalletRepository();
+                    const wallet = createWalletUseCases(repo);
+                    await wallet.persistBalance(newValue);
                     return true;
                 }
                 return false;
@@ -66,13 +53,9 @@ export const useWalletStore = create<WalletState>()(
 
             resetWallet: async () => {
                 set({ crystals: 0 });
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    await supabase
-                        .from('wallets')
-                        .update({ crystals: 0 })
-                        .eq('user_id', user.id);
-                }
+                const repo = new SupabaseWalletRepository();
+                const wallet = createWalletUseCases(repo);
+                await wallet.persistBalance(0);
             }
         }),
         {

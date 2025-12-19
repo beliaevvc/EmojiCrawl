@@ -1,75 +1,57 @@
-export interface WindowPosition {
-    x: number;
-    y: number;
-}
+/**
+ * uiStorage — временный bridge для обратной совместимости.
+ *
+ * ### Что это
+ * Набор функций `load* / save*` для UI-состояния HUD (позиции и видимость окон).
+ *
+ * ### Почему это bridge (Блок 5)
+ * Исторически UI-хуки (`useHudWindowPositions`, `useHudVisibility`) импортировали функции из `utils/uiStorage.ts`
+ * и этот файл напрямую работал с `localStorage`.
+ *
+ * В Блоке 5 (Infrastructure adapters) мы переносим **весь I/O** в `src/infrastructure/localStorage/*`,
+ * чтобы “внешние системы” (LocalStorage) не были размазаны по UI.
+ *
+ * Чтобы сделать миграцию безопасной и маленькой:
+ * - этот файл оставлен как **совместимый API** (те же функции/типы),
+ * - но он больше НЕ трогает `localStorage` напрямую,
+ * - он делегирует в application use-cases (`createUIStateUseCases`) и infra‑репозиторий.
+ *
+ * ### Как использовать
+ * Старый код может продолжать вызывать:
+ * - `loadUIPositions/loadUIVisibility`
+ * - `saveUIPositions/saveUIVisibility`
+ *
+ * Новому коду предпочтительнее зависеть от портов/use-cases напрямую:
+ * `UIStateRepository` + `createUIStateUseCases(...)`.
+ *
+ * ### Инварианты/ограничения
+ * - Функции должны быть безопасны для окружений без `window` (SSR/тесты) → infra‑репозиторий сам делает guards.
+ */
 
-export interface HUDVisibility {
-    deckStats: boolean;
-    deckViewer: boolean;
-    discardViewer: boolean;
-    discardStats: boolean;
-    statsWindow: boolean;
-    logWindow: boolean;
-    labelsWindow: boolean;
-}
+import type { HUDVisibility, UIState, WindowPosition } from '@/features/game/application/ports/UIStateRepository';
+import { createUIStateUseCases } from '@/features/game/application/uiStateUseCases';
+import { LocalStorageUIStateRepository } from '@/infrastructure/localStorage/ui/LocalStorageUIStateRepository';
 
-export interface UIState {
-    positions: Record<string, WindowPosition>;
-    visibility: HUDVisibility;
-}
+export type { HUDVisibility, UIState, WindowPosition };
 
-const STORAGE_KEY = 'skazmor_ui_state';
-
-const DEFAULT_VISIBILITY: HUDVisibility = {
-    deckStats: true,
-    deckViewer: true,
-    discardViewer: true,
-    discardStats: true,
-    statsWindow: true,
-    logWindow: true,
-    labelsWindow: true,
-};
+const uiStateUseCases = createUIStateUseCases(new LocalStorageUIStateRepository());
 
 export const saveUIPositions = (positions: Record<string, WindowPosition>) => {
-    try {
-        const current = loadUIState();
-        const newState = { ...current, positions: { ...current.positions, ...positions } };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-    } catch (e) {
-        console.error('Failed to save UI positions', e);
-    }
+  uiStateUseCases.savePositions(positions);
 };
 
 export const saveUIVisibility = (visibility: Partial<HUDVisibility>) => {
-    try {
-        const current = loadUIState();
-        const newState = { ...current, visibility: { ...current.visibility, ...visibility } };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-    } catch (e) {
-        console.error('Failed to save UI visibility', e);
-    }
-}
+  uiStateUseCases.saveVisibility(visibility);
+};
 
 export const loadUIState = (): UIState => {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            return {
-                positions: parsed.positions || {},
-                visibility: { ...DEFAULT_VISIBILITY, ...(parsed.visibility || {}) }
-            };
-        }
-    } catch (e) {
-        console.error('Failed to load UI state', e);
-    }
-    return { positions: {}, visibility: DEFAULT_VISIBILITY };
+  return uiStateUseCases.loadState();
 };
 
 export const loadUIPositions = (): Record<string, WindowPosition> => {
-    return loadUIState().positions;
+  return uiStateUseCases.loadPositions();
 };
 
 export const loadUIVisibility = (): HUDVisibility => {
-    return loadUIState().visibility;
+  return uiStateUseCases.loadVisibility();
 };
