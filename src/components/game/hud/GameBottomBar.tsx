@@ -21,7 +21,7 @@
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BookOpen, Crown, Eye, EyeOff, Flag, Pause, RotateCcw, Search, Settings } from 'lucide-react';
+import { BookOpen, Crown, Eye, EyeOff, Flag, Gem, Pause, RotateCcw, Search, Settings, Store } from 'lucide-react';
 import { SystemButton } from '@/components/game/hud/SystemButton';
 
 export function GameBottomBar({
@@ -36,6 +36,8 @@ export function GameBottomBar({
 
   isGodMode,
   onToggleGodMode,
+  onOpenCheatAddCoins,
+  onCheatScheduleMerchantNextRound,
 }: {
   showInfo: boolean;
   onToggleInfo: () => void;
@@ -48,6 +50,8 @@ export function GameBottomBar({
 
   isGodMode: boolean;
   onToggleGodMode: () => void;
+  onOpenCheatAddCoins: () => void;
+  onCheatScheduleMerchantNextRound: () => void;
 }) {
   const [isResetHovered, setIsResetHovered] = useState(false);
   const [showGodModeToggle, setShowGodModeToggle] = useState(false);
@@ -128,7 +132,7 @@ export function GameBottomBar({
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             className="overflow-hidden ml-2 flex-shrink-0 flex items-end"
           >
-            <div className="px-1 pt-2 pb-0">
+            <div className="px-1 pt-2 pb-0 flex items-center gap-2">
               <button
                 onClick={onToggleGodMode}
                 className={`
@@ -142,6 +146,7 @@ export function GameBottomBar({
                       : 'bg-stone-900/80 border-stone-700 hover:border-yellow-500/50'
                   }
                 `}
+                title="God Mode"
               >
                 <div
                   className={`
@@ -160,6 +165,32 @@ export function GameBottomBar({
                 >
                   {isGodMode ? 'GOD ON' : 'God Mode'}
                 </span>
+              </button>
+
+              <button
+                onClick={onOpenCheatAddCoins}
+                className={`
+                  group flex items-center justify-center p-3
+                  backdrop-blur-md border rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0
+                  transition-all duration-200
+                  bg-stone-900/80 border-stone-700 hover:border-emerald-500/50
+                `}
+                title="Чит: добавить 💎"
+              >
+                <Gem size={20} className="text-stone-400 group-hover:text-emerald-300 transition-colors" />
+              </button>
+
+              <button
+                onClick={onCheatScheduleMerchantNextRound}
+                className={`
+                  group flex items-center justify-center p-3
+                  backdrop-blur-md border rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0
+                  transition-all duration-200
+                  bg-stone-900/80 border-stone-700 hover:border-sky-500/50
+                `}
+                title="Чит: торговец на следующий раунд"
+              >
+                <Store size={20} className="text-stone-400 group-hover:text-sky-300 transition-colors" />
               </button>
             </div>
           </motion.div>

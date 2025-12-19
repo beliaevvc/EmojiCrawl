@@ -66,6 +66,7 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
             // Otherwise, trigger standard equip drop
             onDrop(item);
         }
+        return { accepted: true };
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),

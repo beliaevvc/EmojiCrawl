@@ -94,6 +94,7 @@ export const createInitialState = ({ clock }: { clock: Clock }): GameState => ({
     overlaySlots: [null, null, null, null],
     saleUsed: false,
     hasBought: false,
+    forceOpenNextRound: false,
   },
 });
 
@@ -891,8 +892,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
           // Traveling Merchant (Variant B / overlay):
           // - показываем только если на столе была РОВНО 1 карта (при 0 карт торговец не приходит),
           // - показываем в начале нового раунда (после round++).
-          const shouldOpenMerchant =
-            cardsOnTable === 1 &&
+          const baseMerchantGate =
             !s.merchant.hasAppeared &&
             s.merchant.willAppear &&
             s.merchant.scheduledRound != null &&
@@ -900,6 +900,8 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
             // торговец по ТЗ не может появиться. Поэтому открываем его при первом подходящем переходе
             // (ровно 1 карта) на или после запланированного раунда.
             newState.round >= s.merchant.scheduledRound;
+
+          const shouldOpenMerchant = (cardsOnTable === 1 && baseMerchantGate) || (s.merchant.forceOpenNextRound && baseMerchantGate);
 
           if (shouldOpenMerchant) {
             const blockedSlotIndex = newSlots.findIndex((c) => c !== null);
@@ -928,6 +930,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
                 overlaySlots,
                 saleUsed: false,
                 hasBought: false,
+                forceOpenNextRound: false,
               },
             };
 
@@ -1027,7 +1030,10 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
       action.type === 'MERCHANT_BUY' ||
       action.type === 'SELL_ITEM' ||
       action.type === 'START_GAME' ||
-      action.type === 'INIT_GAME';
+      action.type === 'INIT_GAME' ||
+      action.type === 'TOGGLE_GOD_MODE' ||
+      action.type === 'CHEAT_ADD_COINS' ||
+      action.type === 'CHEAT_SCHEDULE_MERCHANT_NEXT_ROUND';
     if (!allowed) {
       // Не спамим лог каждый раз — в партии 1 достаточно просто блокировать.
       return state;
@@ -1042,6 +1048,33 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
       nextState = { ...state, isGodMode: !state.isGodMode };
       logMessage = nextState.isGodMode ? '👑 РЕЖИМ БОГА ВКЛЮЧЕН' : 'РЕЖИМ БОГА ВЫКЛЮЧЕН';
       break;
+
+    case 'CHEAT_ADD_COINS': {
+      const amount = Number.isFinite(action.amount) ? Math.trunc(action.amount) : 0;
+      if (amount === 0) return state;
+      const nextCoins = Math.max(0, state.player.coins + amount);
+      nextState = { ...state, player: { ...state.player, coins: nextCoins } };
+      logMessage = `🧪 ЧИТ: ${amount > 0 ? '+' : ''}${amount} 💎 (итого ${nextCoins}).`;
+      logType = 'info';
+      break;
+    }
+
+    case 'CHEAT_SCHEDULE_MERCHANT_NEXT_ROUND': {
+      const scheduledRound = state.round + 1;
+      nextState = {
+        ...state,
+        merchant: {
+          ...state.merchant,
+          willAppear: true,
+          scheduledRound,
+          hasAppeared: false,
+          forceOpenNextRound: true,
+        },
+      };
+      logMessage = `🧪 ЧИТ: торговец запланирован на следующий раунд (раунд ${scheduledRound}).`;
+      logType = 'info';
+      break;
+    }
 
     case 'ACTIVATE_CURSE': {
         nextState = { ...state, curse: action.curse };

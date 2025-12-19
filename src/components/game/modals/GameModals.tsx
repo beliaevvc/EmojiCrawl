@@ -25,6 +25,7 @@ import { CursePicker } from '@/components/CursePicker';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { GameStatsOverlay } from '@/components/GameStatsOverlay';
 import CardComponent from '@/components/CardComponent';
+import { CheatAddCoinsModal } from '@/components/game/modals/CheatAddCoinsModal';
 
 import { baseGameContent } from '@/features/game/application/gameContent';
 
@@ -60,6 +61,11 @@ export type GameModalsProps = {
   showExitConfirm: boolean;
   onConfirmExit: () => void;
   onCancelExit: () => void;
+
+  // Dev/Debug: чит-окна
+  showCheatAddCoins: boolean;
+  onConfirmCheatAddCoins: (amount: number) => void;
+  onCancelCheatAddCoins: () => void;
 
   // Оверлеи предпросмотра (peek/scout)
   peekCards: Card[] | null;
@@ -107,6 +113,10 @@ export function GameModals(props: GameModalsProps) {
     showExitConfirm,
     onConfirmExit,
     onCancelExit,
+
+    showCheatAddCoins,
+    onConfirmCheatAddCoins,
+    onCancelCheatAddCoins,
 
     peekCards,
     peekType,
@@ -195,6 +205,12 @@ export function GameModals(props: GameModalsProps) {
             onConfirm={onConfirmExit}
             onCancel={onCancelExit}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCheatAddCoins && (
+          <CheatAddCoinsModal onConfirm={onConfirmCheatAddCoins} onCancel={onCancelCheatAddCoins} />
         )}
       </AnimatePresence>
 

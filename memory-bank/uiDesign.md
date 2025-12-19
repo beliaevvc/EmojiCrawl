@@ -53,6 +53,8 @@
     *   *Default:* Border 2px, Shadow LG.
     *   *Hover:* Scale 1.05.
     *   *Dragging:* Opacity 0 (показывает слот под собой), копия следует за курсором.
+        *   **Техническая заметка:** используем кастомный drag-layer (react-dnd `useDragLayer`) + `getEmptyImage()` для подавления нативного HTML5 preview, чтобы избежать “уезда” превью при `transform/scale` (например, из-за hover/fm-движений).
+        *   **Snapback (отмена drag):** при отпускании **вне** валидной drop‑зоны превью плавно “возвращается” в исходный слот (эмуляция поведения нативного preview).
     *   *Blocked:* Grayscale, Opacity 0.6.
 *   **Значки (Badges):**
     *   *Value:* Маленький круг в правом нижнем углу.

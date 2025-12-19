@@ -22,7 +22,10 @@ export function SellZone({ onSell, children }: { onSell: (item: any) => void; ch
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: ItemTypes.CARD,
-      drop: (item: any) => onSell(item),
+      drop: (item: any) => {
+        onSell(item);
+        return { accepted: true };
+      },
       collect: (monitor) => ({ isOver: !!monitor.isOver() }),
     }),
     [onSell]

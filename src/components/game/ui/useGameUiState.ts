@@ -35,6 +35,7 @@ export function useGameUiState() {
   const [showCursePicker, setShowCursePicker] = useState(false);
   const [pendingCurse, setPendingCurse] = useState<CurseType | null>(null);
   const [showCurseConfirm, setShowCurseConfirm] = useState(false);
+  const [showCheatAddCoins, setShowCheatAddCoins] = useState(false);
 
   return {
     selectedCard,
@@ -55,6 +56,8 @@ export function useGameUiState() {
     setPendingCurse,
     showCurseConfirm,
     setShowCurseConfirm,
+    showCheatAddCoins,
+    setShowCheatAddCoins,
   };
 }
 

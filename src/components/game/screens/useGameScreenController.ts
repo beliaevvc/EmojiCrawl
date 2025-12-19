@@ -109,6 +109,8 @@ export function useGameScreenController({ deckConfig, runType, templateName }: U
     setPendingCurse,
     showCurseConfirm,
     setShowCurseConfirm,
+    showCheatAddCoins,
+    setShowCheatAddCoins,
   } = useGameUiState();
 
   const { hudVisibility, setHudVisibility } = useHudVisibility();
@@ -298,6 +300,8 @@ export function useGameScreenController({ deckConfig, runType, templateName }: U
       onOpenPause: undefined,
       isGodMode: state.isGodMode,
       onToggleGodMode: () => dispatch({ type: 'TOGGLE_GOD_MODE' }),
+      onOpenCheatAddCoins: () => setShowCheatAddCoins(true),
+      onCheatScheduleMerchantNextRound: () => dispatch({ type: 'CHEAT_SCHEDULE_MERCHANT_NEXT_ROUND' }),
     },
   };
 
@@ -384,6 +388,13 @@ export function useGameScreenController({ deckConfig, runType, templateName }: U
 
     showExitConfirm,
     onCancelExit: () => setShowExitConfirm(false),
+
+    showCheatAddCoins,
+    onConfirmCheatAddCoins: (amount) => {
+      dispatch({ type: 'CHEAT_ADD_COINS', amount });
+      setShowCheatAddCoins(false);
+    },
+    onCancelCheatAddCoins: () => setShowCheatAddCoins(false),
 
     peekCards: state.peekCards,
     peekType: state.peekType,

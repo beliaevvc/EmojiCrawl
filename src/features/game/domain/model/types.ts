@@ -207,6 +207,11 @@ export interface GameState {
     saleUsed: boolean;
     /** За визит торговца можно купить максимум один артефакт (после покупки магазин закрывается). */
     hasBought: boolean;
+    /**
+     * Cheat/debug: форсирует открытие торговца в следующем раунде независимо от условия “ровно 1 карта”.
+     * Сбрасывается при первом же открытии торговца.
+     */
+    forceOpenNextRound: boolean;
   };
 }
 
@@ -248,6 +253,8 @@ export type MonsterAbilityMeta = {
 export type GameAction =
   | { type: 'INIT_GAME' }
   | { type: 'TOGGLE_GOD_MODE' }
+  | { type: 'CHEAT_ADD_COINS'; amount: number }
+  | { type: 'CHEAT_SCHEDULE_MERCHANT_NEXT_ROUND' }
   | {
       type: 'START_GAME';
       deckConfig?: {

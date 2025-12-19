@@ -47,6 +47,7 @@ import { TouchBackend } from 'react-dnd-touch-backend';
 import { OverlaysPlugin } from '@/app/plugins/OverlaysPlugin';
 import { DevQuestPlugin } from '@/app/plugins/DevQuestPlugin';
 import { appConfig } from '@/app/appConfig';
+import { GameDragLayer } from '@/components/game/dnd/GameDragLayer';
 
 // Безопасно определяем “тач-устройство” (важно: этот код выполняется в браузере).
 const isTouchDevice = () => {
@@ -78,6 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* Базовая сцена приложения */}
         <div className="bg-stone-950 min-h-screen text-stone-100 font-sans selection:bg-rose-500/30 relative">
+          <GameDragLayer />
           {children}
         </div>
       </ErrorBoundary>

@@ -50,6 +50,7 @@ export function EnemySlotDropZone({
         !!card && !card.isHidden && (item.type === 'spell' || (item.type === 'weapon' && card.type === 'monster')),
       drop: (item: any) => {
         if (card && !card.isHidden) onDropOnEnemy(item, card.id);
+        return { accepted: true };
       },
       collect: (monitor) => ({
         isOver: !!monitor.isOver(),

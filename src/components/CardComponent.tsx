@@ -19,11 +19,13 @@
  * - это позволяет дальше вводить content packs без переписывания UI.
  */
 import { useDrag } from 'react-dnd';
+import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Card as CardType } from '../types/game';
 import { ItemTypes } from '../types/DragTypes';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { baseGameContent } from '@/features/game/application/gameContent';
+import { emitDragSnapback } from '@/components/game/dnd/dragSnapbackBus';
 
 interface CardProps {
   card: CardType;
@@ -58,14 +60,44 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
     prevValueRef.current = card.value;
   }, [card.value, card.type]);
 
-  const [{ isDragging }, drag] = useDrag(() => ({
+  const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: ItemTypes.CARD,
-    item: { ...card, location }, // Include location in drag item
+    item: () => {
+      const rect = elementRef.current?.getBoundingClientRect();
+      return {
+        ...card,
+        location,
+        __dragSize: rect ? { width: rect.width, height: rect.height } : undefined,
+      };
+    }, // Include location + drag size for correct custom preview positioning
+    end: (dragItem, monitor) => {
+      const dropResult = monitor.getDropResult() as any;
+
+      // If drop didn't happen (released outside of any valid drop target),
+      // emulate the old “snapback” animation that the native HTML5 preview did.
+      const isAccepted = dropResult?.accepted === true;
+      if (!monitor.didDrop() || !isAccepted) {
+        emitDragSnapback({
+          item: dragItem as any,
+          // Важно: для HTML5 backend на `end()` оффсеты часто уже `null`.
+          // DragLayer возьмёт последние значения из своего ref.
+          initialClientOffset: monitor.getInitialClientOffset(),
+          initialSourceClientOffset: monitor.getInitialSourceClientOffset(),
+          currentClientOffset: monitor.getClientOffset(),
+        });
+      }
+    },
     canDrag: isDraggable && !isBlocked && !card.isHidden, // Disable drag if blocked or hidden
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }), [card, isDraggable, isBlocked, location]); // Added location to deps
+
+  // Disable native HTML5 drag preview (it can have incorrect offset when elements are transformed/scaled).
+  // We'll render a custom preview in `GameDragLayer`.
+  useEffect(() => {
+    preview(getEmptyImage(), { captureDraggingState: true });
+  }, [preview]);
 
   // Notify parent about drag state
   useEffect(() => {
@@ -143,7 +175,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ 
           scale: 1, 
-          opacity: isDragging ? 0 : (isBlocked ? blockedOpacity : 1), // Hide original when dragging to show slot underneath
+          opacity: isDragging ? 0 : (isBlocked ? blockedOpacity : 1), // Hide original only while dragging
           filter: isBlocked ? 'grayscale(0.8)' : 'none', // Grayscale for blocked
           x: isShaking ? [0, -5, 5, -5, 5, 0] : 0,
       }}
@@ -153,11 +185,14 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
           filter: "blur(10px)",
           transition: { duration: 0.3 } 
       }}
-      transition={{ 
-          type: "spring", 
-          stiffness: 500, 
+      transition={{
+          type: "spring",
+          stiffness: 500,
           damping: 30,
-          mass: 1
+          mass: 1,
+          // Opacity по spring ощущается как “задержка/мигание” при отмене drag.
+          // Делаем очень быстрый fade (как у нативного HTML5 preview).
+          opacity: { duration: 0.06, ease: "linear" },
       }}
       className={`
         absolute inset-0 w-full h-full rounded-full border-2 ${getBorderColor()} ${getBgColor()}

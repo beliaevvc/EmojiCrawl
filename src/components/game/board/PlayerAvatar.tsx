@@ -55,9 +55,18 @@ export function PlayerAvatar({
 }) {
   const [{ isOver, canDrop, draggedItem }, drop] = useDrop(() => ({
     accept: [ItemTypes.CARD],
+    // Ограничиваем, что вообще “можно” дропнуть на героя:
+    // иначе отпускание монеты “в пустоте” рядом с героем считается drop'ом,
+    // и отмена drag (snapback) не срабатывает.
+    canDrop: (item: any) =>
+      item?.type === 'monster' ||
+      item?.type === 'spell' ||
+      item?.type === 'bravery_potion' ||
+      item?.merchantAction === 'leave',
     drop: (item: any, monitor) => {
       if (monitor.didDrop()) return;
       onDropToPlayer(item);
+      return { accepted: true };
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
