@@ -1,5 +1,21 @@
 # Прогресс разработки (Progress)
 
+## 2025-12-20 — Архивация “не актуальных” документов (Memory Bank)
+
+**Сделано:**
+- Создана папка `memory-bank/archive/` и добавлены архивы завершённых задач (по рефлексиям):
+  - `memory-bank/archive/archive-traveling-merchant-v1.md`
+  - `memory-bank/archive/archive-traveling-merchant-visual-v1.md`
+  - `memory-bank/archive/archive-traveling-merchant-opaque-tokens-v1.md`
+  - `memory-bank/archive/archive-traveling-merchant-new-game-while-active-v1.md`
+  - `memory-bank/archive/archive-versioning-0-1.md`
+  - `memory-bank/archive/archive-memory-bank-grouping-rollback-v1.md`
+- Сохранён полный исторический снэпшот `tasks.md`:
+  - `memory-bank/archive/archive-tasks-md-snapshot-2025-12-20.md`
+- `memory-bank/tasks.md` очищен и возвращён к формату “текущая задача + индекс архивов”.
+
+---
+
 ## 2025-12-19 — Архитектурный рефакторинг: Блок 1 (Game Domain Kernel)
 
 **Сделано:**

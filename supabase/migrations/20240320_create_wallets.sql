@@ -48,3 +48,4 @@ create trigger on_auth_user_created_wallet
   for each row execute procedure public.handle_new_user_wallet();
 
 
+
