@@ -68,6 +68,20 @@ export type SellItemInput = {
   cardId: string;
 };
 
+export type BuyMerchantOfferInput = {
+  offerId: string;
+  targetHand: 'left' | 'right' | 'backpack';
+};
+
+export type UseBraveryPotionInput = {
+  potionCardId: string;
+};
+
+export type CastPrayerInput = {
+  prayerCardId: string;
+  targetSpellCardId: string;
+};
+
 export const gameSession = {
   startGame: (input: StartGameInput): GameAction => {
     // Блок 4: строим snapshot контента, который нужен domain только на этапе START_GAME.
@@ -112,6 +126,34 @@ export const gameSession = {
   sellItem: (input: SellItemInput): GameAction => ({
     type: 'SELL_ITEM',
     cardId: input.cardId,
+  }),
+
+  /**
+   * Traveling Merchant: “🚪 Уйти”.
+   * Закрывает overlay торговца и продолжает обычный добор раунда.
+   */
+  leaveMerchant: (): GameAction => ({
+    type: 'MERCHANT_LEAVE',
+  }),
+
+  /**
+   * Traveling Merchant: покупка товара (DnD оффера в пустой слот).
+   */
+  buyMerchantOffer: (input: BuyMerchantOfferInput): GameAction => ({
+    type: 'MERCHANT_BUY',
+    offerId: input.offerId,
+    targetHand: input.targetHand,
+  }),
+
+  useBraveryPotion: (input: UseBraveryPotionInput): GameAction => ({
+    type: 'USE_BRAVERY_POTION',
+    potionCardId: input.potionCardId,
+  }),
+
+  castPrayer: (input: CastPrayerInput): GameAction => ({
+    type: 'CAST_PRAYER',
+    prayerCardId: input.prayerCardId,
+    targetSpellCardId: input.targetSpellCardId,
   }),
 
   resetHand: (): GameAction => ({

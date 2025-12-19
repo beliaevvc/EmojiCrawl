@@ -47,6 +47,13 @@ export function useSellDropHandler({
         return;
       }
 
+      // Traveling Merchant: во время торговца можно продать строго 1 предмет и только из рюкзака.
+      if (currentState.merchant?.isActive) {
+        if (currentState.merchant.saleUsed) return;
+        const isBackpackItem = item.location === 'backpack' || currentState.backpack.card?.id === item.id;
+        if (!isBackpackItem) return;
+      }
+
       // Отладочный лог (исторически был в `GameScreen`): помогает ловить редкие кейсы с location у DnD-item.
       console.log('Attempting sell:', item.id, 'Location:', item.location);
 

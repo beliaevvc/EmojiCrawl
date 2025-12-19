@@ -43,6 +43,43 @@ body {
   animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
 }
 
+/* Traveling Merchant: мягкое “золотое” переливание внутри токена (артефакты). */
+@keyframes merchant-shimmer {
+  0% { transform: translateX(-60%) rotate(22deg); }
+  100% { transform: translateX(60%) rotate(22deg); }
+}
+
+.merchant-shimmer-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.merchant-shimmer-stripe {
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(251, 191, 36, 0.00) 35%,
+    rgba(251, 191, 36, 0.14) 50%,
+    rgba(251, 191, 36, 0.04) 60%,
+    transparent 100%
+  );
+  transform: translateX(-60%) rotate(22deg);
+  animation: merchant-shimmer 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .merchant-shimmer-stripe {
+    animation: none;
+    opacity: 0.08;
+    transform: rotate(22deg);
+  }
+}
+
 /* Custom scrollbar for rules */
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;

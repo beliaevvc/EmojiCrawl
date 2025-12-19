@@ -28,7 +28,17 @@ import type { Card } from '@/types/game';
 export function useCardSelection({ onSelect }: { onSelect: (card: Card) => void }) {
   const handleCardClick = useCallback(
     (card: Card) => {
-      if (card.type === 'spell' || (card.type === 'monster' && card.ability)) {
+      // Открываем “описание/zoom” для:
+      // - заклинаний,
+      // - монстров со способностью,
+      // - артефактов торговца (по ТЗ: клик как у заклинаний, доступно и в магазине, и в инвентаре).
+      if (
+        card.type === 'spell' ||
+        card.type === 'bravery_potion' ||
+        card.type === 'claymore' ||
+        card.type === 'prayer_spell' ||
+        (card.type === 'monster' && card.ability)
+      ) {
         onSelect(card);
       }
     },

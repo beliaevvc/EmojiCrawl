@@ -55,11 +55,21 @@ const isTouchDevice = () => {
 };
 
 // Для тач-устройств используем TouchBackend, иначе — HTML5Backend.
-const Backend = isTouchDevice() ? TouchBackend : HTML5Backend;
+// Важно для UX: на таче мы хотим “tap = открыть описание”, а drag — “по удержанию”.
+// Для этого включаем задержку старта drag.
+const isTouch = isTouchDevice();
+const Backend = isTouch ? TouchBackend : HTML5Backend;
+const backendOptions = isTouch
+  ? {
+      enableMouseEvents: true,
+      delayTouchStart: 250, // hold-to-drag (тап остаётся кликом)
+      delayTouchStartHover: 250,
+    }
+  : undefined;
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <DndProvider backend={Backend}>
+    <DndProvider backend={Backend} options={backendOptions}>
       <ErrorBoundary>
         {/* Глобальные инструменты / плагины */}
         {appConfig.plugins.devConsole && <DevConsole />}

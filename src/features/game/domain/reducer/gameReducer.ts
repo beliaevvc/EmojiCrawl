@@ -84,6 +84,17 @@ export const createInitialState = ({ clock }: { clock: Clock }): GameState => ({
   hpUpdates: [],
   curse: null,
   hasActed: false,
+  merchant: {
+    willAppear: false,
+    scheduledRound: null,
+    hasAppeared: false,
+    isActive: false,
+    blockedSlotIndex: null,
+    offers: [],
+    overlaySlots: [null, null, null, null],
+    saleUsed: false,
+    hasBought: false,
+  },
 });
 
 // Вспомогательные функции
@@ -101,6 +112,110 @@ export const createGameReducer = ({ rng, clock }: GameDomainDeps) => {
   const addLog = (state: GameState, message: string, type: LogEntry['type']): GameState => {
     const newLogs = [createLog(message, type), ...state.logs].slice(0, 50); // Храним только последние 50 логов
     return { ...state, logs: newLogs };
+  };
+
+  const createMerchantOfferCards = (): Card[] => {
+    // Партия 1: товары пока “витрина” (покупка/эффекты добавим следующей партией).
+    // Уже сейчас важно: иконки/названия/описания должны совпадать с ТЗ, чтобы UX можно было проверить.
+    const price = 15;
+    return [
+      {
+        id: `merchant_bravery_${createId(rng, 5)}`,
+        type: 'spell',
+        value: 0,
+        icon: '🦁',
+        name: 'Зелье Храбрости',
+        description: 'Цена: 15💎. Использование: -4 HP, затем +2 max HP.',
+        merchantOfferType: 'bravery_potion',
+        merchantPrice: price,
+      } as any,
+      {
+        id: `merchant_claymore_${createId(rng, 5)}`,
+        type: 'weapon',
+        value: 6,
+        icon: '🗡️',
+        name: 'Клеймор',
+        description: 'Цена: 15💎. Оружие с прочностью (как щит).',
+        merchantOfferType: 'claymore',
+        merchantPrice: price,
+      } as any,
+      {
+        id: `merchant_prayer_${createId(rng, 5)}`,
+        type: 'spell',
+        value: 0,
+        icon: '📜',
+        name: 'Молитва',
+        description: 'Цена: 15💎. Дублирует выбранный спелл в рюкзак.',
+        merchantOfferType: 'prayer',
+        merchantPrice: price,
+      } as any,
+    ];
+  };
+
+  const createMerchantLeaveToken = (): Card => {
+    return {
+      id: `merchant_leave_${createId(rng, 5)}`,
+      type: 'coin',
+      value: 0,
+      icon: '🚪',
+      name: 'Уйти',
+      description: 'Закрыть торговца и продолжить раунд.',
+      merchantAction: 'leave',
+    } as any;
+  };
+
+  const closeMerchantAndDeal3 = (state: GameState, prevEnemySlotsForSpawnCheck?: (Card | null)[]): GameState => {
+    const before = prevEnemySlotsForSpawnCheck ?? state.enemySlots;
+    const newSlots = [...state.enemySlots];
+    const deck = [...state.deck];
+
+    for (let i = 0; i < 4; i++) {
+      if (newSlots[i] === null && deck.length > 0) {
+        const cardToDraw = deck.pop();
+        if (cardToDraw) newSlots[i] = cardToDraw;
+      }
+    }
+
+    let s: GameState = {
+      ...state,
+      deck,
+      enemySlots: newSlots,
+      merchant: {
+        ...state.merchant,
+        isActive: false,
+        blockedSlotIndex: null,
+        offers: [],
+        overlaySlots: [null, null, null, null],
+        saleUsed: false,
+        hasBought: false,
+      },
+    };
+
+    // Spawn-способности для новых монстров
+    s.enemySlots.forEach((c) => {
+      if (c && c.type === 'monster' && !before.some((old) => old?.id === c.id)) {
+        s = applySpawnAbilities(s, c);
+      }
+    });
+
+    // Туман: товары торговца не скрываются; применяем только после закрытия и обычного добора.
+    if (s.curse === 'fog') {
+      const indices = shuffle([0, 1, 2, 3], rng).slice(0, 2);
+      const fogSlots = [...s.enemySlots];
+      let hiddenCount = 0;
+      indices.forEach((i) => {
+        if (fogSlots[i]) {
+          fogSlots[i] = { ...fogSlots[i]!, isHidden: true };
+          hiddenCount++;
+        }
+      });
+      s.enemySlots = fogSlots;
+      if (hiddenCount > 0) {
+        s = addLog(s, 'ТУМАН: Карты скрыты.', 'info');
+      }
+    }
+
+    return s;
   };
 
   const updateOverheads = (state: GameState, type: keyof Overheads, value: number): GameState => {
@@ -486,9 +601,12 @@ const updateMirrorMonsters = (state: GameState): GameState => {
     // Считаем максимальный урон оружия (учитывая проклятие “Закалка”)
     let maxDmg = 0;
     const temperingBonus = state.curse === 'tempering' ? 1 : 0;
-    if (state.leftHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.leftHand.card.value + temperingBonus);
-    if (state.rightHand.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.rightHand.card.value + temperingBonus);
-    if (state.backpack.card?.type === 'weapon') maxDmg = Math.max(maxDmg, state.backpack.card.value + temperingBonus);
+    if (state.leftHand.card?.type === 'weapon' || state.leftHand.card?.type === 'claymore')
+      maxDmg = Math.max(maxDmg, state.leftHand.card.value + temperingBonus);
+    if (state.rightHand.card?.type === 'weapon' || state.rightHand.card?.type === 'claymore')
+      maxDmg = Math.max(maxDmg, state.rightHand.card.value + temperingBonus);
+    if (state.backpack.card?.type === 'weapon' || state.backpack.card?.type === 'claymore')
+      maxDmg = Math.max(maxDmg, state.backpack.card.value + temperingBonus);
 
     let newState = { ...state };
     const newSlots = [...newState.enemySlots];
@@ -647,7 +765,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
     const hand = weaponHand === 'left' ? newState.leftHand : newState.rightHand;
     const weapon = hand.card;
 
-    if (!weapon || weapon.type !== 'weapon') return { state };
+    if (!weapon || (weapon.type !== 'weapon' && weapon.type !== 'claymore')) return { state };
 
     let damage = weapon.value;
     if (newState.curse === 'tempering') {
@@ -706,10 +824,26 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         }
     }
 
-    if (weaponHand === 'left') newState.leftHand = { ...newState.leftHand, card: null };
-    else newState.rightHand = { ...newState.rightHand, card: null };
-
-    newState.discardPile = [...newState.discardPile, weapon];
+    // Claymore: оружие с прочностью (остаётся в руке и теряет прочность на HP монстра ДО удара).
+    if (weapon.type === 'claymore') {
+      const durabilityCost = monsterHp; // по ТЗ: тратим по HP монстра до удара
+      const newDurability = Math.max(0, weapon.value - durabilityCost);
+      if (newDurability === 0) {
+        if (weaponHand === 'left') newState.leftHand = { ...newState.leftHand, card: null };
+        else newState.rightHand = { ...newState.rightHand, card: null };
+        newState.discardPile = [...newState.discardPile, { ...weapon, value: 0 }];
+        log += ` КЛЕЙМОР: сломан (потеряно ${durabilityCost} прочности).`;
+      } else {
+        const updatedClaymore = { ...weapon, value: newDurability };
+        if (weaponHand === 'left') newState.leftHand = { ...newState.leftHand, card: updatedClaymore };
+        else newState.rightHand = { ...newState.rightHand, card: updatedClaymore };
+        log += ` КЛЕЙМОР: осталось ${newDurability} прочности (-${durabilityCost}).`;
+      }
+    } else {
+      if (weaponHand === 'left') newState.leftHand = { ...newState.leftHand, card: null };
+      else newState.rightHand = { ...newState.rightHand, card: null };
+      newState.discardPile = [...newState.discardPile, weapon];
+    }
 
     return { state: newState, log, logType: 'combat' };
 }
@@ -736,18 +870,6 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
      if (cardsOnTable <= 1 && !deckEmpty) {
           const newSlots = [...s.enemySlots];
           const deck = [...s.deck];
-          
-          for(let i=0; i<4; i++) {
-             if (newSlots[i] === null && deck.length > 0) {
-                let cardToDraw: Card | undefined;
-                
-                if (!cardToDraw) cardToDraw = deck.pop();
-
-                if (cardToDraw) {
-                    newSlots[i] = cardToDraw;
-                }
-             }
-          }
 
           const clearUsedHand = (hand: any): any => {
              if (hand.blocked) {
@@ -756,7 +878,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
              return { ...hand, blocked: false };
           };
 
-          let newState = {
+          let newState: GameState = {
              ...s,
              deck,
              enemySlots: newSlots,
@@ -765,6 +887,64 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
              backpack: clearUsedHand(s.backpack),
              round: s.round + 1
           };
+
+          // Traveling Merchant (Variant B / overlay):
+          // - показываем только если на столе была РОВНО 1 карта (при 0 карт торговец не приходит),
+          // - показываем в начале нового раунда (после round++).
+          const shouldOpenMerchant =
+            cardsOnTable === 1 &&
+            !s.merchant.hasAppeared &&
+            s.merchant.willAppear &&
+            s.merchant.scheduledRound != null &&
+            // Важно: если в запланированный раунд переход произошёл при 0 карт,
+            // торговец по ТЗ не может появиться. Поэтому открываем его при первом подходящем переходе
+            // (ровно 1 карта) на или после запланированного раунда.
+            newState.round >= s.merchant.scheduledRound;
+
+          if (shouldOpenMerchant) {
+            const blockedSlotIndex = newSlots.findIndex((c) => c !== null);
+            const offers = createMerchantOfferCards();
+            const leave = createMerchantLeaveToken();
+            const overlaySlots: (Card | null)[] = [null, null, null, null];
+
+            // В слоте с последней картой показываем “🚪 Уйти”, остальные 3 — товары.
+            if (blockedSlotIndex !== -1) {
+              overlaySlots[blockedSlotIndex] = leave;
+            }
+
+            const emptyIndices = [0, 1, 2, 3].filter((idx) => idx !== blockedSlotIndex);
+            for (let i = 0; i < emptyIndices.length; i++) {
+              overlaySlots[emptyIndices[i]] = offers[i] ?? null;
+            }
+
+            newState = {
+              ...newState,
+              merchant: {
+                ...newState.merchant,
+                hasAppeared: true,
+                isActive: true,
+                blockedSlotIndex,
+                offers,
+                overlaySlots,
+                saleUsed: false,
+                hasBought: false,
+              },
+            };
+
+            return addLog(newState, `ТОРГОВЕЦ: прибыл (раунд ${newState.round}).`, 'info');
+          }
+
+          // Обычный добор (если торговец не активировался).
+          for (let i = 0; i < 4; i++) {
+            if (newSlots[i] === null && deck.length > 0) {
+              let cardToDraw: Card | undefined;
+              if (!cardToDraw) cardToDraw = deck.pop();
+              if (cardToDraw) {
+                newSlots[i] = cardToDraw;
+              }
+            }
+          }
+          newState.enemySlots = newSlots;
           
           // Применяем spawn-способности для НОВЫХ карт (которых не было на столе в прошлом состоянии)
           newState.enemySlots.forEach((c) => {
@@ -827,6 +1007,25 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
   let nextState = state;
   let logMessage = '';
   let logType: LogEntry['type'] = 'info';
+
+  /**
+   * Traveling Merchant: во время торговца игра находится в “режиме магазина”.
+   *
+   * Правила (по ТЗ):
+   * - запрещены боевые взаимодействия и касты,
+   * - запрещён сброс,
+   * - разрешено “🚪 Уйти”,
+   * - разрешена ровно 1 продажа предмета из рюкзака.
+   *
+   * Примечание: покупка/артефакты будут следующей партией. Сейчас “витрина + уйти + 1 продажа”.
+   */
+  if (state.merchant.isActive) {
+    const allowed = action.type === 'MERCHANT_LEAVE' || action.type === 'MERCHANT_BUY' || action.type === 'SELL_ITEM';
+    if (!allowed) {
+      // Не спамим лог каждый раз — в партии 1 достаточно просто блокировать.
+      return state;
+    }
+  }
 
   switch (action.type) {
     case 'INIT_GAME':
@@ -1006,8 +1205,33 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         stats: { ...initialStats, startTime: clock.now(), runType: runType, templateName: action.templateName },
         activeEffects: [],
         curse: startingCurse,
-        hasActed: false
+        hasActed: false,
+        merchant: {
+          ...initialState.merchant,
+          willAppear: rng.nextFloat() < 0.4,
+          scheduledRound: null,
+        },
       };
+
+      // Планируем раунд появления торговца (если он должен появиться).
+      // Важно: на переходе раунда мы добираем ДО 4 карт (если на столе 0 карт) или 3 (если осталась 1 карта).
+      // Поэтому для планирования берём консервативную оценку по 4 картам за раунд, чтобы не выбрать “несуществующий” раунд.
+      if (nextState.merchant.willAppear) {
+        const estimatedMaxRound = 1 + Math.ceil(nextState.deck.length / 4);
+        const minRound = 2; // по ТЗ: на 1-м раунде торговец не появляется
+        const maxAllowed = Math.max(minRound, estimatedMaxRound - 1); // допускаем “предпоследний”
+        const scheduled = minRound + Math.floor(rng.nextFloat() * (maxAllowed - minRound + 1));
+        nextState.merchant.scheduledRound = scheduled;
+        // Диагностический лог: помогает понять, “почему не выпал”.
+        // Важно: торговец откроется только на переходе раунда, когда на столе осталась РОВНО 1 карта.
+        nextState = addLog(
+          nextState,
+          `🎩 ТОРГОВЕЦ: будет в этом забеге. Появится начиная с раунда ${scheduled} (когда на столе останется 1 карта).`,
+          'info'
+        );
+      } else {
+        nextState = addLog(nextState, '🎩 ТОРГОВЕЦ: в этом забеге не появится.', 'info');
+      }
 
       // Применяем spawn-способности для стартовой раздачи
       nextState.enemySlots.forEach(c => {
@@ -1031,6 +1255,204 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
       }
 
       break;
+    }
+
+    case 'MERCHANT_BUY': {
+      if (!state.merchant.isActive) return state;
+      if (state.merchant.hasBought) return state;
+
+      const offer = state.merchant.offers.find((o) => o.id === action.offerId);
+      if (!offer) return state;
+
+      const price = offer.merchantPrice ?? 15;
+      if (state.player.coins < price) {
+        return addLog(state, 'ТОРГОВЕЦ: не хватает 💎.', 'info');
+      }
+
+      const targetSlot =
+        action.targetHand === 'left'
+          ? state.leftHand
+          : action.targetHand === 'right'
+            ? state.rightHand
+            : state.backpack;
+
+      if (targetSlot.blocked) {
+        return addLog(state, 'ТОРГОВЕЦ: слот заблокирован.', 'info');
+      }
+      if (targetSlot.card) {
+        return addLog(state, 'ТОРГОВЕЦ: слот занят.', 'info');
+      }
+
+      // Артефакты, которые реально попадают в инвентарь (эффекты будут следующей партией).
+      const createPurchasedArtifact = (): Card | null => {
+        switch (offer.merchantOfferType) {
+          case 'bravery_potion':
+            return {
+              id: `bravery_${createId(rng, 7)}`,
+              type: 'bravery_potion',
+              value: 0,
+              icon: '🦁',
+              name: 'Зелье Храбрости',
+              description: 'Использование: -4 HP, затем +2 max HP. Продажа: 0💎.',
+              merchantOfferType: 'bravery_potion',
+            };
+          case 'claymore':
+            return {
+              id: `claymore_${createId(rng, 7)}`,
+              type: 'claymore',
+              value: 6,
+              icon: '🗡️',
+              name: 'Клеймор',
+              description: 'Оружие с прочностью (как щит). Продажа: по текущей прочности.',
+              merchantOfferType: 'claymore',
+            };
+          case 'prayer':
+            return {
+              id: `prayer_${createId(rng, 7)}`,
+              type: 'prayer_spell',
+              value: 0,
+              icon: '📜',
+              name: 'Молитва',
+              description: 'Скопировать выбранный спелл в рюкзак. Продать нельзя.',
+              merchantOfferType: 'prayer',
+            };
+          default:
+            return null;
+        }
+      };
+
+      const purchased = createPurchasedArtifact();
+      if (!purchased) return state;
+
+      // Списываем деньги и кладём артефакт в выбранный слот.
+      let s: GameState = {
+        ...state,
+        hasActed: true,
+        player: { ...state.player, coins: state.player.coins - price },
+        merchant: { ...state.merchant, hasBought: true },
+      };
+
+      if (action.targetHand === 'left') s = { ...s, leftHand: { ...s.leftHand, card: purchased } };
+      else if (action.targetHand === 'right') s = { ...s, rightHand: { ...s.rightHand, card: purchased } };
+      else s = { ...s, backpack: { ...s.backpack, card: purchased } };
+
+      // По ТЗ: покупка закрывает магазин сразу, затем обычный добор 3 карт из деки.
+      const closed = closeMerchantAndDeal3(s, state.enemySlots);
+      return addLog(closed, `ТОРГОВЕЦ: куплено ${purchased.icon} за ${price}💎.`, 'gain');
+    }
+
+    case 'USE_BRAVERY_POTION': {
+      nextState = { ...state, hasActed: true };
+
+      const loc = findCardLocation(state, action.potionCardId);
+      if (loc !== 'leftHand' && loc !== 'rightHand' && loc !== 'backpack') {
+        return addLog(state, '🦁 ХРАБРОСТЬ: зелье не найдено.', 'info');
+      }
+
+      const slot = loc === 'leftHand' ? state.leftHand : loc === 'rightHand' ? state.rightHand : state.backpack;
+      const card = slot.card;
+      if (!card || card.type !== 'bravery_potion') {
+        return addLog(state, '🦁 ХРАБРОСТЬ: это не зелье храбрости.', 'info');
+      }
+      if (slot.blocked) {
+        return addLog(state, '🦁 ХРАБРОСТЬ: слот заблокирован.', 'info');
+      }
+
+      // По ТЗ: сначала -4 HP (в God Mode игнорируем), затем +2 maxHp. Может убить при HP<=4.
+      let newState: GameState = { ...state };
+
+      const maxHpAfter = newState.player.maxHp + 2;
+      let hpAfter = newState.player.hp;
+      if (!newState.isGodMode) {
+        hpAfter = Math.max(0, hpAfter - 4);
+      }
+
+      newState.player = { ...newState.player, maxHp: maxHpAfter };
+      newState = setPlayerHp(newState, Math.min(maxHpAfter, hpAfter), 'bravery_potion');
+
+      // Убираем зелье из слота и кладём в discard (как заклинание).
+      if (loc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
+      else if (loc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
+      else newState.backpack = { ...newState.backpack, card: null };
+      newState.discardPile = [...newState.discardPile, card];
+
+      newState.hasActed = true;
+
+      const dmgPart = newState.isGodMode ? ' (GOD: урон игнорируется)' : '';
+      const log = `🦁 ХРАБРОСТЬ: -4 HP, +2 max HP.${dmgPart}`;
+      return addLog(newState, log, 'combat');
+    }
+
+    case 'CAST_PRAYER': {
+      nextState = { ...state, hasActed: true };
+
+      // “Молчание” блокирует магию (логика аналогична spell-кастам).
+      if (hasActiveAbility(state, 'silence')) {
+        return addLog(state, 'МОЛЧАНИЕ: Магия заблокирована!', 'info');
+      }
+
+      const prayerLoc = findCardLocation(state, action.prayerCardId);
+      if (prayerLoc !== 'leftHand' && prayerLoc !== 'rightHand' && prayerLoc !== 'backpack') {
+        return addLog(state, '📜 МОЛИТВА: карта не найдена.', 'info');
+      }
+
+      const prayerSlot =
+        prayerLoc === 'leftHand' ? state.leftHand : prayerLoc === 'rightHand' ? state.rightHand : state.backpack;
+      if (prayerSlot.blocked) {
+        return addLog(state, '📜 МОЛИТВА: слот заблокирован.', 'info');
+      }
+      const prayerCard = prayerSlot.card;
+      if (!prayerCard || prayerCard.type !== 'prayer_spell') {
+        return addLog(state, '📜 МОЛИТВА: это не “Молитва”.', 'info');
+      }
+
+      // Таргет: spell-карта в руке.
+      const targetLoc = findCardLocation(state, action.targetSpellCardId);
+      if (targetLoc !== 'leftHand' && targetLoc !== 'rightHand') {
+        return addLog(state, '📜 МОЛИТВА: цель должна быть заклинанием в руке.', 'info');
+      }
+      const targetCard = targetLoc === 'leftHand' ? state.leftHand.card : state.rightHand.card;
+      if (!targetCard || targetCard.type !== 'spell' || !targetCard.spellType) {
+        return addLog(state, '📜 МОЛИТВА: цель должна быть заклинанием.', 'info');
+      }
+
+      // Копия строго в рюкзак, только если пуст и не заблокирован (web тоже блокирует).
+      // Разрешаем кейс, когда сама “Молитва” лежит в рюкзаке: она “съедается”, а на её место кладём копию.
+      const backpackOccupiedByOther =
+        !!state.backpack.card && state.backpack.card.id !== action.prayerCardId;
+
+      if (state.backpack.blocked || hasActiveAbility(state, 'web') || backpackOccupiedByOther) {
+        return addLog(state, '📜 МОЛИТВА: Рюкзак занят или заблокирован.', 'info');
+      }
+
+      const copiedSpell: Card = {
+        id: `prayer_copy_${createId(rng, 7)}`,
+        type: 'spell',
+        value: 0,
+        spellType: targetCard.spellType,
+        icon: targetCard.icon,
+        name: targetCard.name,
+        description: targetCard.description,
+      };
+
+      const newState: GameState = { ...state };
+      newState.backpack = { ...newState.backpack, card: copiedSpell };
+
+      // Молитва уходит в discard.
+      if (prayerLoc === 'leftHand') newState.leftHand = { ...newState.leftHand, card: null };
+      else if (prayerLoc === 'rightHand') newState.rightHand = { ...newState.rightHand, card: null };
+      // prayerLoc === 'backpack': уже “заменили” молитву на копию
+
+      newState.discardPile = [...newState.discardPile, prayerCard];
+      newState.hasActed = true;
+
+      return addLog(newState, `📜 МОЛИТВА: Скопировано ${targetCard.icon} в рюкзак.`, 'spell');
+    }
+
+    case 'MERCHANT_LEAVE': {
+      if (!state.merchant.isActive) return state;
+      const newState = closeMerchantAndDeal3({ ...state, hasActed: true }, state.enemySlots);
+      return addLog(newState, 'ТОРГОВЕЦ: ты уходишь.', 'info');
     }
 
     case 'TAKE_CARD_TO_HAND': {
@@ -1249,7 +1671,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
                      logMessage = res.log;
                      logType = res.logType || 'combat';
                  }
-            } else if (hand.card?.type === 'weapon') {
+            } else if (hand.card?.type === 'weapon' || hand.card?.type === 'claymore') {
                  const res = handleWeaponAttack(state, monster, monsterIdx, handSide);
                  nextState = res.state;
                  if (res.log) {
@@ -1767,6 +2189,19 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
     }
     
     case 'SELL_ITEM': {
+        // Traveling Merchant: во время магазина продажа разрешена только из рюкзака и строго один раз.
+        if (state.merchant.isActive) {
+          if (state.merchant.saleUsed) {
+            return state;
+          }
+          if (!state.backpack.card || state.backpack.card.id !== action.cardId) {
+            return state;
+          }
+          if (state.backpack.blocked) {
+            return state;
+          }
+        }
+
         nextState = { ...state, hasActed: true };
         if (hasActiveAbility(state, 'scream')) {
             logMessage = 'КРИК: Продажа заблокирована монстром!';
@@ -1786,6 +2221,10 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
              logMessage = 'Нельзя продать монстра!';
              break;
         }
+        if (cardToSell && cardToSell.type === 'prayer_spell') {
+             logMessage = 'Нельзя продать Молитву!';
+             break;
+        }
 
         const { newState, card, fromWhere } = removeCardFromSource(state, action.cardId);
         
@@ -1794,7 +2233,7 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
         newState.discardPile = [...newState.discardPile, card];
 
         let coinsToAdd = 0;
-        if (card.type === 'weapon' || card.type === 'potion' || card.type === 'shield') {
+        if (card.type === 'weapon' || card.type === 'potion' || card.type === 'shield' || card.type === 'claymore') {
             coinsToAdd = card.value;
         } else if (card.type === 'coin' || card.type === 'skull') {
              coinsToAdd = 0; 
@@ -1814,6 +2253,16 @@ const handleWeaponAttack = (state: GameState, monster: any, monsterIdx: number, 
             ...newState,
             player: { ...newState.player, coins: newState.player.coins + coinsToAdd }
         };
+
+        if (state.merchant.isActive) {
+          nextState = {
+            ...nextState,
+            merchant: {
+              ...nextState.merchant,
+              saleUsed: true,
+            },
+          };
+        }
         nextState = updateStats(nextState, { 
             itemsSold: nextState.stats.itemsSold + 1,
             coinsCollected: nextState.stats.coinsCollected + coinsToAdd 

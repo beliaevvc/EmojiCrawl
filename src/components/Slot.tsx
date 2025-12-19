@@ -30,9 +30,20 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
     canDrop: (item: any) => {
         if (isBlocked) return false;
         
+        // Traveling Merchant: токены торговца (товары/🚪) можно бросать только в пустые слоты инвентаря.
+        // Это защищает от “ложного” режима таргетинга спелла, когда слот занят.
+        if ((item?.merchantAction === 'leave' || item?.merchantOfferType) && card) {
+          return false;
+        }
+
         // INTERACTION LOGIC (Priority 1)
         // If this slot has an interaction handler for this item type (e.g. Monster), allow it
         if (onInteract && item.type === 'monster') return true;
+
+        // “Молитва” (prayer_spell): можно таргетить ТОЛЬКО spell-карту в руке.
+        if (item?.type === 'prayer_spell') {
+          return location === 'hand' && !!card && card.type === 'spell';
+        }
 
         // EQUIP LOGIC (Priority 2)
         // If we have a custom validator for equipping (e.g. no monsters in hand), check it
@@ -60,7 +71,7 @@ const Slot = ({ card, onDrop, accepts, placeholderIcon, isBlocked, className = "
       isOver: !!monitor.isOver(),
       canDrop: !!monitor.canDrop(),
     }),
-  }), [isBlocked, card, onDrop, accepts, canDropItem, onInteract]);
+  }), [isBlocked, card, onDrop, accepts, canDropItem, onInteract, location]);
 
   const isActive = canDrop && isOver;
   

@@ -80,7 +80,15 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
       (elementRef as any).current = element;
   };
 
+  const isMerchantArtifact =
+    card.type === 'bravery_potion' || card.type === 'claymore' || card.type === 'prayer_spell';
+  const isMerchantLeave = card.merchantAction === 'leave';
+
   const getBorderColor = () => {
+    // По ТЗ визуала: все артефакты торговца имеют золотую обводку (единый стиль).
+    if (isMerchantArtifact) return 'border-amber-400';
+    // 🚪 “Уйти” — отдельный стиль (не золотой).
+    if (isMerchantLeave) return 'border-stone-500';
     switch (card.type) {
       case 'monster': return 'border-rose-800';
       case 'weapon': return 'border-stone-400';
@@ -94,9 +102,15 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
   };
 
   const getBgColor = () => {
+    if (isMerchantLeave) return 'bg-stone-900/70';
     switch (card.type) {
        case 'monster': return 'bg-rose-950/40';
        case 'skull': return 'bg-stone-950/60';
+       // Артефакты торговца делаем чуть “дороже” фоном, shimmer добавит золото сверху.
+       case 'bravery_potion':
+       case 'claymore':
+       case 'prayer_spell':
+         return 'bg-amber-950/15';
        default: return 'bg-stone-800/80';
     }
   }
@@ -140,6 +154,7 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
         select-none z-10
         ${isShaking ? 'ring-4 ring-rose-500' : ''}
         ${isModified ? (isBuff ? 'ring-2 ring-emerald-500/50' : 'ring-2 ring-rose-500/50') : ''} 
+        ${isMerchantArtifact ? 'shadow-[0_0_18px_rgba(251,191,36,0.22)] ring-1 ring-amber-300/30' : ''}
       `}
     >
       {/* Card Back for Hidden Cards (Universal) */}
@@ -153,6 +168,13 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
       {/* Content (Only if not hidden) */}
       {!card.isHidden && (
         <>
+            {/* Traveling Merchant: мягкий золотой shimmer (внутренний) */}
+            {isMerchantArtifact && (
+              <div className="merchant-shimmer-clip">
+                <div className="merchant-shimmer-stripe" />
+              </div>
+            )}
+
             {card.type !== 'spell' && (
                 <div className={`
                 absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 w-5 h-5 md:w-7 md:h-7 rounded-full 
@@ -205,6 +227,16 @@ const CardComponent = ({ card, isDraggable = true, onClick, isBlocked = false, p
             {card.priceMultiplier && card.priceMultiplier > 1 && (
                 <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-yellow-500 text-black font-bold text-[10px] flex items-center justify-center border border-yellow-300 shadow-md z-20">
                     x{card.priceMultiplier}
+                </div>
+            )}
+
+            {/* Traveling Merchant Price Badge */}
+            {typeof (card as any).merchantPrice === 'number' && (
+                <div
+                    className="absolute -top-1 -left-1 md:-top-2 md:-left-2 px-1.5 py-0.5 rounded-full bg-amber-500/90 text-black font-bold text-[9px] md:text-[10px] border border-amber-200 shadow-md z-20"
+                    title="Цена торговца (💎)"
+                >
+                    💎{(card as any).merchantPrice}
                 </div>
             )}
 

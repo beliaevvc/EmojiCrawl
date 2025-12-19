@@ -26,7 +26,7 @@
 import type { RefObject } from 'react';
 import { ItemTypes } from '@/types/DragTypes';
 import { baseGameContent } from '@/features/game/application/gameContent';
-import { InteractionZone } from '../dnd/InteractionZone';
+import { useDrop } from 'react-dnd';
 
 export function PlayerAvatar({
   heroRef,
@@ -53,8 +53,26 @@ export function PlayerAvatar({
   activeBuffs: string[];
   hasMissEffect: boolean;
 }) {
+  const [{ isOver, canDrop, draggedItem }, drop] = useDrop(() => ({
+    accept: [ItemTypes.CARD],
+    drop: (item: any, monitor) => {
+      if (monitor.didDrop()) return;
+      onDropToPlayer(item);
+    },
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+      canDrop: !!monitor.canDrop(),
+      draggedItem: monitor.getItem() as any,
+    }),
+  }));
+
+  // Во время торговца хотим визуально подсветить героя как “цель” для 🚪 (leave).
+  const isMerchantLeave = (draggedItem as any)?.merchantAction === 'leave';
+  const dropRingClass =
+    isOver && canDrop ? (isMerchantLeave ? 'ring-4 ring-amber-400/60 rounded-full' : 'ring-4 ring-rose-500/50 rounded-full') : '';
+
   return (
-    <InteractionZone onDrop={onDropToPlayer} accepts={[ItemTypes.CARD]} className="relative aspect-square">
+    <div ref={drop} className={`relative aspect-square ${dropRingClass}`}>
       <div
         ref={heroRef}
         className={`w-full h-full rounded-full border-2 md:border-4 border-stone-400 bg-stone-800 flex items-center justify-center text-4xl md:text-6xl shadow-[0_0_20px_rgba(0,0,0,0.5)] z-10 relative overflow-hidden transition-all ${heroShake ? 'animate-shake ring-4 ring-rose-500' : ''} ${armorFlash ? 'ring-4 ring-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.6)] brightness-110 scale-105' : ''} ${healFlash ? 'ring-4 ring-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.6)] brightness-110 scale-105' : ''}`}
@@ -101,7 +119,7 @@ export function PlayerAvatar({
           </div>
         )}
       </div>
-    </InteractionZone>
+    </div>
   );
 }
 

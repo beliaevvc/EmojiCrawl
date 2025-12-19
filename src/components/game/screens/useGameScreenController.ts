@@ -312,6 +312,8 @@ export function useGameScreenController({ deckConfig, runType, templateName }: U
     },
     board: {
       enemySlots: state.enemySlots,
+      merchantOverlaySlots: state.merchant?.isActive ? state.merchant.overlaySlots : undefined,
+      merchantBlockedSlotIndex: state.merchant?.isActive ? state.merchant.blockedSlotIndex : null,
       onSetEnemySlotRef: (idx, el) => {
         slotRefs.current[idx] = el;
       },

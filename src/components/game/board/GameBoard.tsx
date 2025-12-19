@@ -20,7 +20,7 @@
  */
 
 import type { RefObject } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { Card } from '@/types/game';
 import { EnemySlotDropZone } from '../dnd/EnemySlotDropZone';
 import { InteractionZone } from '../dnd/InteractionZone';
@@ -30,6 +30,8 @@ import { PlayerAvatar } from './PlayerAvatar';
 
 export type GameBoardProps = {
   enemySlots: Array<Card | null>;
+  merchantOverlaySlots?: Array<Card | null>;
+  merchantBlockedSlotIndex?: number | null;
   onSetEnemySlotRef: (idx: number, el: HTMLDivElement | null) => void;
 
   leftHandRef: RefObject<HTMLDivElement>;
@@ -74,6 +76,8 @@ export type GameBoardProps = {
 export function GameBoard(props: GameBoardProps) {
   const {
     enemySlots,
+    merchantOverlaySlots,
+    merchantBlockedSlotIndex,
     onSetEnemySlotRef,
     leftHandRef,
     rightHandRef,
@@ -107,10 +111,46 @@ export function GameBoard(props: GameBoardProps) {
     hasMissEffect,
   } = props;
 
+  const isMerchantActive =
+    !!merchantOverlaySlots && merchantOverlaySlots.some((c) => c !== null) && merchantBlockedSlotIndex != null;
+
   return (
-    <div className="relative grid grid-cols-4 gap-2 md:gap-4 w-full max-w-sm md:max-w-xl aspect-[2/1] transition-all duration-300">
-      {/* Enemy Row */}
-      {enemySlots.map((card, i) => (
+    <div className="relative w-full max-w-sm md:max-w-xl transition-all duration-300">
+      {/* Traveling Merchant banner (виден всё время, пока активен магазин) */}
+      {isMerchantActive && (
+        // Важно: баннер НЕ должен сдвигать поле вниз.
+        // Поэтому крепим его “снаружи” над полем: bottom-full + margin-bottom.
+        // Дополнительно поднимаем баннер ещё на половину его собственной высоты (по запросу),
+        // чтобы он был выше верхнего ряда, но поле оставалось на месте.
+        <div className="pointer-events-none absolute inset-x-0 bottom-full mb-3 -translate-y-1/2 z-10 flex justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30, mass: 1 }}
+            // Делаем табличку ограниченной ширины и центрируем — чтобы она не выглядела “сдвинутой”.
+            className="w-[92%] md:w-[88%] max-w-lg"
+          >
+            <div className="bg-stone-900/80 backdrop-blur-md border border-stone-700 shadow-xl rounded-xl px-3 py-2 text-center">
+              <div className="text-[10px] md:text-xs font-display uppercase tracking-widest text-stone-200">
+                🎩 Странствующий торговец
+              </div>
+              <div className="mt-1 text-[10px] md:text-xs text-stone-300 leading-snug space-y-0.5">
+                <div>
+                  🖐️ Перетащи артефакт в свободный слот — купить{' '}
+                  <span className="text-amber-300 font-bold">💎15</span>
+                </div>
+                <div>🚪 Перетащи дверь на героя или в пустой слот — уйти</div>
+                <div className="text-stone-400">⛔ Во время торговца бой и магия недоступны</div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Сетка поля (позиция/размер не должны меняться из-за баннера) */}
+      <div className="relative grid grid-cols-4 gap-2 md:gap-4 w-full aspect-[2/1]">
+        {/* Enemy Row */}
+        {enemySlots.map((card, i) => (
         <div
           key={`enemy-slot-${i}`}
           className="aspect-square flex items-center justify-center relative"
@@ -128,14 +168,45 @@ export function GameBoard(props: GameBoardProps) {
                   card={card}
                   isDraggable={true}
                   onClick={() => onCardClick(card)}
-                  isBlocked={isStealthBlocked(card)}
+                  // Во время торговца последняя карта раунда перекрыта “🚪 Уйти” и не должна взаимодействовать.
+                  isBlocked={isStealthBlocked(card) || (isMerchantActive && merchantBlockedSlotIndex === i)}
                   penalty={getCardModifier(card)}
                 />
               )}
             </AnimatePresence>
+
+            {/* Traveling Merchant overlay tokens */}
+            {merchantOverlaySlots?.[i] && (
+              <div className="absolute inset-0 z-40">
+                {/**
+                 * Токены торговца:
+                 * - 🚪 “Уйти” всегда draggable,
+                 * - товары draggable только если хватает 💎 (иначе блокируем с серостью).
+                 */}
+                {(() => {
+                  const token = merchantOverlaySlots[i]!;
+                  const price = token.merchantPrice ?? 15;
+                  const isLeave = token.merchantAction === 'leave';
+                  const canBuy = coins >= price;
+                  return (
+                <CardComponent
+                  key={`merchant-overlay-${token.id}`}
+                  card={token}
+                  isDraggable={isLeave || (token.merchantOfferType ? canBuy : false)}
+                  isBlocked={!isLeave && token.merchantOfferType ? !canBuy : false}
+                  // По ТЗ: артефакты торговца должны открывать описание “как у заклинаний”.
+                  // 🚪 “Уйти” — не артефакт, описание ему не нужно.
+                  onClick={token.merchantOfferType ? () => onCardClick(token) : undefined}
+                  penalty={0}
+                  location="field"
+                />
+                  );
+                })()}
+              </div>
+            )}
           </EnemySlotDropZone>
         </div>
-      ))}
+        ))}
 
       {/* Left Hand */}
       <InteractionZone onDrop={() => {}} accepts={[]} className="relative">
@@ -216,6 +287,7 @@ export function GameBoard(props: GameBoardProps) {
             <span className="text-4xl md:text-5xl drop-shadow-lg opacity-90 filter brightness-125">🕸️</span>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
